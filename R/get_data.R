@@ -59,6 +59,8 @@ get_onsets_selected_data <- function(recording) {
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o <- get_metre_data(r)
+#' r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+#' m2 <- get_metre_data(r2)
 get_metre_data <- function(recording) {
 
   # Identify metre files
@@ -69,14 +71,18 @@ get_metre_data <- function(recording) {
 
   message("Loading ", paste(basename(metre_files), collapse = ", "))
 
-  output_metre_selected <- list()
+  output_metre <- list()
   for (fil in metre_files) {
-    output_metre_selected[[basename(fil)]] <- read.csv(fil)
+    output_metre[[basename(fil)]] <- read.csv(fil)
   }
-  names(output_metre_selected) <- sub(".*_Metre_(.*)\\.csv", "\\1", names(output_metre_selected))
-  class(output_metre_selected) <- "Metre"
+  names(output_metre) <- sub(".*_Metre_(.*)\\.csv", "\\1", names(output_metre))
 
-  invisible(output_metre_selected)
+  # Order on time
+  min_time <- sapply(output_metre, function(x) min(x$Time, na.rm = TRUE))
+  output_metre <- output_metre[order(min_time)]
+
+  class(output_metre) <- "Metre"
+  invisible(output_metre)
 }
 
 
@@ -116,9 +122,9 @@ get_duration_annotation_data <- function(recording) {
 #' Get view from NS video data
 #'
 #' Creates time reference and displacement from raw data
+#' @param recording
 #' @param vid
 #' @param inst
-#' @param recording
 #' @param direct
 #' @param save_output
 #' @param folder_out
@@ -147,6 +153,15 @@ get_raw_view <- function(recording, vid, direct, inst,
 
   # Add a time column
   df <- cbind(df[1], Time = df$X / recording$fps, df[-1])
+
+  # Add a displacement column
+  dx <- as.data.frame(lapply(df[x_colnames], function(x) c(NA, diff(x))))
+  dy <- as.data.frame(lapply(df[y_colnames], function(x) c(NA, diff(x))))
+  disp <- sqrt(dx^2 + dy^2)
+  colnames(disp) <- paste0(data_points, "_d")
+  df <- cbind(df, disp)
+  selected_cols <- c(first_col, "Time", rbind(x_colnames, y_colnames, colnames(disp)))
+  df <- df[selected_cols]
 
   if (save_output) {
     out_folder <- file.path(recording$data_root, folder_out)
@@ -184,7 +199,8 @@ get_processed_view <- function(rv, folder_out = "Normalized", save_output = TRUE
   data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-(1:2)]
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
-  selected_cols <- c(first_cols, x_colnames, y_colnames)
+  d_colnames <- paste0(data_points, "_d")
+  selected_cols <- c(first_cols, x_colnames, y_colnames, d_colnames)
   df <- df[selected_cols]
 
   # Split dataframe into x- and y- columns and determine which dimension has the larger extent

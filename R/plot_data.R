@@ -10,9 +10,9 @@
 #' m <- get_metre_data(r)
 #' plot(m)
 plot.Metre <- function(obj) {
-  zoo_list <- lapply(obj, function(x) zoo::zoo(x$Cycle, order.by = x$Time))
+  zoo_list <- lapply(obj, function(x) zoo::zoo(diff(x$Time), order.by = x$Time))
   z <- do.call(merge, zoo_list)
-  plot(z, yax.flip = TRUE, xlab = "Time / s", main = "Metre Object")
+  plot(z, yax.flip = TRUE, xlab = "Time / s", main = "Metre Object - Time Between Cycles")
 }
 
 
@@ -28,9 +28,11 @@ plot.Metre <- function(obj) {
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' plot(v)
 plot.RawView <- function(o, cols=NULL, ...) {
+
   # Restrict points to plot
-  cols <- if (is.null(cols)) seq_len(min(ncol(o$df), 10))[-1] else c("Time", cols)
+  cols <- if (is.null(cols)) seq_len(min(ncol(o$df), 11))[-1] else c("Time", cols)
   sp <- if (nrow(o$df) > 100) sample(nrow(o$df), 100) else seq_len(nrow(o$df))
+
   df <- o$df[sp, cols, drop = FALSE]
   zoo_list <- lapply(df[-1], function(x) zoo::zoo(x, order.by = df$Time))
   z <- do.call(merge, zoo_list)
@@ -40,7 +42,7 @@ plot.RawView <- function(o, cols=NULL, ...) {
   if (is.null(ncol(z))) {
     plot(z, xlab = "Time / s", ylab = cols[-1], main = paste0("Raw View for ", title), ...)
   } else {
-    plot(z, yax.flip = TRUE, xlab = "Time / s", main = paste0("Raw View for ", title), ...)
+    plot(z, nc = 3, yax.flip = TRUE, xlab = "Time / s", main = paste0("Raw View for ", title), ...)
   }
 }
 
@@ -55,10 +57,11 @@ plot.RawView <- function(o, cols=NULL, ...) {
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
-#' pv <- get_processed_view(pv)
+#' pv <- get_processed_view(rv)
 #' plot(rv)
 #' plot(pv)
 plot.ProcessedView <- function(o, cols=NULL) {
+
   # Restrict points to plot
   cols <- if (is.null(cols)) seq_len(min(ncol(o$df_norm), 10))[-1] else c("Time", cols)
   sp <- if (nrow(o$df_norm) > 100) sample(nrow(o$df_norm), 100) else seq_len(nrow(o$df_norm))
@@ -86,10 +89,11 @@ plot.ProcessedView <- function(o, cols=NULL) {
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
-#' pv <- get_processed_view(pv)
+#' pv <- get_processed_view(rv)
 #' fv <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
 #' plot(fv)
 plot.FilteredView <- function(o, cols=NULL) {
+
   # Restrict points to plot
   cols <- if (is.null(cols)) seq_len(min(ncol(o$df_filt), 10)) else c("Time", cols)
   sp <- if (nrow(o$df_filt) > 100) sample(nrow(o$df_filt), 100) else seq_len(nrow(o$df_filt))
