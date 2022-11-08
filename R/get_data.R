@@ -1,21 +1,138 @@
-#' Get NS video data
+#' Get a meta-data recording object
 #'
 #' @param stem
-#' @param vid
-#' @param direc
-#' @param inst
 #' @param folder_in
-#' @param folder_out
 #' @param path
+#' @param fps
 #'
 #' @return
 #' @export
 #'
 #' @examples
-#' ns_data <- get_NS_data("NIR_ABh_Puriya", "Central", "", "Sitar", path="C:/data/movementsync")
-get_NS_data <- function(stem, vid, diry, inst, folder_in = "Original",
-                        folder_out = "Normalized", path = ".", save_output = TRUE) {
-  data_file_name <- file.path(path, folder_in, paste0(stem, "_", vid, "_", diry ,'NS_', inst, '.csv'))
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+get_recording <- function(stem, fps, folder_in = "Original", path = "C:/data/movementsync") {
+  data_path <- file.path(path, folder_in)
+  data_files <- list.files(data_path, pattern = paste0("^", stem, ".*\\.csv") )
+  l <- list(data_root = path, data_path = data_path, data_files = data_files, stem = stem,
+            fps = fps)
+  class(l) <- "Recording"
+  l
+}
+
+
+#' Get onsets selected files
+#'
+#' @param recording
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' o <- get_onsets_selected_data(r)
+get_onsets_selected_data <- function(recording) {
+
+  # Identify onset files
+  is_onsets_selected_file <- grepl(
+    paste0("^", recording$stem, ".*_Onsets_Selected_.*\\.csv"),
+    recording$data_files)
+  onsets_selected_files <- file.path(recording$data_path, recording$data_files[is_onsets_selected_file])
+  message("Loading ", paste(basename(onsets_selected_files), collapse = ", "))
+
+  output_onsets_selected <- list()
+  for (fil in onsets_selected_files) {
+    output_onsets_selected[[basename(fil)]] <- read.csv(fil)
+  }
+  class(output_onsets_selected) <- "OnsetsSelected"
+
+  invisible(output_onsets_selected)
+}
+
+
+#' Get metre files
+#'
+#' @param recording
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' o <- get_metre_data(r)
+get_metre_data <- function(recording) {
+
+  # Identify metre files
+  is_metre_file <- grepl(
+    paste0("^", recording$stem, ".*_Metre_.*\\.csv"),
+    recording$data_files)
+  metre_files <- file.path(recording$data_path, recording$data_files[is_metre_file])
+
+  message("Loading ", paste(basename(metre_files), collapse = ", "))
+
+  output_metre_selected <- list()
+  for (fil in metre_files) {
+    output_metre_selected[[basename(fil)]] <- read.csv(fil)
+  }
+  names(output_metre_selected) <- sub(".*_Metre_(.*)\\.csv", "\\1", names(output_metre_selected))
+  class(output_metre_selected) <- "Metre"
+
+  invisible(output_metre_selected)
+}
+
+
+#' Get duration annotation data
+#'
+#' @param recording
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' df <- get_duration_annotation_data(r)
+get_duration_annotation_data <- function(recording) {
+
+  # Identify duration files
+  is_duration_file <- grepl(
+    paste0("^", recording$stem, ".*_(Annotation|MD)\\.csv"),
+    recording$data_files)
+  duration_files <- file.path(recording$data_path, recording$data_files[is_duration_file])
+
+  message("Loading ", paste(basename(duration_files), collapse = ", "))
+
+  output_list <- list()
+  for (fil in duration_files) {
+    output_list[[basename(fil)]] <- read.csv(fil, header = FALSE)
+  }
+
+  output_dfr <- do.call(rbind.data.frame, c(output_list, make.row.names = FALSE))
+  colnames(output_dfr) <- c("Tier", "In", "Out", "Duration", "Comments")
+  class(output_dfr) <- c("Duration", class(output_dfr))
+
+  output_dfr
+}
+
+
+#' Get view from NS video data
+#'
+#' Creates time reference and displacement from raw data
+#' @param vid
+#' @param inst
+#' @param recording
+#' @param direct
+#' @param save_output
+#' @param folder_out
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' v <- get_raw_view(r, "Central", NULL, "Sitar")
+get_raw_view <- function(recording, vid, direct, inst,
+                        folder_out = "Raw", save_output = TRUE) {
+  data_file_name <- file.path(recording$data_path,
+                              paste0(recording$stem, "_", vid, "_", direct ,'NS_', inst, '.csv'))
   message("Loading ", data_file_name)
   stopifnot(file.exists(data_file_name))
 
@@ -24,8 +141,50 @@ get_NS_data <- function(stem, vid, diry, inst, folder_in = "Original",
   data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-1]
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
-  selected_cols <- c(first_col, x_colnames, y_colnames)
+  selected_cols <- c(first_col, rbind(x_colnames, y_colnames))
   if (!all(selected_cols %in% colnames(df))) stop("Cannot find data points in data file")
+  df <- df[selected_cols]
+
+  # Add a time column
+  df <- cbind(df[1], Time = df$X / recording$fps, df[-1])
+
+  if (save_output) {
+    out_folder <- file.path(recording$data_root, folder_out)
+    if (!dir.exists(out_folder)) dir.create(out_folder)
+    out_file_name <- file.path(out_folder, paste0(recording$stem, "_", vid , "_", inst, '_RAW.csv'))
+    write.csv(df, out_file_name, row.names=FALSE)
+  }
+  l <- list(df = df, vid = vid, direct = direct,
+       inst = inst, recording = recording)
+  class(l) <- "RawView"
+
+  invisible(l)
+}
+
+
+#' Get processed view from NS video data
+#'
+#' Does normalisation and interpolation of missing data in the view
+#'
+#' @param rv
+#' @param save_output
+#' @param folder_out
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' rv <- get_raw_view(r, "Central", "", "Sitar")
+#' pv <- get_processed_view(rv)
+get_processed_view <- function(rv, folder_out = "Normalized", save_output = TRUE) {
+
+  df <- rv$df
+  first_cols <- colnames(df)[1:2]
+  data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-(1:2)]
+  x_colnames <- paste0(data_points, "_x")
+  y_colnames <- paste0(data_points, "_y")
+  selected_cols <- c(first_cols, x_colnames, y_colnames)
   df <- df[selected_cols]
 
   # Split dataframe into x- and y- columns and determine which dimension has the larger extent
@@ -48,46 +207,55 @@ get_NS_data <- function(stem, vid, diry, inst, folder_in = "Original",
   dfy_norm <- dfy_norm + 0.5 - (max(dfy_norm, na.rm=TRUE) + min(dfy_norm, na.rm=TRUE))/2
 
   # Recombine dataframe
-  X <- df[[first_col]]
+  X <- df[first_cols]
   df_norm <- cbind(X, dfx_norm, dfy_norm)
+  cn <- c(colnames(X), rbind(colnames(dfx_norm), colnames(dfy_norm)))
+  df_norm <- df_norm[cn]
 
   # Interpolate missing data
   df_norm <- replace(zoo::na.spline(df_norm), is.na(zoo::na.approx(df_norm, na.rm=FALSE)), NA)
   df_norm <- as.data.frame(df_norm)
 
   if (save_output) {
-    out_folder <- file.path(path, folder_out)
+    out_folder <- file.path(rv$recording$data_root, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
-    out_file_name <- file.path(path, folder_out, paste0(stem, "_", vid , "_", inst, '_NORM.csv'))
+    out_file_name <- file.path(out_folder, paste0(rv$recording$stem, "_", rv$vid , "_", rv$inst, '_NORM.csv'))
     write.csv(df_norm, out_file_name, row.names=FALSE)
   }
+  l <- list(df_norm = df_norm, vid = rv$vid, direct = rv$direct,
+            inst = rv$inst, recording = rv$recording)
+  class(l) <- "ProcessedView"
 
-  invisible(list(df_norm = df_norm, stem = stem, vid = vid, diry = diry,
-                 inst = inst, path = path))
+  invisible(l)
 }
 
 
 #' Apply a filter
 #'
-#' @param ns_data
+#' @param view
 #' @param data_points
 #' @param window_size
 #' @param poly_order
+#' @param folder_out
+#' @param save_output
 #'
 #' @return
 #' @export
 #'
 #' @examples
-#' ns_data <- get_NS_data("NIR_ABh_Puriya_", "Central_", "", "Sitar")
-#' ns_filt1 <- apply_filter(ns_data, c("Nose", "RWrist", "LWrist"), window_size=41, poly_order=3)
-#' ns_filt2 <- apply_filter(ns_data, c("Nose", "RWrist", "LWrist"), window_size=41, poly_order=3)
-apply_filter <- function(ns_data, data_points, window_size, poly_order, folder_out = "Filtered", save_output=TRUE) {
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' rv <- get_raw_view(r, "Central", "", "Sitar")
+#' pv <- get_processed_view(rv)
+#'
+#' filt1 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
+#' filt2 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=41, poly_order=3)
+apply_filter <- function(view, data_points, window_size, poly_order, folder_out = "Filtered", save_output=TRUE) {
 
-  df_norm <- ns_data$df_norm
-  first_col <- colnames(df_norm[1])
+  df_norm <- view$df_norm
+  first_cols <- colnames(df_norm[1:2])
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
-  df_filt <- df_norm[c(first_col, x_colnames, y_colnames)]
+  df_filt <- df_norm[c(first_cols, rbind(x_colnames, y_colnames))]
 
   # Apply Savitsky-Golay filter
   for (cn in c(x_colnames, y_colnames)) {
@@ -96,102 +264,18 @@ apply_filter <- function(ns_data, data_points, window_size, poly_order, folder_o
 
   # Save version
   if (save_output) {
-    out_folder <- file.path(ns_data$path, folder_out)
+    out_folder <- file.path(view$recording$data_root, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder,
-      paste0(ns_data$stem, "_", ns_data$vid, "_", ns_data$inst, '_SEL_', window_size, '_', poly_order,'.csv')
+      paste0(view$recording$stem, "_", view$vid, "_", view$inst, '_SEL_', window_size, '_', poly_order,'.csv')
     )
     write.csv(df_filt, out_file_name, row.names=FALSE)
   }
+  l <- list(df_filt = df_filt, view = view)
+  class(l) <- "FilteredView"
 
-  invisible(list(df_filt = df_filt, stem = ns_data$stem, vid = ns_data$vid,
-                 diry = ns_data$diry, inst = ns_data$inst, path = ns_data$path))
+  invisible(l)
 }
 
 
-
-#' Get onsets selected files
-#'
-#' @param stem
-#' @param folder_in
-#' @param path
-#'
-#' @return
-#' @export
-#'
-#' @examples
-#' o <- get_onsets_selected_data("NIR_ABh_Puriya")
-get_onsets_selected_data <- function(stem, folder_in = "Original", path = "C:/data/movementsync") {
-
-  # Get onset selected files
-  onsets_selected_files <- list.files(file.path(path, folder_in),
-                                      pattern = paste0("^", stem, ".*_Onsets_Selected_.*\\.csv"),
-                                      full.names = TRUE)
-  message("Loading ", paste(onsets_selected_files, collapse = ", "))
-
-  output_onsets_selected <- list()
-  for (fil in onsets_selected_files) {
-    output_onsets_selected[[basename(fil)]] <- read.csv(fil)
-  }
-
-  invisible(output_onsets_selected)
-}
-
-
-#' Get metre files
-#'
-#' @param stem
-#' @param folder_in
-#' @param path
-#'
-#' @return
-#' @export
-#'
-#' @examples
-#' o <- get_metre_data("NIR_ABh_Puriya")
-get_metre_data <- function(stem, folder_in = "Original", path = "C:/data/movementsync") {
-
-  # Get metre files
-  metre_files <- list.files(file.path(path, folder_in),
-                            pattern = paste0("^", stem, ".*_Metre_.*\\.csv"),
-                            full.names = TRUE)
-  message("Loading ", paste(metre_files, collapse = ", "))
-
-  output_metre_selected <- list()
-  for (fil in metre_files) {
-    output_metre_selected[[basename(fil)]] <- read.csv(fil)
-  }
-  class(output_metre_selected) <- "Metre"
-
-  invisible(output_metre_selected)
-}
-
-
-#' Get duration annotation data
-#'
-#' @param stem
-#' @param path
-#'
-#' @return
-#' @export
-#'
-#' @examples
-#' df <- get_duration_annotation_data("NIR_ABh_Puriya")
-get_duration_annotation_data <- function(stem, folder_in = "Original", path = "C:/data/movementsync") {
-
-  duration_files <- list.files(
-    file.path(path, folder_in),
-    pattern = paste0("^", stem, ".*_(Annotation|MD)\\.csv"),
-    full.names = TRUE)
-
-  output_list <- list()
-  for (fil in duration_files) {
-    output_list[[basename(fil)]] <- read.csv(fil, header = FALSE)
-  }
-
-  output_dfr <- do.call(rbind.data.frame, c(output_list, make.row.names = FALSE))
-  colnames(output_dfr) <- c("Tier", "In", "Out", "Duration", "Comments")
-
-  output_dfr
-}
 
