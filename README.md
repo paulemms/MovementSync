@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# MovementSync - Analysis and Visualisation of Movement and Music Onset Data
+# movementsync - Analysis and Visualisation of Movement and Music Onset Data
 
 <!-- badges: start -->
 
@@ -16,13 +16,13 @@ entering the following commands into R:
 
 ``` r
 if (!require(devtools)) install.packages("devtools")
-devtools::install_github("paulemms/MovementSync")
+devtools::install_github("paulemms/movementsync")
 ```
 
 ## Usage
 
 ``` r
-library(MovementSync)
-packageVersion("MovementSync")                                                        ```
+library(movementsync)
+packageVersion("movementsync")                                                        ```
                                                                                         
 ```

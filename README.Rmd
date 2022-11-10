@@ -13,11 +13,11 @@ knitr::opts_chunk$set(
 )
 ```
 
-# MovementSync - Analysis and Visualisation of Movement and Music Onset Data
+# movementsync - Analysis and Visualisation of Movement and Music Onset Data
 
 <!-- badges: start -->
-  [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-                                                                                      <!-- badges: end -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
 
 ## Installation
 
@@ -26,11 +26,11 @@ entering the following commands into R:
 
 ```{r,eval=FALSE}
 if (!require(devtools)) install.packages("devtools")
-devtools::install_github("paulemms/MovementSync")
+devtools::install_github("paulemms/movementsync")
 ```
 
 ## Usage
 ```{r, message=FALSE, warning=FALSE, echo=TRUE, eval=FALSE}
-library(MovementSync)
-packageVersion("MovementSync")                                                        ```
+library(movementsync)
+packageVersion("movementsync")                                                        ```
                                                                                         
