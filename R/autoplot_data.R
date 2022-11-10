@@ -36,6 +36,37 @@ autoplot.OnsetsSelected <- function(obj) {
     ggplot2::xlab("Inst")
 }
 
+
+#' OnsetsSelected layer for ggplot
+#'
+#' @param obj
+#' @param xmin
+#' @param xmax
+#' @param ...
+#' @param color
+#' @param alpha
+#'
+#' @return ggplot geom_rect object
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' o <- get_onsets_selected_data(r)
+#' v <- get_raw_view(r, "Central", "", "Sitar")
+#' autoplot(v, columns = c("LEar_x", "LEar_y"), maxpts=5000) + autolayer(o)
+#' @exportS3Method
+autolayer.OnsetsSelected <- function(obj, color = "hotpink", alpha = 0.4, ...) {
+  class(obj) <- NULL
+  df <- dplyr::bind_rows(obj, .id = "Tala")
+  df <- dplyr::group_by(df, Tala, Inst.Name)
+  rects <- dplyr::summarise(df, Inst_Min=min(Inst, na.rm=TRUE), Inst_Max=max(Inst, na.rm=TRUE))
+
+  ggplot2::geom_rect(
+    data = rects,
+    ggplot2::aes(xmin = Inst_Min, xmax = Inst_Max, ymin = -Inf, ymax = Inf, col = Inst.Name, fill = Tala),
+    alpha = 0.4)
+}
+
+
 #' Autoplot a Metre S3 object
 #'
 #' @importFrom ggplot2 autoplot

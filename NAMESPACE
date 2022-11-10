@@ -2,6 +2,7 @@
 
 S3method(autolayer,Duration)
 S3method(autolayer,Metre)
+S3method(autolayer,OnsetsSelected)
 S3method(autoplot,Metre)
 S3method(autoplot,OnsetsSelected)
 S3method(autoplot,View)

@@ -146,7 +146,7 @@ get_duration_annotation_data <- function(recording) {
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 get_raw_view <- function(recording, vid, direct, inst, add_optflow = TRUE,
-                        folder_out = "Raw", save_output = TRUE) {
+                        folder_out = "Raw", save_output = FALSE) {
   fn_cpts <- c(recording$stem, vid, direct, 'NS', inst)
   fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
   data_file_name <- file.path(recording$data_path, fn)
@@ -164,15 +164,6 @@ get_raw_view <- function(recording, vid, direct, inst, add_optflow = TRUE,
 
   # Add a time column
   df <- cbind(df[1], Time = df$X / recording$fps, df[-1])
-
-  # Add a displacement column
-  dx <- as.data.frame(lapply(df[x_colnames], function(x) c(NA, diff(x))))
-  dy <- as.data.frame(lapply(df[y_colnames], function(x) c(NA, diff(x))))
-  disp <- sqrt(dx^2 + dy^2)
-  colnames(disp) <- paste0(data_points, "_d")
-  df <- cbind(df, disp)
-  selected_cols <- c(first_col, "Time", rbind(x_colnames, y_colnames, colnames(disp)))
-  df <- df[selected_cols]
 
   # If there is an OptFlow file present merge it into data frame
   if (add_optflow) {
@@ -193,9 +184,21 @@ get_raw_view <- function(recording, vid, direct, inst, add_optflow = TRUE,
       colnames(of_df) <- c("X", "Time", "Head_x", "Head_y")
       of_df <- of_df[, c("X", "Head_x", "Head_y")]
       # Merge on Frame
-      df <- merge(df, of_df, by = "X", all.y = TRUE)
+      df <- merge(df, of_df, by = "X", all.x = TRUE)
+      data_points <- c(data_points, "Head")
+      x_colnames <- c(x_colnames, "Head_x")
+      y_colnames <- c(y_colnames, "Head_y")
     }
   }
+
+  # Add a displacement column
+  dx <- as.data.frame(lapply(df[x_colnames], function(x) c(NA, diff(x))))
+  dy <- as.data.frame(lapply(df[y_colnames], function(x) c(NA, diff(x))))
+  disp <- sqrt(dx^2 + dy^2)
+  colnames(disp) <- paste0(data_points, "_d")
+  df <- cbind(df, disp)
+  selected_cols <- c(first_col, "Time", rbind(x_colnames, y_colnames, colnames(disp)))
+  df <- df[selected_cols]
 
   if (save_output) {
     out_folder <- file.path(recording$data_home, folder_out)
@@ -203,6 +206,7 @@ get_raw_view <- function(recording, vid, direct, inst, add_optflow = TRUE,
     out_file_name <- file.path(out_folder, paste0(recording$stem, "_", vid , "_", inst, '_RAW.csv'))
     write.csv(df, out_file_name, row.names=FALSE)
   }
+
   l <- list(df = df, vid = vid, direct = direct,
        inst = inst, recording = recording)
   class(l) <- c("RawView", "View")
@@ -234,10 +238,7 @@ get_raw_views <- function(recording) {
     tail_str <- substr(basename(fil), nchar(recording$stem) + 2, nchar(basename(fil)) - 4)
     tail_lead <- sub("^(.*)_NS_.*", "\\1", tail_str)
     inst <- sub("^.*_NS_(.*)", "\\1", tail_str)
-    #tail_cpts <- strsplit(tail_str, "_")[[1]]
-    #tail_ns <- which(tail_cpts == "NS")
-    #browser()
-    #tail_cpts <- tail_cpts[tail_cpts != "NS"]
+
     tail_cpts <- strsplit(tail_lead, "_")[[1]]
     if (length(tail_cpts) == 2) {
       vid <- tail_cpts[1]
@@ -272,15 +273,16 @@ get_raw_views <- function(recording) {
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-get_processed_view <- function(rv, folder_out = "Normalized", save_output = TRUE) {
+get_processed_view <- function(rv, folder_out = "Normalized", save_output = FALSE) {
+  stopifnot(class(rv)[1] == "RawView")
 
   df <- rv$df
   first_cols <- colnames(df)[1:2]
   data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-(1:2)]
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
-  d_colnames <- paste0(data_points, "_d")
-  selected_cols <- c(first_cols, x_colnames, y_colnames, d_colnames)
+  #d_colnames <- paste0(data_points, "_d")
+  selected_cols <- c(first_cols, x_colnames, y_colnames)
   df <- df[selected_cols]
 
   # Split dataframe into x- and y- columns and determine which dimension has the larger extent
@@ -292,7 +294,7 @@ get_processed_view <- function(rv, folder_out = "Normalized", save_output = TRUE
   max_y <- max(dfy, na.rm = TRUE)
   min_y <- min(dfy, na.rm = TRUE)
 
-  size <- max((max_x - min_x),(max_y - min_y))
+  size <- max((max_x - min_x), (max_y - min_y))
 
   # Normalise position data of all columns to the larger dimension (=0:1) and move midpoint to 0.5
   # Y-dimension inverted to make (0,0) bottom left of plots
@@ -307,6 +309,15 @@ get_processed_view <- function(rv, folder_out = "Normalized", save_output = TRUE
   df_norm <- cbind(X, dfx_norm, dfy_norm)
   cn <- c(colnames(X), rbind(colnames(dfx_norm), colnames(dfy_norm)))
   df_norm <- df_norm[cn]
+
+  # Recompute a displacement column
+  dx <- as.data.frame(lapply(df_norm[x_colnames], function(x) c(NA, diff(x))))
+  dy <- as.data.frame(lapply(df_norm[y_colnames], function(x) c(NA, diff(x))))
+  disp <- sqrt(dx^2 + dy^2)
+  colnames(disp) <- paste0(data_points, "_d")
+  df_norm <- cbind(df_norm, disp)
+  selected_cols <- c(first_cols, rbind(x_colnames, y_colnames, colnames(disp)))
+  df_norm <- df_norm[selected_cols]
 
   # Interpolate missing data
   df_norm <- replace(zoo::na.spline(df_norm), is.na(zoo::na.approx(df_norm, na.rm=FALSE)), NA)
@@ -345,7 +356,9 @@ get_processed_view <- function(rv, folder_out = "Normalized", save_output = TRUE
 #'
 #' fv1 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
 #' fv2 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=41, poly_order=3)
-apply_filter <- function(view, data_points, window_size, poly_order, folder_out = "Filtered", save_output=TRUE) {
+apply_filter <- function(view, data_points, window_size, poly_order,
+                         folder_out = "Filtered", save_output = FALSE) {
+  stopifnot(class(view)[1] == "ProcessedView")
 
   df_norm <- view$df
   first_cols <- colnames(df_norm[1:2])

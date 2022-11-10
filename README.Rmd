@@ -1,0 +1,36 @@
+---
+  output: github_document
+---
+
+  <!-- README.md is generated from README.Rmd. Please edit that file -->
+
+  ```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "75%"
+)
+```
+
+# MovementSync - Analysis and Visualisation of Movement and Music Onset Data
+
+<!-- badges: start -->
+  [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+                                                                                      <!-- badges: end -->
+
+## Installation
+
+You can install the current version of `MovementSync` from Github by
+entering the following commands into R:
+
+```{r,eval=FALSE}
+if (!require(devtools)) install.packages("devtools")
+devtools::install_github("paulemms/MovementSync")
+```
+
+## Usage
+```{r, message=FALSE, warning=FALSE, echo=TRUE, eval=FALSE}
+library(MovementSync)
+packageVersion("MovementSync")                                                        ```
+                                                                                        

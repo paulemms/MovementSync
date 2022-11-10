@@ -4,23 +4,23 @@ devtools::load_all()
 # DONE
 # merged Optflow data if its there - NIR_DBh_Malhar_2Gats_OptFlow_Guitar ?? adds optflow to each camera
 # Loaded all data, added a function to load all views from recording
-# metre layer add vertical lines
+# metre layer add vertical lines, onsetSelected max min
 # Gagaku_5_Juha has metre data now
 # Added basic xy plot with colour time
+# Added displacement to processed view by redoing the calculation on normatlised data
 
 # TODO
-# add displacement - what happens to the displace on normalisation? - do it for processed
-# overlay audio onto video - autolayers
-# for OSF data process to remove camera drift
-# periodicity - look at github
+# overlay audio onto video - autolayers - test on last performance
+# * for OSF data process to remove camera drift in process view
+# * periodicity - look at github
 # iii, iv - color code position of features
 # order onsetselected data
 # generalise filter
 # Diagnostic duration plot?
 # Generalise autolayer to accept parameters or expr
+# dedicated zoo methods?
+# gganimate? https://rpubs.com/jedoenriquez/animatingchartsintro - on processed
 
-# QUERY
-# What is Gagaku_4_Satto recording? No vid?
 
 # Recording 1
 r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
@@ -44,22 +44,25 @@ rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 summary(rv1)
 plot(rv1, nc = 3, maxpts = 500)
 plot(rv1, columns = c("LEar_x", "LEar_y"))
-plot(rv1, columns = c("Head_x", "Head_y")) # drift in camera?
+plot(rv1, columns = c("Head_x", "Head_y", "Head_d")) # drift in camera?
 plot(rv1, xlim = c(500,1000), nc = 3)
 
-# Autolayering
+# Autolayering with OnsetSelected, Metre and Duration objects,
 autoplot(rv1, columns = c("LEar_x", "LEar_y"), maxpts = 2000)
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(d1)
-autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
-  xlim_duration(d1, 'Tier == "FORM" & Comments == "Alap"')
+autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(o1)
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(d1, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
 autoplot(rv1, columns = c("LEar_x", "LEar_y"), maxpts=5000) + ggplot2::xlim(1000, 2000) +
   autolayer(m1)
 
+# Set x-scale using Duration object
+autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
+  xlim_duration(d1, 'Tier == "FORM" & Comments == "Alap"')
+
 # Processed data
 pv1 <- get_processed_view(rv1)
 plot(pv1, nc = 3)
-autoplot(pv1, columns = c("LEar_x", "LEar_y"))
+autoplot(pv1, columns = c("LEar_x", "LEar_y", "LEar_d")) # processed displacement added
 
 # Filtered data
 fv1 <- apply_filter(pv1, c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
@@ -126,9 +129,11 @@ o5 <- get_onsets_selected_data(r5)
 plot(o5, column = "Time") # Data format different
 m5 <- get_metre_data(r5)
 autoplot(m5)
-# 8 views
+# 8 views - automation
 rv_view <- get_raw_views(r5)
 names(rv_view)
 plot(rv_view$V1_M_Taiko, nc = 3)
 View(rv_view)
 
+pv_view <- lapply(rv_view, get_processed_view)
+fv_view <- lapply(pv_view, apply_filter, data_points=c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
