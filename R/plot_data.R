@@ -1,113 +1,75 @@
+#' Plot a OnsetsSelected S3 object
+#'
+#' @param obj
+#' @param columns
+#' @param ... passed to plot.zoo
+#'
+#' @return
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' o <- get_onsets_selected_data(r)
+#' plot(o)
+#' @exportS3Method
+plot.OnsetsSelected <- function(obj, column="Inst.Peak", ...) {
+  zoo_list <- lapply(obj, function(x) zoo::zoo(x[[column]], order.by = as.numeric(rownames(x))))
+  z <- do.call(merge, zoo_list)
+  plot(z, xlab = "Row Number", main = paste("OnsetsSelected", column), ...)
+}
+
+
 #' Plot a Metre S3 object
 #'
 #' @param obj
 #'
 #' @return
-#' @exportS3Method
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' m <- get_metre_data(r)
 #' plot(m)
-plot.Metre <- function(obj) {
+#' @exportS3Method
+plot.Metre <- function(obj, ...) {
   zoo_list <- lapply(obj, function(x) zoo::zoo(diff(x$Time), order.by = x$Time))
   z <- do.call(merge, zoo_list)
-  plot(z, yax.flip = TRUE, xlab = "Time / s", main = "Metre Object - Time Between Cycles")
+  if (is.null(ncol(z))) {
+    plot(z, yax.flip = TRUE, xlab = "Time / s", ylab = "", main = "Metre Object - Time Between Cycles", ...)
+  } else {
+    plot(z, yax.flip = TRUE, xlab = "Time / s", main = "Metre Object - Time Between Cycles", ...)
+
+  }
 }
 
 
-#' Plot a RawView S3 object
+#' Plot a View S3 object
 #'
-#' @param o
+#' @param obj
+#' @param columns
+#' @param ... passed to plot.zoo
 #'
 #' @return
-#' @exportS3Method
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' plot(v)
-plot.RawView <- function(o, cols=NULL, ...) {
+#' @exportS3Method
+plot.View <- function(obj, columns=NULL, maxpts = 1000, ...) {
 
-  # Restrict points to plot
-  cols <- if (is.null(cols)) seq_len(min(ncol(o$df), 11))[-1] else c("Time", cols)
-  sp <- if (nrow(o$df) > 100) sample(nrow(o$df), 100) else seq_len(nrow(o$df))
+  # Restrict points and columns to plot
+  columns <- if (is.null(columns)) seq_len(min(ncol(obj$df), 11))[-1] else c("Time", columns)
+  sp <- if (nrow(obj$df) > maxpts) sample(nrow(obj$df), maxpts) else seq_len(nrow(obj$df))
 
-  df <- o$df[sp, cols, drop = FALSE]
+  df <- obj$df[sp, columns, drop = FALSE]
+  df <- df[, colSums(is.na(df)) < (nrow(df) - 1), drop=FALSE] # more than one point
   zoo_list <- lapply(df[-1], function(x) zoo::zoo(x, order.by = df$Time))
   z <- do.call(merge, zoo_list)
 
-  title <- c(o$recording$stem, o$vid, o$direct, o$inst)
+  title <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
   title <- paste(title[title != ""], collapse="_")
   if (is.null(ncol(z))) {
-    plot(z, xlab = "Time / s", ylab = cols[-1], main = paste0("Raw View for ", title), ...)
+    plot(z, xlab = "Time / s", ylab = columns[-1], main = paste(class(obj)[1], "for", title), ...)
   } else {
-    plot(z, nc = 3, yax.flip = TRUE, xlab = "Time / s", main = paste0("Raw View for ", title), ...)
+    plot(z, xlab = "Time / s", main = paste(class(obj)[1], "for", title), ...)
   }
 }
-
-
-#' Plot a ProcessedView S3 object
-#'
-#' @param o
-#'
-#' @return
-#' @exportS3Method
-#'
-#' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' rv <- get_raw_view(r, "Central", "", "Sitar")
-#' pv <- get_processed_view(rv)
-#' plot(rv)
-#' plot(pv)
-plot.ProcessedView <- function(o, cols=NULL) {
-
-  # Restrict points to plot
-  cols <- if (is.null(cols)) seq_len(min(ncol(o$df_norm), 10))[-1] else c("Time", cols)
-  sp <- if (nrow(o$df_norm) > 100) sample(nrow(o$df_norm), 100) else seq_len(nrow(o$df_norm))
-  df <- o$df_norm[sp, cols, drop = FALSE]
-  zoo_list <- lapply(df[-1], function(x) zoo::zoo(x, order.by = df$Time))
-  z <- do.call(merge, zoo_list)
-
-  title <- c(o$recording$stem, o$vid, o$direct, o$inst)
-  title <- paste(title[title != ""], collapse="_")
-  if (is.null(ncol(z))) {
-    plot(z, xlab = "Time / s", ylab = cols[-1], main = paste0("Processed View for ", title))
-  } else {
-    plot(z, yax.flip = TRUE, xlab = "Time / s", main = paste0("Processed View for ", title))
-  }
-}
-
-
-#' Plot a FilteredView S3 object
-#'
-#' @param o
-#'
-#' @return
-#' @exportS3Method
-#'
-#' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' rv <- get_raw_view(r, "Central", "", "Sitar")
-#' pv <- get_processed_view(rv)
-#' fv <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
-#' plot(fv)
-plot.FilteredView <- function(o, cols=NULL) {
-
-  # Restrict points to plot
-  cols <- if (is.null(cols)) seq_len(min(ncol(o$df_filt), 10)) else c("Time", cols)
-  sp <- if (nrow(o$df_filt) > 100) sample(nrow(o$df_filt), 100) else seq_len(nrow(o$df_filt))
-  df <- o$df_filt[sp, cols, drop = FALSE]
-
-  zoo_list <- lapply(df[-(1:2)], function(x) zoo::zoo(x, order.by = df$Time))
-  z <- do.call(merge, zoo_list)
-
-  title <- c(o$view$recording$stem, o$view$vid, o$view$direct, o$view$inst)
-  title <- paste(title[title != ""], collapse="_")
-  if (is.null(ncol(z))) {
-    plot(z, xlab = "Time / s", ylab = cols[-1], main = paste0("Filtered View for ", title))
-  } else {
-    plot(z, yax.flip = TRUE, xlab = "Time / s", main = paste0("Filtered View for ", title))
-  }
-}
-

@@ -10,10 +10,12 @@
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-get_recording <- function(stem, fps, folder_in = "Original", path = "C:/data/movementsync") {
+get_recording <- function(stem, fps, folder_in = "Original", path = "~/movementsync") {
+  stopifnot(dir.exists(path))
+
   data_path <- file.path(path, folder_in)
   data_files <- list.files(data_path, pattern = paste0("^", stem, ".*\\.csv") )
-  l <- list(data_root = path, data_path = data_path, data_files = data_files, stem = stem,
+  l <- list(data_home = path, data_path = data_path, data_files = data_files, stem = stem,
             fps = fps)
   class(l) <- "Recording"
   l
@@ -41,10 +43,16 @@ get_onsets_selected_data <- function(recording) {
 
   output_onsets_selected <- list()
   for (fil in onsets_selected_files) {
-    output_onsets_selected[[basename(fil)]] <- read.csv(fil)
+    df <- read.csv(fil)
+    # specify colClasses?
+    if ("Matra" %in% colnames(df)) {
+      df[["Matra"]] <- suppressWarnings(as.integer(df[["Matra"]]))
+    }
+    output_onsets_selected[[basename(fil)]] <- df
   }
-  class(output_onsets_selected) <- "OnsetsSelected"
+  names(output_onsets_selected) <- sub(".*_Onsets_Selected_(.*)\\.csv", "\\1", names(output_onsets_selected))
 
+  class(output_onsets_selected) <- "OnsetsSelected"
   invisible(output_onsets_selected)
 }
 
@@ -65,17 +73,16 @@ get_metre_data <- function(recording) {
 
   # Identify metre files
   is_metre_file <- grepl(
-    paste0("^", recording$stem, ".*_Metre_.*\\.csv"),
+    paste0("^", recording$stem, ".*_Metre(_|).*\\.csv"),
     recording$data_files)
   metre_files <- file.path(recording$data_path, recording$data_files[is_metre_file])
-
   message("Loading ", paste(basename(metre_files), collapse = ", "))
 
   output_metre <- list()
   for (fil in metre_files) {
     output_metre[[basename(fil)]] <- read.csv(fil)
   }
-  names(output_metre) <- sub(".*_Metre_(.*)\\.csv", "\\1", names(output_metre))
+  names(output_metre) <- sub(".*_Metre(_|)(.*)\\.csv", "\\2", names(output_metre))
 
   # Order on time
   min_time <- sapply(output_metre, function(x) min(x$Time, na.rm = TRUE))
@@ -121,24 +128,28 @@ get_duration_annotation_data <- function(recording) {
 
 #' Get view from NS video data
 #'
-#' Creates time reference and displacement from raw data
-#' @param recording
-#' @param vid
-#' @param inst
-#' @param direct
-#' @param save_output
-#' @param folder_out
+#' Creates time reference and displacement from raw csv data
+#'
+#' Adds OptFlow data for head if present.
+#' @param recording object
+#' @param vid video camera
+#' @param inst instrument
+#' @param direct direction
+#' @param save_output save the output?
+#' @param folder_out output folder relative to recording home
+#' @param add_optflow add the optflow data?
 #'
 #' @return
 #' @export
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' v <- get_raw_view(r, "Central", NULL, "Sitar")
-get_raw_view <- function(recording, vid, direct, inst,
+#' v <- get_raw_view(r, "Central", "", "Sitar")
+get_raw_view <- function(recording, vid, direct, inst, add_optflow = TRUE,
                         folder_out = "Raw", save_output = TRUE) {
-  data_file_name <- file.path(recording$data_path,
-                              paste0(recording$stem, "_", vid, "_", direct ,'NS_', inst, '.csv'))
+  fn_cpts <- c(recording$stem, vid, direct, 'NS', inst)
+  fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
+  data_file_name <- file.path(recording$data_path, fn)
   message("Loading ", data_file_name)
   stopifnot(file.exists(data_file_name))
 
@@ -163,17 +174,86 @@ get_raw_view <- function(recording, vid, direct, inst,
   selected_cols <- c(first_col, "Time", rbind(x_colnames, y_colnames, colnames(disp)))
   df <- df[selected_cols]
 
+  # If there is an OptFlow file present merge it into data frame
+  if (add_optflow) {
+    of_fn_cpts <- c(recording$stem, 'Optflow', vid, direct, inst)
+    of_fn <- paste0(paste(of_fn_cpts[of_fn_cpts != ""], collapse = "_"), ".csv")
+    of_data_file_name <- file.path(recording$data_path, of_fn)
+
+    # Try without vid
+    if (!file.exists(of_data_file_name)) {
+      of_fn_cpts <- c(recording$stem, 'Optflow', direct, inst)
+      of_fn <- paste0(paste(of_fn_cpts[of_fn_cpts != ""], collapse = "_"), ".csv")
+      of_data_file_name <- file.path(recording$data_path, of_fn)
+    }
+
+    if (file.exists(of_data_file_name)) {
+      message("Loading ", of_data_file_name)
+      of_df <- read.csv(of_data_file_name, colClasses = "numeric")
+      colnames(of_df) <- c("X", "Time", "Head_x", "Head_y")
+      of_df <- of_df[, c("X", "Head_x", "Head_y")]
+      # Merge on Frame
+      df <- merge(df, of_df, by = "X", all.y = TRUE)
+    }
+  }
+
   if (save_output) {
-    out_folder <- file.path(recording$data_root, folder_out)
+    out_folder <- file.path(recording$data_home, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder, paste0(recording$stem, "_", vid , "_", inst, '_RAW.csv'))
     write.csv(df, out_file_name, row.names=FALSE)
   }
   l <- list(df = df, vid = vid, direct = direct,
        inst = inst, recording = recording)
-  class(l) <- "RawView"
+  class(l) <- c("RawView", "View")
 
   invisible(l)
+}
+
+
+#' Get views from a recording
+#'
+#' @param recording
+#'
+#' @return named list of views
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' v_list <- get_raw_views(r)
+get_raw_views <- function(recording) {
+
+  # Identify view files
+  is_view_file <- grepl(
+    paste0("^", recording$stem, ".*_NS.*\\.csv"),
+    recording$data_files)
+  view_files <- file.path(recording$data_path, recording$data_files[is_view_file])
+
+  output_views <- list()
+  for (fil in view_files) {
+    tail_str <- substr(basename(fil), nchar(recording$stem) + 2, nchar(basename(fil)) - 4)
+    tail_lead <- sub("^(.*)_NS_.*", "\\1", tail_str)
+    inst <- sub("^.*_NS_(.*)", "\\1", tail_str)
+    #tail_cpts <- strsplit(tail_str, "_")[[1]]
+    #tail_ns <- which(tail_cpts == "NS")
+    #browser()
+    #tail_cpts <- tail_cpts[tail_cpts != "NS"]
+    tail_cpts <- strsplit(tail_lead, "_")[[1]]
+    if (length(tail_cpts) == 2) {
+      vid <- tail_cpts[1]
+      direct <- tail_cpts[2]
+      id <- paste(vid, direct, inst, sep = "_")
+    } else if (length(tail_cpts) == 1) {
+      vid <- tail_cpts[1]
+      direct <- ""
+      id <- paste(vid, inst, sep = "_")
+    } else stop("Unrecognised file format")
+
+    output_views[[id]] <- get_raw_view(recording, vid, direct, inst)
+  }
+
+
+  output_views
 }
 
 
@@ -233,14 +313,14 @@ get_processed_view <- function(rv, folder_out = "Normalized", save_output = TRUE
   df_norm <- as.data.frame(df_norm)
 
   if (save_output) {
-    out_folder <- file.path(rv$recording$data_root, folder_out)
+    out_folder <- file.path(rv$recording$data_home, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder, paste0(rv$recording$stem, "_", rv$vid , "_", rv$inst, '_NORM.csv'))
     write.csv(df_norm, out_file_name, row.names=FALSE)
   }
-  l <- list(df_norm = df_norm, vid = rv$vid, direct = rv$direct,
+  l <- list(df = df_norm, vid = rv$vid, direct = rv$direct,
             inst = rv$inst, recording = rv$recording)
-  class(l) <- "ProcessedView"
+  class(l) <- c("ProcessedView", "View")
 
   invisible(l)
 }
@@ -263,11 +343,11 @@ get_processed_view <- function(rv, folder_out = "Normalized", save_output = TRUE
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
 #'
-#' filt1 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
-#' filt2 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=41, poly_order=3)
+#' fv1 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
+#' fv2 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=41, poly_order=3)
 apply_filter <- function(view, data_points, window_size, poly_order, folder_out = "Filtered", save_output=TRUE) {
 
-  df_norm <- view$df_norm
+  df_norm <- view$df
   first_cols <- colnames(df_norm[1:2])
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
@@ -280,18 +360,20 @@ apply_filter <- function(view, data_points, window_size, poly_order, folder_out 
 
   # Save version
   if (save_output) {
-    out_folder <- file.path(view$recording$data_root, folder_out)
+    out_folder <- file.path(view$recording$data_home, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder,
       paste0(view$recording$stem, "_", view$vid, "_", view$inst, '_SEL_', window_size, '_', poly_order,'.csv')
     )
     write.csv(df_filt, out_file_name, row.names=FALSE)
   }
-  l <- list(df_filt = df_filt, view = view)
-  class(l) <- "FilteredView"
+  l <- list(df = df_filt, vid = view$vid, direct = view$direct,
+            inst = view$inst, recording = view$recording)
+  class(l) <- c("FilteredView", "View")
 
   invisible(l)
 }
+
 
 
 
