@@ -2,16 +2,13 @@ rm(list = ls())
 devtools::load_all()
 
 # DONE
-# merged Optflow data if its there - NIR_DBh_Malhar_2Gats_OptFlow_Guitar ?? adds optflow to each camera
-# Loaded all data, added a function to load all views from recording
-# metre layer add vertical lines, onsetSelected max min
-# Gagaku_5_Juha has metre data now
-# Added basic xy plot with colour time
-# Added displacement to processed view by redoing the calculation on normatlised data
+# Separate optflow function if no camera - inherits from RawView so processing works using
+# existing functions
+# for OSF data process to remove camera drift in process view
+
 
 # TODO
 # overlay audio onto video - autolayers - test on last performance
-# * for OSF data process to remove camera drift in process view
 # * periodicity - look at github
 # iii, iv - color code position of features
 # order onsetselected data
@@ -20,9 +17,11 @@ devtools::load_all()
 # Generalise autolayer to accept parameters or expr
 # dedicated zoo methods?
 # gganimate? https://rpubs.com/jedoenriquez/animatingchartsintro - on processed
+# Generalise interpolation methods
 
-
-# Recording 1
+################################################################################
+### Recording 1
+################################################################################
 r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 summary(r1)
 
@@ -44,7 +43,7 @@ rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 summary(rv1)
 plot(rv1, nc = 3, maxpts = 500)
 plot(rv1, columns = c("LEar_x", "LEar_y"))
-plot(rv1, columns = c("Head_x", "Head_y", "Head_d")) # drift in camera?
+plot(rv1, columns = c("Head_x", "Head_y", "Head_d")) # drift in camera
 plot(rv1, xlim = c(500,1000), nc = 3)
 
 # Autolayering with OnsetSelected, Metre and Duration objects,
@@ -62,6 +61,7 @@ autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
 # Processed data
 pv1 <- get_processed_view(rv1)
 plot(pv1, nc = 3)
+plot(pv1, columns = c("Head_x", "Head_y", "Head_d")) # Trend in Head removed
 autoplot(pv1, columns = c("LEar_x", "LEar_y", "LEar_d")) # processed displacement added
 
 # Filtered data
@@ -77,7 +77,9 @@ rm(fv1)
 fv1 <- readRDS("C:/temp/fv1.rds")
 plot(fv1, nc = 3)
 
-# Recording 2
+################################################################################
+### Recording 2
+################################################################################
 r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 o2 <- get_onsets_selected_data(r2)
 m2 <- get_metre_data(r2)
@@ -92,7 +94,19 @@ plot(rv2_SideL_Tabla, nc=3)
 rv2_SideR_Tabla <- get_raw_view(r2, "SideR", "", "Tabla")
 plot(rv2_SideL_Tabla, nc=3)
 
-# Recording 3
+# OptFlow data has no camera in filename so load separately
+rv2_OptFlow_Guitar <- get_raw_optflow_view(r2, "", "Guitar")
+rv2_OptFlow_Tabla <- get_raw_optflow_view(r2, "", "Tabla")
+pv2_OptFlow_Guitar <- get_processed_view(rv2_OptFlow_Guitar)
+pv2_OptFlow_Tabla <- get_processed_view(rv2_OptFlow_Tabla)
+fv2_OptFlow_Guitar <- apply_filter(pv2_OptFlow_Guitar, "Head", window_size=19, poly_order=4)
+fv2_OptFlow_Tabla <- apply_filter(pv2_OptFlow_Tabla, "Head", window_size=19, poly_order=4)
+plot(fv2_OptFlow_Guitar) # linear drift removed
+plot(fv2_OptFlow_Tabla)
+
+################################################################################
+###  Recording 3
+################################################################################
 r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)
 o3 <- get_onsets_selected_data(r3)
 m3 <- get_metre_data(r3)
@@ -106,7 +120,9 @@ plot(rv3_Cam2_Singer, nc=3)
 rv3_Cam2_Tabla <- get_raw_view(r3, "Cam2", "", "Tabla")
 plot(rv3_Cam2_Tabla, nc=3) # Ear only has one point on sampling
 
-# Recording 4
+################################################################################
+###  Recording 4
+################################################################################
 r4 <- get_recording("NIRP1_VS_Hams", fps = 25)
 o4 <- get_onsets_selected_data(r4)
 m4 <- get_metre_data(r4)
@@ -123,7 +139,9 @@ plot(rv4_Central_TanpuraL, nc=3)
 rv4_Central_TanpuraR <- get_raw_view(r4, "Central", "", "TanpuraR")
 plot(rv4_Central_TanpuraR, nc=3)
 
-# Recording 5
+################################################################################
+###  Recording 5
+################################################################################
 r5 <- get_recording("Gagaku_5_Juha", fps = 60)
 o5 <- get_onsets_selected_data(r5)
 plot(o5, column = "Time") # Data format different

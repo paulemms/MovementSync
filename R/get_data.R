@@ -130,7 +130,7 @@ get_duration_annotation_data <- function(recording) {
 #'
 #' Creates time reference and displacement from raw csv data
 #'
-#' Adds OptFlow data for head if present.
+#' Adds OptFlow data for head if present and a camera is specified in filename.
 #' @param recording object
 #' @param vid video camera
 #' @param inst instrument
@@ -171,13 +171,6 @@ get_raw_view <- function(recording, vid, direct, inst, add_optflow = TRUE,
     of_fn <- paste0(paste(of_fn_cpts[of_fn_cpts != ""], collapse = "_"), ".csv")
     of_data_file_name <- file.path(recording$data_path, of_fn)
 
-    # Try without vid
-    if (!file.exists(of_data_file_name)) {
-      of_fn_cpts <- c(recording$stem, 'Optflow', direct, inst)
-      of_fn <- paste0(paste(of_fn_cpts[of_fn_cpts != ""], collapse = "_"), ".csv")
-      of_data_file_name <- file.path(recording$data_path, of_fn)
-    }
-
     if (file.exists(of_data_file_name)) {
       message("Loading ", of_data_file_name)
       of_df <- read.csv(of_data_file_name, colClasses = "numeric")
@@ -210,6 +203,55 @@ get_raw_view <- function(recording, vid, direct, inst, add_optflow = TRUE,
   l <- list(df = df, vid = vid, direct = direct,
        inst = inst, recording = recording)
   class(l) <- c("RawView", "View")
+
+  invisible(l)
+}
+
+
+#' Creates time reference and displacement from raw csv optflow data
+#'
+#' Used to loads OptFlow data when no video camera specified in filename.
+#' @param recording object
+#' @param inst instrument
+#' @param direct direction
+#' @param save_output save the output?
+#' @param folder_out output folder relative to recording home
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+#' rov <- get_raw_optflow_view(r, "", "Guitar")
+#' pov <- get_processed_view(rov)
+#' fv1 <- apply_filter(pov, c("Head"), window_size=19, poly_order=4)
+get_raw_optflow_view <- function(recording, direct, inst,
+                         folder_out = "Raw", save_output = TRUE) {
+  fn_cpts <- c(recording$stem, 'OptFlow', direct, inst)
+  fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
+  data_file_name <- file.path(recording$data_path, fn)
+  message("Loading ", data_file_name)
+  stopifnot(file.exists(data_file_name))
+
+  df <- read.csv(data_file_name, colClasses = "numeric")
+  colnames(df) <- c("X", "Time", "Head_x", "Head_y")
+
+  # Add a displacement column
+  dx <- c(NA, diff(df[["Head_x"]]))
+  dy <- c(NA, diff(df[["Head_y"]]))
+  disp <- sqrt(dx^2 + dy^2)
+  df <- cbind(df, 'Head_d' = disp)
+
+  if (save_output) {
+    out_folder <- file.path(recording$data_home, folder_out)
+    if (!dir.exists(out_folder)) dir.create(out_folder)
+    out_file_name <- file.path(out_folder, paste0(recording$stem, "_", inst, '_RAW.csv'))
+    write.csv(df, out_file_name, row.names=FALSE)
+  }
+
+  l <- list(df = df, vid = "", direct = direct,
+            inst = inst, recording = recording)
+  class(l) <- c("OptFlowView", "RawView", "View")
 
   invisible(l)
 }
@@ -260,8 +302,7 @@ get_raw_views <- function(recording) {
 
 #' Get processed view from NS video data
 #'
-#' Does normalisation and interpolation of missing data in the view
-#'
+#' Does normalisation and interpolation of missing data in the view.
 #' @param rv
 #' @param save_output
 #' @param folder_out
@@ -274,16 +315,24 @@ get_raw_views <- function(recording) {
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
 get_processed_view <- function(rv, folder_out = "Normalized", save_output = FALSE) {
-  stopifnot(class(rv)[1] == "RawView")
+  stopifnot("RawView" %in% class(rv))
 
   df <- rv$df
   first_cols <- colnames(df)[1:2]
   data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-(1:2)]
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
-  #d_colnames <- paste0(data_points, "_d")
   selected_cols <- c(first_cols, x_colnames, y_colnames)
   df <- df[selected_cols]
+
+  # If there is a head datapoint we need to remove linear drift
+  if ("Head" %in% data_points) {
+    fit_head_x <- lm(Head_x ~ Time, data = df, na.action = na.exclude)
+    fit_head_y <- lm(Head_y ~ Time, data = df, na.action = na.exclude)
+    df[['Head_x']] <- as.numeric(residuals(fit_head_x))
+    df[['Head_y']] <- as.numeric(residuals(fit_head_y))
+    message("Removed linear trend in Head data point")
+  }
 
   # Split dataframe into x- and y- columns and determine which dimension has the larger extent
   dfx <- df[x_colnames]
@@ -358,7 +407,7 @@ get_processed_view <- function(rv, folder_out = "Normalized", save_output = FALS
 #' fv2 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=41, poly_order=3)
 apply_filter <- function(view, data_points, window_size, poly_order,
                          folder_out = "Filtered", save_output = FALSE) {
-  stopifnot(class(view)[1] == "ProcessedView")
+  stopifnot("ProcessedView" %in% class(view))
 
   df_norm <- view$df
   first_cols <- colnames(df_norm[1:2])
