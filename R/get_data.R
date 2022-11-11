@@ -25,6 +25,7 @@ get_recording <- function(stem, fps, folder_in = "Original", path = "~/movements
 #' Get onsets selected files
 #'
 #' @param recording
+#' @param instrument_cols
 #'
 #' @return
 #' @export
@@ -32,7 +33,7 @@ get_recording <- function(stem, fps, folder_in = "Original", path = "~/movements
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o <- get_onsets_selected_data(r)
-get_onsets_selected_data <- function(recording) {
+get_onsets_selected_data <- function(recording, instrument_cols = NULL) {
 
   # Identify onset files
   is_onsets_selected_file <- grepl(
@@ -47,6 +48,11 @@ get_onsets_selected_data <- function(recording) {
     # specify colClasses?
     if ("Matra" %in% colnames(df)) {
       df[["Matra"]] <- suppressWarnings(as.integer(df[["Matra"]]))
+    }
+    if (!is.null(instrument_cols)) {
+      df <- tidyr::pivot_longer(df, cols = instrument_cols, names_to = "Inst.Name",
+                          values_to = "Inst")
+      df[["Inst.Peak"]] <- 0
     }
     output_onsets_selected[[basename(fil)]] <- df
   }
@@ -131,6 +137,7 @@ get_duration_annotation_data <- function(recording) {
 #' Creates time reference and displacement from raw csv data
 #'
 #' Adds OptFlow data for head if present and a camera is specified in filename.
+#'
 #' @param recording object
 #' @param vid video camera
 #' @param inst instrument
@@ -138,6 +145,7 @@ get_duration_annotation_data <- function(recording) {
 #' @param save_output save the output?
 #' @param folder_out output folder relative to recording home
 #' @param add_optflow add the optflow data?
+#' @param lead_diff Value to start diff calc
 #'
 #' @return
 #' @export
@@ -145,7 +153,7 @@ get_duration_annotation_data <- function(recording) {
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
-get_raw_view <- function(recording, vid, direct, inst, add_optflow = TRUE,
+get_raw_view <- function(recording, vid, direct, inst, lead_diff = 0, add_optflow = TRUE,
                         folder_out = "Raw", save_output = FALSE) {
   fn_cpts <- c(recording$stem, vid, direct, 'NS', inst)
   fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
@@ -185,8 +193,8 @@ get_raw_view <- function(recording, vid, direct, inst, add_optflow = TRUE,
   }
 
   # Add a displacement column
-  dx <- as.data.frame(lapply(df[x_colnames], function(x) c(NA, diff(x))))
-  dy <- as.data.frame(lapply(df[y_colnames], function(x) c(NA, diff(x))))
+  dx <- as.data.frame(lapply(df[x_colnames], function(x) c(lead_diff, diff(x))))
+  dy <- as.data.frame(lapply(df[y_colnames], function(x) c(lead_diff, diff(x))))
   disp <- sqrt(dx^2 + dy^2)
   colnames(disp) <- paste0(data_points, "_d")
   df <- cbind(df, disp)
@@ -224,7 +232,7 @@ get_raw_view <- function(recording, vid, direct, inst, add_optflow = TRUE,
 #' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 #' rov <- get_raw_optflow_view(r, "", "Guitar")
 #' pov <- get_processed_view(rov)
-#' fv1 <- apply_filter(pov, c("Head"), window_size=19, poly_order=4)
+#' fv1 <- apply_filter(pov, c("Head"), n=19, p=4)
 get_raw_optflow_view <- function(recording, direct, inst,
                          folder_out = "Raw", save_output = TRUE) {
   fn_cpts <- c(recording$stem, 'OptFlow', direct, inst)
@@ -302,30 +310,33 @@ get_raw_views <- function(recording) {
 
 #' Get processed view from NS video data
 #'
-#' Does normalisation and interpolation of missing data in the view.
-#' @param rv
+#' Normalises and interpolates missing data in the view.
+#'
+#' @param rv RawView object
 #' @param save_output
 #' @param folder_out
+#' @param lead_diff
 #'
-#' @return
+#' @return ProcessedView object
 #' @export
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-get_processed_view <- function(rv, folder_out = "Normalized", save_output = FALSE) {
+get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
+                               save_output = FALSE) {
   stopifnot("RawView" %in% class(rv))
 
+  first_cols <- colnames(rv$df)[1:2]
   df <- rv$df
-  first_cols <- colnames(df)[1:2]
   data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-(1:2)]
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
   selected_cols <- c(first_cols, x_colnames, y_colnames)
   df <- df[selected_cols]
 
-  # If there is a head datapoint we need to remove linear drift
+  # If there is a Head data_point we need to remove linear drift
   if ("Head" %in% data_points) {
     fit_head_x <- lm(Head_x ~ Time, data = df, na.action = na.exclude)
     fit_head_y <- lm(Head_y ~ Time, data = df, na.action = na.exclude)
@@ -360,8 +371,8 @@ get_processed_view <- function(rv, folder_out = "Normalized", save_output = FALS
   df_norm <- df_norm[cn]
 
   # Recompute a displacement column
-  dx <- as.data.frame(lapply(df_norm[x_colnames], function(x) c(NA, diff(x))))
-  dy <- as.data.frame(lapply(df_norm[y_colnames], function(x) c(NA, diff(x))))
+  dx <- as.data.frame(lapply(df_norm[x_colnames], function(x) c(lead_diff, diff(x))))
+  dy <- as.data.frame(lapply(df_norm[y_colnames], function(x) c(lead_diff, diff(x))))
   disp <- sqrt(dx^2 + dy^2)
   colnames(disp) <- paste0(data_points, "_d")
   df_norm <- cbind(df_norm, disp)
@@ -386,38 +397,49 @@ get_processed_view <- function(rv, folder_out = "Normalized", save_output = FALS
 }
 
 
-#' Apply a filter
+#' Apply a Savitzky-Golay filter to a view
 #'
-#' @param view
+#' @param view View object
 #' @param data_points
-#' @param window_size
-#' @param poly_order
-#' @param folder_out
+#' @param n window size
+#' @param p poly order
 #' @param save_output
+#' @param sig_filter S3 filter object from signals package
+#' @param folder_out
 #'
-#' @return
 #' @export
+#' @return
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
 #'
-#' fv1 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
-#' fv2 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=41, poly_order=3)
-apply_filter <- function(view, data_points, window_size, poly_order,
-                         folder_out = "Filtered", save_output = FALSE) {
+#' set.seed(1)
+#' fv1 <- apply_filter_sgolay(pv, c("Nose", "RWrist", "LWrist"), n = 19, p = 4)
+#' fv2 <- apply_filter_sgolay(pv, c("Nose", "RWrist", "LWrist"), n = 41, p = 3)
+#'
+#' set.seed(1) # to reproduce with S3 filter object
+#' fv3 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), signal::sgolay(4, 19))
+apply_filter_sgolay <- function(view, data_points, n, p, folder_out = "Filtered", save_output = FALSE) {
+  apply_filter(view, data_points, signal::sgolay(p, n))
+}
+
+#' @export
+apply_filter <- function(view, data_points, sig_filter, folder_out = "Filtered", save_output = FALSE) {
   stopifnot("ProcessedView" %in% class(view))
 
   df_norm <- view$df
   first_cols <- colnames(df_norm[1:2])
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
-  df_filt <- df_norm[c(first_cols, rbind(x_colnames, y_colnames))]
+  d_colnames <- paste0(data_points, "_d")
+  df_selected <- df_norm[c(first_cols, rbind(x_colnames, y_colnames, d_colnames))]
 
-  # Apply Savitsky-Golay filter
-  for (cn in c(x_colnames, y_colnames)) {
-    df_filt[[cn]] <- signal::sgolayfilt(df_filt[[cn]], p = poly_order, n = window_size)
+    # Apply filter
+  df_filt <- df_selected
+  for (cn in c(x_colnames, y_colnames, d_colnames)) {
+    df_filt[[cn]] <- signal::filter(sig_filter, df_selected[[cn]])
   }
 
   # Save version
@@ -435,6 +457,7 @@ apply_filter <- function(view, data_points, window_size, poly_order,
 
   invisible(l)
 }
+
 
 
 

@@ -4,20 +4,25 @@ devtools::load_all()
 # DONE
 # Separate optflow function if no camera - inherits from RawView so processing works using
 # existing functions
-# for OSF data process to remove camera drift in process view
-
+# For OSF data process to remove camera drift in process view by using linear regression
+# Generalised filter that can be applied with apply_filter
+# Added periodicity FFT plot
+# Pivot onsetsselected data as option (for last recording 5) - not in same format as other CSVs
 
 # TODO
-# overlay audio onto video - autolayers - test on last performance
-# * periodicity - look at github
+# overlay audio onto video - autolayers - test on last performance - stack the rects for inst?
 # iii, iv - color code position of features
 # order onsetselected data
-# generalise filter
 # Diagnostic duration plot?
 # Generalise autolayer to accept parameters or expr
 # dedicated zoo methods?
 # gganimate? https://rpubs.com/jedoenriquez/animatingchartsintro - on processed
 # Generalise interpolation methods
+# Rename X to Frame in data
+
+# Query
+# Is it ok to still include optflow data with other video data when there is a camera
+# Email mentions scale might be different for head??? or is that just for NIR_DBh_Malhar_2Gats?
 
 ################################################################################
 ### Recording 1
@@ -65,7 +70,7 @@ plot(pv1, columns = c("Head_x", "Head_y", "Head_d")) # Trend in Head removed
 autoplot(pv1, columns = c("LEar_x", "LEar_y", "LEar_d")) # processed displacement added
 
 # Filtered data
-fv1 <- apply_filter(pv1, c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
+fv1 <- apply_filter_sgolay(pv1, c("Nose", "RWrist", "LWrist"), n = 19, p = 4)
 summary(fv1)
 plot(fv1, nc = 3)
 autoplot(fv1)
@@ -99,8 +104,8 @@ rv2_OptFlow_Guitar <- get_raw_optflow_view(r2, "", "Guitar")
 rv2_OptFlow_Tabla <- get_raw_optflow_view(r2, "", "Tabla")
 pv2_OptFlow_Guitar <- get_processed_view(rv2_OptFlow_Guitar)
 pv2_OptFlow_Tabla <- get_processed_view(rv2_OptFlow_Tabla)
-fv2_OptFlow_Guitar <- apply_filter(pv2_OptFlow_Guitar, "Head", window_size=19, poly_order=4)
-fv2_OptFlow_Tabla <- apply_filter(pv2_OptFlow_Tabla, "Head", window_size=19, poly_order=4)
+fv2_OptFlow_Guitar <- apply_filter_sgolay(pv2_OptFlow_Guitar, "Head", n = 19, p = 4)
+fv2_OptFlow_Tabla <- apply_filter_sgolay(pv2_OptFlow_Tabla, "Head", n = 19, p = 4)
 plot(fv2_OptFlow_Guitar) # linear drift removed
 plot(fv2_OptFlow_Tabla)
 
@@ -142,16 +147,31 @@ plot(rv4_Central_TanpuraR, nc=3)
 ################################################################################
 ###  Recording 5
 ################################################################################
+instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa",
+                 "Ryuteki", "Hichiriki", "Sho", "Biwa_RW", "Shoko_RW", "Taiko_LW",
+                 "Taiko_RW")
+
 r5 <- get_recording("Gagaku_5_Juha", fps = 60)
-o5 <- get_onsets_selected_data(r5)
-plot(o5, column = "Time") # Data format different
+o5 <- get_onsets_selected_data(r5, instrument_cols = instruments) # not in same format as others
+plot(o5) # Peak set to zero as not in data
 m5 <- get_metre_data(r5)
 autoplot(m5)
+d5 <- get_duration_annotation_data(r5) # not in same format as others
+
+# Fudge it
+colnames(d5) <- c("Tier", "Comments", "In", "Out", "Duration")
+
 # 8 views - automation
 rv_view <- get_raw_views(r5)
 names(rv_view)
 plot(rv_view$V1_M_Taiko, nc = 3)
-View(rv_view)
+# View(rv_view)
 
 pv_view <- lapply(rv_view, get_processed_view)
-fv_view <- lapply(pv_view, apply_filter, data_points=c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
+fv_view <- lapply(pv_view, apply_filter_sgolay, data_points=c("Nose"), n = 19, p = 4)
+
+autoplot(fv_view$V3_Ryuteki)
+autoplot(fv_view$V3_Ryuteki) + autolayer(d5, expr = 'Tier == "Section"')
+autoplot(fv_view$V3_Ryuteki) + autolayer(m5) +
+  xlim_duration(d5, 'Tier == "Section" & Comments == "B"')
+autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", alpha = 0)

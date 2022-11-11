@@ -1,0 +1,98 @@
+---
+title: "MovementSync"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r}
+library(movementsync)
+```
+
+## Recording 1
+
+```{r}
+r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+summary(r1)
+```
+
+```{r}
+o1 <- get_onsets_selected_data(r1)
+summary(o1)
+plot(o1)
+autoplot(o1)
+```
+
+```{r}
+m1 <- get_metre_data(r1)
+summary(m1)
+plot(m1)
+autoplot(m1)
+```
+
+```{r}
+d1 <- get_duration_annotation_data(r1)
+summary(d1)
+# plot(d1)
+```
+
+```{r}
+rv1 <- get_raw_view(r1, "Central", "", "Sitar")
+summary(rv1)
+plot(rv1, nc = 3, maxpts = 500)
+plot(rv1, columns = c("LEar_x", "LEar_y"))
+plot(rv1, columns = c("Head_x", "Head_y", "Head_d")) # drift in camera
+plot(rv1, xlim = c(500,1000), nc = 3)
+```
+
+Autolayering with OnsetSelected, Metre and Duration objects,
+```{r}
+autoplot(rv1, columns = c("LEar_x", "LEar_y"), maxpts = 2000)
+autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(d1)
+autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(o1)
+autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(d1, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
+autoplot(rv1, columns = c("LEar_x", "LEar_y"), maxpts=5000) + ggplot2::xlim(1000, 2000) +
+  autolayer(m1)
+```
+
+Set x-scale using Duration object
+```{r}
+autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
+  xlim_duration(d1, 'Tier == "FORM" & Comments == "Alap"')
+```
+
+Processed data
+```{r}
+pv1 <- get_processed_view(rv1)
+plot(pv1, nc = 3)
+plot(pv1, columns = c("Head_x", "Head_y", "Head_d")) # Trend in Head removed
+autoplot(pv1, columns = c("LEar_x", "LEar_y", "LEar_d")) # processed displacement added
+```
+
+Filtered data
+```{r}
+fv1 <- apply_filter_sgolay(pv1, c("Nose", "RWrist", "LWrist"), n = 19, p = 4)
+summary(fv1)
+plot(fv1, nc = 3)
+autoplot(fv1)
+autoplot(fv1) + autolayer(d1)
+```
+
+Save the filtered objected in an RDS file
+```{r}
+saveRDS(fv1, file = "C:/temp/fv1.rds")
+rm(fv1)
+fv1 <- readRDS("C:/temp/fv1.rds")
+plot(fv1, nc = 3)
+```

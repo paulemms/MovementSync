@@ -18,13 +18,12 @@ NULL
 #' @param obj
 #'
 #' @return
-#' @export
+#' @exportS3Method
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o <- get_onsets_selected_data(r)
 #' autoplot(o)
-#' @exportS3Method
 autoplot.OnsetsSelected <- function(obj) {
   class(obj) <- NULL
   df <- dplyr::bind_rows(obj, .id = "Rhythm")
@@ -47,14 +46,15 @@ autoplot.OnsetsSelected <- function(obj) {
 #' @param alpha
 #'
 #' @return ggplot geom_rect object
+#' @exportS3Method
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o <- get_onsets_selected_data(r)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' autoplot(v, columns = c("LEar_x", "LEar_y"), maxpts=5000) + autolayer(o)
-#' @exportS3Method
-autolayer.OnsetsSelected <- function(obj, color = "hotpink", alpha = 0.4, ...) {
+autolayer.OnsetsSelected <- function(obj, colour = "Inst.Name", fill = "Tala",
+                                     alpha = 0.4, ...) {
   class(obj) <- NULL
   df <- dplyr::bind_rows(obj, .id = "Tala")
   df <- dplyr::group_by(df, Tala, Inst.Name)
@@ -62,8 +62,8 @@ autolayer.OnsetsSelected <- function(obj, color = "hotpink", alpha = 0.4, ...) {
 
   ggplot2::geom_rect(
     data = rects,
-    ggplot2::aes(xmin = Inst_Min, xmax = Inst_Max, ymin = -Inf, ymax = Inf, col = Inst.Name, fill = Tala),
-    alpha = 0.4)
+    ggplot2::aes(xmin = Inst_Min, xmax = Inst_Max, ymin = -Inf, ymax = Inf,
+                 colour = !!sym(colour), fill = !!sym(fill)), alpha = alpha)
 }
 
 
@@ -73,13 +73,12 @@ autolayer.OnsetsSelected <- function(obj, color = "hotpink", alpha = 0.4, ...) {
 #' @param obj
 #'
 #' @return
-#' @export
+#' @exportS3Method
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' m <- get_metre_data(r)
 #' autoplot(m)
-#' @exportS3Method
 autoplot.Metre <- function(obj) {
   zoo_list <- lapply(obj, function(x) zoo::zoo(diff(x$Time), order.by = x$Time))
   z <- do.call(merge, zoo_list)
@@ -107,6 +106,7 @@ autoplot.Metre <- function(obj) {
 #' @param alpha
 #'
 #' @return ggplot geom_vline object
+#' @exportS3Method
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
@@ -115,7 +115,6 @@ autoplot.Metre <- function(obj) {
 #' autoplot(v, columns = c("LEar_x", "LEar_y"), maxpts=5000) +
 #' ggplot2::xlim(1000, 2000) +
 #' autolayer(m)
-#' @exportS3Method
 autolayer.Metre <- function(obj, xmin = -Inf, xmax = Inf, color = "hotpink", alpha = 0.4, ...) {
   x <- unlist(lapply(obj, function(y) y$Time))
   x[x < xmin] <- NA
@@ -132,12 +131,12 @@ autolayer.Metre <- function(obj, xmin = -Inf, xmax = Inf, color = "hotpink", alp
 #' @param ... passed to plot.zoo
 #'
 #' @return
+#' @exportS3Method
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' autoplot(v, columns = c("LEar_x", "LEar_y"))
-#' @exportS3Method
 autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 
   # Restrict points and columns to plot
@@ -165,6 +164,7 @@ autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 #' @param ...
 #'
 #' @return
+#' @exportS3Method
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
@@ -175,7 +175,6 @@ autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d)
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
-#' @exportS3Method
 autolayer.Duration <- function(obj, expr = 'Tier == "FORM"') {
   expr <- rlang::parse_expr(expr)
   rects <- dplyr::filter(obj, !!expr)

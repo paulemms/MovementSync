@@ -55,7 +55,7 @@ summary.Metre <- function(obj) {
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' fv <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), window_size=19, poly_order=4)
+#' fv <- apply_filter_sgolay(pv, c("Nose", "RWrist", "LWrist"), n=19, p=4)
 #' summary(rv)
 #' summary(pv)
 #' summary(fv)
