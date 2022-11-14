@@ -37,7 +37,7 @@ periodicity <- function(view, data_points = NULL, ...) {
       na.action = na.omit,
       ...
     )
-  spx <- spec$freq * sampling_rate
+  spx <- spec$freq * sampling_rate # to get cycles per seconds
   spy <- spec$spec
   colnames(spy) <- colnames(df)[-(1:2)]
   output_df <- data.frame(Time = 1 / spx, spy)
@@ -60,7 +60,7 @@ periodicity <- function(view, data_points = NULL, ...) {
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' per1 <- periodicity(pv, data_points = c("LEye"), spans = 5)
+#' per1 <- periodicity(pv, data_points = c("LElbow", "LEye"), spans = 5)
 #' autoplot(per1)
 #'
 #' fv <- apply_filter_sgolay(pv, data_points = c("LElbow", "LEye"), n = 19, p = 4)
@@ -81,12 +81,13 @@ autoplot.PeriodicityView <- function(obj, time_range = c(0, 10), colour = "blue"
 
   ggplot2::ggplot(long_df, ggplot2::aes(x = Time, y = Ampl)) +
   ggplot2::geom_line(colour = colour) +
-  ggplot2::xlab('Time / s') +
+  ggplot2::xlab('Time / min:sec') +
   ggplot2::ylab('Amplitude') +
-  ggplot2::scale_x_continuous(
-    limits = c(time_range[1], time_range[2]),
-    breaks = seq(time_range[1], time_range[2], by = (time_range[2]-time_range[1]) / 5)
-  ) +
+  # ggplot2::scale_x_continuous(
+  #   limits = c(time_range[1], time_range[2]),
+  #   breaks = seq(time_range[1], time_range[2], by = (time_range[2]-time_range[1]) / 5)
+  # ) +
   ggplot2::labs(title = class(obj)[1], subtitle = title) +
-  ggplot2::facet_wrap(~DataPoint, scales = "free")
+  ggplot2::facet_wrap(~DataPoint, scales = "free") +
+  ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
 }

@@ -1,3 +1,5 @@
+# Disgnostic plots of S3 objects
+
 #' Plot a OnsetsSelected S3 object
 #'
 #' @param obj

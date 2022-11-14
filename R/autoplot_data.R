@@ -32,7 +32,9 @@ autoplot.OnsetsSelected <- function(obj) {
     ggplot2::geom_point() +
     ggplot2::facet_grid(Rhythm ~ Inst.Name, scales="free_y") +
     ggplot2::labs(title = "OnsetsSelected Object") +
-    ggplot2::xlab("Inst")
+    ggplot2::xlab("Inst / min:sec") +
+    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+
 }
 
 
@@ -63,7 +65,8 @@ autolayer.OnsetsSelected <- function(obj, colour = "Inst.Name", fill = "Tala",
   ggplot2::geom_rect(
     data = rects,
     ggplot2::aes(xmin = Inst_Min, xmax = Inst_Max, ymin = -Inf, ymax = Inf,
-                 colour = !!sym(colour), fill = !!sym(fill)), alpha = alpha)
+                 colour = !!ggplot2::sym(colour), fill = !!ggplot2::sym(fill)),
+    alpha = alpha)
 }
 
 
@@ -86,12 +89,14 @@ autoplot.Metre <- function(obj) {
   if (is.null(ncol(z))) {
     autoplot(z) +
       ggplot2::labs(title = "Metre Object", subtitle = "Time Between Cycles") +
-      ggplot2::xlab("Time / s") + ggplot2::ylab("")
+      ggplot2::xlab("Time / min:sec") + ggplot2::ylab("")  +
+      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
   } else {
     autoplot(z) +
       ggplot2::facet_grid(Series ~ ., scales="free_y") +
       ggplot2::labs(title = "Metre Object", subtitle = "Time Between Cycles") +
-      ggplot2::xlab("Time / s")
+      ggplot2::xlab("Time / min:sec") +
+      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
   }
 }
 
@@ -147,13 +152,14 @@ autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
   zoo_list <- lapply(df[-1], function(x) zoo::zoo(x, order.by = df$Time))
   z <- do.call(merge, zoo_list)
 
-  title <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
-  title <- paste(title[title != ""], collapse="_")
+  subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
+  subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
   autoplot(z) +
     ggplot2::facet_wrap(Series ~ ., scales="free_y") +
-    ggplot2::labs(title = class(obj)[1], subtitle = title) +
-    ggplot2::xlab("Time / s")
+    ggplot2::labs(title = class(obj)[1], subtitle = subtitle) +
+    ggplot2::xlab("Time / min:sec") +
+    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
 }
 
 

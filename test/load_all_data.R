@@ -2,23 +2,31 @@ rm(list = ls())
 devtools::load_all()
 
 # DONE
-# Separate optflow function if no camera - inherits from RawView so processing works using
-# existing functions
-# For OSF data process to remove camera drift in process view by using linear regression
-# Generalised filter that can be applied with apply_filter
-# Added periodicity FFT plot
+# Used alpha for xy distribution
+# Added a subset generic for views - maybe should be window
+# Separate optflow function - inherits from RawView so processing works using existing functions
+# auto scale time axis - ggplot
+
+# DONE (Monday)
 # Pivot onsetsselected data as option (for last recording 5) - not in same format as other CSVs
 
 # TODO
+# Added periodicity FFT plot - windowing
+# motiongram - displacement gives velocity
+# grangers - extension - stats granger
+# periodicity - restrict time domain, windowed 10s version
+# remove autoloading of optflow
 # overlay audio onto video - autolayers - test on last performance - stack the rects for inst?
+# gganimate? https://rpubs.com/jedoenriquez/animatingchartsintro - on processed
 # iii, iv - color code position of features
 # order onsetselected data
 # Diagnostic duration plot?
 # Generalise autolayer to accept parameters or expr
 # dedicated zoo methods?
-# gganimate? https://rpubs.com/jedoenriquez/animatingchartsintro - on processed
 # Generalise interpolation methods
 # Rename X to Frame in data
+# https://stackoverflow.com/questions/68022639/combining-time-trend-plot-with-timeline
+# get data points method for view
 
 # Query
 # Is it ok to still include optflow data with other video data when there is a camera
@@ -42,13 +50,15 @@ autoplot(m1)
 
 d1 <- get_duration_annotation_data(r1)
 summary(d1)
-# plot(d1)
+# plot(d1) Gantt?
 
 rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 summary(rv1)
 plot(rv1, nc = 3, maxpts = 500)
 plot(rv1, columns = c("LEar_x", "LEar_y"))
-plot(rv1, columns = c("Head_x", "Head_y", "Head_d")) # drift in camera
+
+rv2 <- get_raw_optflow_view(r1, "Central", "", "Sitar")
+plot(rv2, columns = c("Head_x", "Head_y", "Head_d")) # drift in camera
 plot(rv1, xlim = c(500,1000), nc = 3)
 
 # Autolayering with OnsetSelected, Metre and Duration objects,
@@ -66,8 +76,9 @@ autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
 # Processed data
 pv1 <- get_processed_view(rv1)
 plot(pv1, nc = 3)
-plot(pv1, columns = c("Head_x", "Head_y", "Head_d")) # Trend in Head removed
-autoplot(pv1, columns = c("LEar_x", "LEar_y", "LEar_d")) # processed displacement added
+autoplot(pv1, columns = c("LEar_x", "LEar_y", "LEar_d"))
+pv2 <- get_processed_view(rv1)
+plot(pv2, columns = c("Head_x", "Head_y", "Head_d")) # Trend in Head removed
 
 # Filtered data
 fv1 <- apply_filter_sgolay(pv1, c("Nose", "RWrist", "LWrist"), n = 19, p = 4)
@@ -81,6 +92,10 @@ saveRDS(fv1, file = "C:/temp/fv1.rds")
 rm(fv1)
 fv1 <- readRDS("C:/temp/fv1.rds")
 plot(fv1, nc = 3)
+
+# Different filter
+fv2 <- apply_filter(pv1, c("Nose", "RWrist", "LWrist"), signal::MedianFilter(n = 3))
+plot(fv2, nc = 3)
 
 ################################################################################
 ### Recording 2
@@ -100,8 +115,8 @@ rv2_SideR_Tabla <- get_raw_view(r2, "SideR", "", "Tabla")
 plot(rv2_SideL_Tabla, nc=3)
 
 # OptFlow data has no camera in filename so load separately
-rv2_OptFlow_Guitar <- get_raw_optflow_view(r2, "", "Guitar")
-rv2_OptFlow_Tabla <- get_raw_optflow_view(r2, "", "Tabla")
+rv2_OptFlow_Guitar <- get_raw_optflow_view(r2, "", "", "Guitar")
+rv2_OptFlow_Tabla <- get_raw_optflow_view(r2, "", "", "Tabla")
 pv2_OptFlow_Guitar <- get_processed_view(rv2_OptFlow_Guitar)
 pv2_OptFlow_Tabla <- get_processed_view(rv2_OptFlow_Tabla)
 fv2_OptFlow_Guitar <- apply_filter_sgolay(pv2_OptFlow_Guitar, "Head", n = 19, p = 4)

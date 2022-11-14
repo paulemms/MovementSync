@@ -140,12 +140,11 @@ get_duration_annotation_data <- function(recording) {
 #'
 #' @param recording object
 #' @param vid video camera
-#' @param inst instrument
 #' @param direct direction
+#' @param inst instrument
+#' @param lead_diff Value to start diff calc
 #' @param save_output save the output?
 #' @param folder_out output folder relative to recording home
-#' @param add_optflow add the optflow data?
-#' @param lead_diff Value to start diff calc
 #'
 #' @return
 #' @export
@@ -153,8 +152,8 @@ get_duration_annotation_data <- function(recording) {
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
-get_raw_view <- function(recording, vid, direct, inst, lead_diff = 0, add_optflow = TRUE,
-                        folder_out = "Raw", save_output = FALSE) {
+get_raw_view <- function(recording, vid, direct, inst, lead_diff = 0,
+                         folder_out = "Raw", save_output = FALSE) {
   fn_cpts <- c(recording$stem, vid, direct, 'NS', inst)
   fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
   data_file_name <- file.path(recording$data_path, fn)
@@ -173,24 +172,24 @@ get_raw_view <- function(recording, vid, direct, inst, lead_diff = 0, add_optflo
   # Add a time column
   df <- cbind(df[1], Time = df$X / recording$fps, df[-1])
 
-  # If there is an OptFlow file present merge it into data frame
-  if (add_optflow) {
-    of_fn_cpts <- c(recording$stem, 'Optflow', vid, direct, inst)
-    of_fn <- paste0(paste(of_fn_cpts[of_fn_cpts != ""], collapse = "_"), ".csv")
-    of_data_file_name <- file.path(recording$data_path, of_fn)
-
-    if (file.exists(of_data_file_name)) {
-      message("Loading ", of_data_file_name)
-      of_df <- read.csv(of_data_file_name, colClasses = "numeric")
-      colnames(of_df) <- c("X", "Time", "Head_x", "Head_y")
-      of_df <- of_df[, c("X", "Head_x", "Head_y")]
-      # Merge on Frame
-      df <- merge(df, of_df, by = "X", all.x = TRUE)
-      data_points <- c(data_points, "Head")
-      x_colnames <- c(x_colnames, "Head_x")
-      y_colnames <- c(y_colnames, "Head_y")
-    }
-  }
+  # # If there is an OptFlow file present merge it into data frame
+  # if (add_optflow) {
+  #   of_fn_cpts <- c(recording$stem, 'Optflow', vid, direct, inst)
+  #   of_fn <- paste0(paste(of_fn_cpts[of_fn_cpts != ""], collapse = "_"), ".csv")
+  #   of_data_file_name <- file.path(recording$data_path, of_fn)
+  #
+  #   if (file.exists(of_data_file_name)) {
+  #     message("Loading ", of_data_file_name)
+  #     of_df <- read.csv(of_data_file_name, colClasses = "numeric")
+  #     colnames(of_df) <- c("X", "Time", "Head_x", "Head_y")
+  #     of_df <- of_df[, c("X", "Head_x", "Head_y")]
+  #     # Merge on Frame
+  #     df <- merge(df, of_df, by = "X", all.x = TRUE)
+  #     data_points <- c(data_points, "Head")
+  #     x_colnames <- c(x_colnames, "Head_x")
+  #     y_colnames <- c(y_colnames, "Head_y")
+  #   }
+  # }
 
   # Add a displacement column
   dx <- as.data.frame(lapply(df[x_colnames], function(x) c(lead_diff, diff(x))))
@@ -219,9 +218,11 @@ get_raw_view <- function(recording, vid, direct, inst, lead_diff = 0, add_optflo
 #' Creates time reference and displacement from raw csv optflow data
 #'
 #' Used to loads OptFlow data when no video camera specified in filename.
+#'
 #' @param recording object
-#' @param inst instrument
+#' @param vid camera
 #' @param direct direction
+#' @param inst instrument
 #' @param save_output save the output?
 #' @param folder_out output folder relative to recording home
 #'
@@ -230,12 +231,13 @@ get_raw_view <- function(recording, vid, direct, inst, lead_diff = 0, add_optflo
 #'
 #' @examples
 #' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
-#' rov <- get_raw_optflow_view(r, "", "Guitar")
+#' rov <- get_raw_optflow_view(r, "" ,"", "Guitar")
 #' pov <- get_processed_view(rov)
-#' fv1 <- apply_filter(pov, c("Head"), n=19, p=4)
-get_raw_optflow_view <- function(recording, direct, inst,
+#' fv1 <- apply_filter_sgolay(pov, c("Head"), n=19, p=4)
+#'
+get_raw_optflow_view <- function(recording, vid, direct, inst,
                          folder_out = "Raw", save_output = TRUE) {
-  fn_cpts <- c(recording$stem, 'OptFlow', direct, inst)
+  fn_cpts <- c(recording$stem, 'OptFlow', vid, direct, inst)
   fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
   data_file_name <- file.path(recording$data_path, fn)
   message("Loading ", data_file_name)
@@ -422,7 +424,7 @@ get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
 #' set.seed(1) # to reproduce with S3 filter object
 #' fv3 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), signal::sgolay(4, 19))
 apply_filter_sgolay <- function(view, data_points, n, p, folder_out = "Filtered", save_output = FALSE) {
-  apply_filter(view, data_points, signal::sgolay(p, n))
+  apply_filter(view, data_points, signal::sgolay(p, n), folder_out, save_output)
 }
 
 #' @export
@@ -459,6 +461,20 @@ apply_filter <- function(view, data_points, sig_filter, folder_out = "Filtered",
 }
 
 
-
+#' Get the data points held in a view
+#'
+#' @param obj view object
+#'
+#' @return character vector
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' rv <- get_raw_view(r, "Central", "", "Sitar")
+#' get_data_points(rv)
+get_data_points <- function(obj) {
+  stopifnot("View" %in% class(obj))
+  unique(sapply(strsplit(colnames(obj$df), "_"), function(x) x[1]))[-(1:2)]
+}
 
 
