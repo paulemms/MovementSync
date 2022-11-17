@@ -161,35 +161,14 @@ get_raw_view <- function(recording, vid, direct, inst, lead_diff = 0,
   stopifnot(file.exists(data_file_name))
 
   df <- read.csv(data_file_name, colClasses = "numeric")
-  first_col <- colnames(df)[1]
+  first_col <- "Frame"
+  colnames(df)[1] <- first_col
   data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-1]
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
-  selected_cols <- c(first_col, rbind(x_colnames, y_colnames))
-  if (!all(selected_cols %in% colnames(df))) stop("Cannot find data points in data file")
-  df <- df[selected_cols]
 
   # Add a time column
-  df <- cbind(df[1], Time = df$X / recording$fps, df[-1])
-
-  # # If there is an OptFlow file present merge it into data frame
-  # if (add_optflow) {
-  #   of_fn_cpts <- c(recording$stem, 'Optflow', vid, direct, inst)
-  #   of_fn <- paste0(paste(of_fn_cpts[of_fn_cpts != ""], collapse = "_"), ".csv")
-  #   of_data_file_name <- file.path(recording$data_path, of_fn)
-  #
-  #   if (file.exists(of_data_file_name)) {
-  #     message("Loading ", of_data_file_name)
-  #     of_df <- read.csv(of_data_file_name, colClasses = "numeric")
-  #     colnames(of_df) <- c("X", "Time", "Head_x", "Head_y")
-  #     of_df <- of_df[, c("X", "Head_x", "Head_y")]
-  #     # Merge on Frame
-  #     df <- merge(df, of_df, by = "X", all.x = TRUE)
-  #     data_points <- c(data_points, "Head")
-  #     x_colnames <- c(x_colnames, "Head_x")
-  #     y_colnames <- c(y_colnames, "Head_y")
-  #   }
-  # }
+  df <- cbind(df[1], Time = df[[1]] / recording$fps, df[-1])
 
   # Add a displacement column
   dx <- as.data.frame(lapply(df[x_colnames], function(x) c(lead_diff, diff(x))))
@@ -244,7 +223,7 @@ get_raw_optflow_view <- function(recording, vid, direct, inst,
   stopifnot(file.exists(data_file_name))
 
   df <- read.csv(data_file_name, colClasses = "numeric")
-  colnames(df) <- c("X", "Time", "Head_x", "Head_y")
+  colnames(df) <- c("Frame", "Time", "Head_x", "Head_y")
 
   # Add a displacement column
   dx <- c(NA, diff(df[["Head_x"]]))
@@ -335,8 +314,8 @@ get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
   data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-(1:2)]
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
-  selected_cols <- c(first_cols, x_colnames, y_colnames)
-  df <- df[selected_cols]
+  # selected_cols <- c(first_cols, x_colnames, y_colnames)
+  # df <- df[selected_cols]
 
   # If there is a Head data_point we need to remove linear drift
   if ("Head" %in% data_points) {
@@ -372,6 +351,10 @@ get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
   cn <- c(colnames(X), rbind(colnames(dfx_norm), colnames(dfy_norm)))
   df_norm <- df_norm[cn]
 
+  # Interpolate missing data
+  df_norm <- replace(zoo::na.spline(df_norm), is.na(zoo::na.approx(df_norm, na.rm=FALSE)), NA)
+  df_norm <- as.data.frame(df_norm)
+
   # Recompute a displacement column
   dx <- as.data.frame(lapply(df_norm[x_colnames], function(x) c(lead_diff, diff(x))))
   dy <- as.data.frame(lapply(df_norm[y_colnames], function(x) c(lead_diff, diff(x))))
@@ -380,10 +363,6 @@ get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
   df_norm <- cbind(df_norm, disp)
   selected_cols <- c(first_cols, rbind(x_colnames, y_colnames, colnames(disp)))
   df_norm <- df_norm[selected_cols]
-
-  # Interpolate missing data
-  df_norm <- replace(zoo::na.spline(df_norm), is.na(zoo::na.approx(df_norm, na.rm=FALSE)), NA)
-  df_norm <- as.data.frame(df_norm)
 
   if (save_output) {
     out_folder <- file.path(rv$recording$data_home, folder_out)
@@ -478,3 +457,40 @@ get_data_points <- function(obj) {
 }
 
 
+#' Get joined view from multiple views from the same recording
+#'
+#' @param l named list of view objects
+#' @param save_output
+#' @param folder_out
+#' @param lead_diff
+#'
+#' @return JoinedView object
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' rv_list <- get_raw_views(r)
+#' jv <- get_joined_view(rv_list)
+#' plot(jv, columns = c("LEar_x_Central_Sitar", "LEar_x_Central_Tabla"), yax.flip=T)
+get_joined_view <- function(l, folder_out = "Joined", save_output = FALSE) {
+  stopifnot(all(sapply(l, function(x) "View" %in% class(x))))
+
+  join_pair <- function(x, y) {
+    dplyr::inner_join(l[[x]]$df, l[[y]]$df, by = c("Frame", "Time"),
+    suffix = paste0("_", c(x, y)), copy = TRUE)
+  }
+
+  joined_df <- Reduce(join_pair, names(l))
+
+  if (save_output) {
+    out_folder <- file.path(l[[1]]$recording$data_home, folder_out)
+    if (!dir.exists(out_folder)) dir.create(out_folder)
+    out_file_name <- file.path(out_folder, paste0(l[[1]]$recording$stem, "_", l[[1]]$vid , "_", l[[1]]$inst, '_JOINED.csv'))
+    write.csv(joined_df, out_file_name, row.names=FALSE)
+  }
+  output_list <- list(df = joined_df, vid = "", direct = "", inst = "",
+                      recording = l[[1]]$recording)
+  class(output_list) <- c("JoinedView", class(l[[1]]))
+
+  invisible(output_list)
+}

@@ -2,35 +2,29 @@ rm(list = ls())
 devtools::load_all()
 
 # DONE
-# Used alpha for xy distribution
-# Added a subset generic for views - maybe should be window
-# Separate optflow function - inherits from RawView so processing works using existing functions
-# auto scale time axis - ggplot
-
-# DONE (Monday)
-# Pivot onsetsselected data as option (for last recording 5) - not in same format as other CSVs
+# Added a SplicedView and a splicer function that subsets the time line
+# Added a window size and step size splice
+# different functions for spectrum (short time interval) and specgram (over an overlapping SplicedTime data.frame)
+# see spectogram in signals for implementation
 
 # TODO
-# Added periodicity FFT plot - windowing
+# get_filtered_data convenience function
+# wrist and nose focus as points -lag over a second, 2 or 3 seconds nose
 # motiongram - displacement gives velocity
-# grangers - extension - stats granger
+# * Added periodicity FFT plot - yet to do windowing
+# grangers - extension - stats ?, lmtest - tables - p number against time
+# granger packge
 # periodicity - restrict time domain, windowed 10s version
-# remove autoloading of optflow
 # overlay audio onto video - autolayers - test on last performance - stack the rects for inst?
 # gganimate? https://rpubs.com/jedoenriquez/animatingchartsintro - on processed
 # iii, iv - color code position of features
 # order onsetselected data
 # Diagnostic duration plot?
 # Generalise autolayer to accept parameters or expr
-# dedicated zoo methods?
 # Generalise interpolation methods
-# Rename X to Frame in data
 # https://stackoverflow.com/questions/68022639/combining-time-trend-plot-with-timeline
-# get data points method for view
+# dedicated zoo methods?
 
-# Query
-# Is it ok to still include optflow data with other video data when there is a camera
-# Email mentions scale might be different for head??? or is that just for NIR_DBh_Malhar_2Gats?
 
 ################################################################################
 ### Recording 1
@@ -77,7 +71,7 @@ autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
 pv1 <- get_processed_view(rv1)
 plot(pv1, nc = 3)
 autoplot(pv1, columns = c("LEar_x", "LEar_y", "LEar_d"))
-pv2 <- get_processed_view(rv1)
+pv2 <- get_processed_view(rv2)
 plot(pv2, columns = c("Head_x", "Head_y", "Head_d")) # Trend in Head removed
 
 # Filtered data

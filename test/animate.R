@@ -16,11 +16,11 @@ maxpts <- 250
 x_features <- paste(features, "x", sep = "_")
 y_features <- paste(features, "y", sep = "_")
 
-df <- fv1$df[seq_len(maxpts), c("X","Time", x_features, y_features), drop=FALSE]
+df <- fv1$df[seq_len(maxpts), c("Frame","Time", x_features, y_features), drop=FALSE]
 df_list <- list()
 for (i in seq_along(features)) {
-  df_list[[features[i]]] <- df[c("Time", "X", x_features[i], y_features[i])]
-  names(df_list[[features[i]]]) <- c("Time", "X", "x", "y")
+  df_list[[features[i]]] <- df[c("Time", "Frame", x_features[i], y_features[i])]
+  names(df_list[[features[i]]]) <- c("Time", "Frame", "x", "y")
 }
 df1 <- dplyr::bind_rows(df_list, .id = "Feature")
 

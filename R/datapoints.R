@@ -9,12 +9,11 @@
 #' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 #' dp <- c("LElbow", "RElbow")
-#' sub_rv1 <- subset(rv1, Time >= 10 & Time <= 100, dp)
-#' plot_xy(sub_rv1)
 #' pv1 <- get_processed_view(rv1)
-#' sub_pv1 <- subset(pv1, Time >= 10 & Time <= 100, dp, by = 1)
-#' plot_xy(sub_pv1)
-plot_xy <- function(obj, maxpts=10000) {
+#' fv1 <- apply_filter_sgolay(pv1, data_points = dp, n = 41, p = 3)
+#' sub_fv1 <- subset(fv1, Time >= 0 & Time <= 100, by = 100)
+#' plot_history_xy(sub_fv1)
+plot_history_xy <- function(obj, maxpts=10000) {
   df <- obj$df
   stopifnot(nrow(df) < maxpts)
 
@@ -24,13 +23,22 @@ plot_xy <- function(obj, maxpts=10000) {
 
   df_list <- list()
   for (i in seq_along(data_point)) {
-    df_list[[data_point[i]]] <- df[c("Time", x_dp[i], y_dp[i])]
-    names(df_list[[data_point[i]]]) <- c("Time", "x", "y")
+    xend <- c(df[[x_dp[i]]][-1], NA)
+    yend <- c(df[[y_dp[i]]][-1], NA)
+    df_list[[data_point[i]]] <- cbind(df[c("Time", x_dp[i], y_dp[i])], xend, yend)
+    names(df_list[[data_point[i]]]) <- c("Time", "x", "y", "xend", "yend")
   }
   df1 <- dplyr::bind_rows(df_list, .id = "DataPoint")
 
-  ggplot2::ggplot(df1, ggplot2::aes(x, y, col=Time)) +
-    ggplot2::geom_point() + ggplot2::geom_line() + ggplot2::facet_wrap(~DataPoint)
+  subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
+  subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+  ggplot2::ggplot(df1, ggplot2::aes(x, y, alpha = Time, colour = DataPoint)) +
+    ggplot2::labs(title = paste("DataPoint History of", class(obj)[1]), subtitle = subtitle) +
+    ggplot2::geom_point(alpha = 0.1, shape = 19) +
+    ggplot2::geom_segment(ggplot2::aes(x = x, xend = xend, y = y, yend = yend),
+                          arrow = ggplot2::arrow(length = ggplot2::unit(0.2, "cm"), type = "closed"))
+
 }
 
 
@@ -50,9 +58,9 @@ plot_xy <- function(obj, maxpts=10000) {
 #' pv1 <- get_processed_view(rv1)
 #' dp <- c("LWrist", "RWrist", "LElbow", "RElbow", "LEye", "REye", "Neck", "MidHip")
 #' fv1 <- apply_filter_sgolay(pv1, data_point = dp, n = 41, p = 4)
-#' sub_fv1 <- subset(fv1, Time >= 10 & Time <= 100, dp)
+#' sub_fv1 <- subset(fv1, Time >= 10 & Time <= 200, dp)
 #' distribution_dp(sub_fv1)
-distribution_dp <- function(obj, maxpts = 10000, alpha = 0.1, ...) {
+distribution_dp <- function(obj, maxpts = 50000, alpha = 0.1, ...) {
   df <- obj$df
   stopifnot(nrow(df) < maxpts)
 
@@ -66,11 +74,11 @@ distribution_dp <- function(obj, maxpts = 10000, alpha = 0.1, ...) {
     names(df_list[[data_point[i]]]) <- c("Time", "x", "y")
   }
   df1 <- dplyr::bind_rows(df_list, .id = "DataPoint")
-  # long1_df <- tidyr::pivot_longer(df[c("X", "Time", x_dp)], cols = x_dp,
+  # long1_df <- tidyr::pivot_longer(df[c("Frame", "Time", x_dp)], cols = x_dp,
   #                                names_to = "DataPoint", values_to = "x")
-  # long2_df <- tidyr::pivot_longer(df[c("X", "Time", y_dp)], cols = y_dp,
+  # long2_df <- tidyr::pivot_longer(df[c("Frame", "Time", y_dp)], cols = y_dp,
   #                                names_to = "DataPoint", values_to = "y")
-  # long_df <- dplyr::inner_join(long1_df, long2_df, by = c("X", "DataPoint"))
+  # long_df <- dplyr::inner_join(long1_df, long2_df, by = c("Frame", "DataPoint"))
 
   subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
@@ -98,9 +106,9 @@ distribution_dp <- function(obj, maxpts = 10000, alpha = 0.1, ...) {
 #' pv1 <- get_processed_view(rv1)
 #' dp <- c("LWrist", "RWrist", "LElbow", "RElbow", "LEye", "REye", "Neck", "MidHip")
 #' fv1 <- apply_filter_sgolay(pv1, data_point = dp, n = 41, p = 4)
-#' sub_fv1 <- subset(fv1, Time >= 10 & Time <= 20, dp)
+#' sub_fv1 <- subset(fv1, Time >= 10 & Time <= 20, by = 2)
 #' velocity_dp(sub_fv1)
-velocity_dp <- function(obj, add_mean = "y", maxpts = 10000, alpha = 0.5, ...) {
+velocity_dp <- function(obj, add_mean = "y", vscale = 5, maxpts = 10000, alpha = 0.5, ...) {
   df <- obj$df
   stopifnot(nrow(df) < maxpts)
 
@@ -113,7 +121,7 @@ velocity_dp <- function(obj, add_mean = "y", maxpts = 10000, alpha = 0.5, ...) {
     col_means <- colMeans(df[y_dp], na.rm = TRUE)
     print(col_means)
     for (i in seq_along(d_dp)) {
-      df[d_dp[i]] <- df[d_dp[i]] * obj$recording$fps + col_means[y_dp[i]]
+      df[d_dp[i]] <- df[d_dp[i]] * vscale + col_means[y_dp[i]]
     }
   } else stop(x)
 
@@ -145,7 +153,7 @@ velocity_dp <- function(obj, add_mean = "y", maxpts = 10000, alpha = 0.5, ...) {
 #' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 #' pv1 <- get_processed_view(rv1)
-#' dp <- c("LWrist", "RWrist", "LElbow", "RElbow", "LEye", "REye")
+#' dp <- c("LWrist", "RWrist", "LElbow", "RElbow", "LEye", "REye", "MidHip")
 #' fv1 <- apply_filter_sgolay(pv1, data_point = dp, n = 41, p = 4)
 #' sub_fv1 <- subset(fv1, Time >= 0 & Time <= 20, dp, by = 2)
 #' motion_gram(sub_fv1)
@@ -172,7 +180,3 @@ motion_gram <- function(obj, maxpts = 10000, alpha =0.5, ...) {
   gridExtra::grid.arrange(p1, p2, nrow = 1, top = paste("Motiongram:", subtitle), widths=c(0.4, 0.6))
 }
 
-
-motion_history_plot <- function(obj, maxpts = 10000, alpha =0.5, ...) {
-
-}

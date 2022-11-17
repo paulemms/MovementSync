@@ -1,3 +1,5 @@
+# Diagnostic plots of S3 objects
+
 #' Autoplot methods
 #'
 #' @importFrom ggplot2 autoplot
@@ -220,3 +222,5 @@ xlim_duration <- function(obj, expr = 'Tier == "Form"') {
 
   ggplot2::xlim(xmin, xmax)
 }
+
+

@@ -54,7 +54,7 @@ plot.Metre <- function(obj, ...) {
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
-#' plot(v)
+#' plot(v, columns = "LEar_x")
 #' @exportS3Method
 plot.View <- function(obj, columns=NULL, maxpts = 1000, ...) {
 

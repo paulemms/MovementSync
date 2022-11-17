@@ -91,3 +91,60 @@ autoplot.PeriodicityView <- function(obj, time_range = c(0, 10), colour = "blue"
   ggplot2::facet_wrap(~DataPoint, scales = "free") +
   ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
 }
+
+
+#' Specgram Plot
+#'
+#' @param obj
+#' @param ... passed to signal::specgram
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' rv <- get_raw_view(r, "Central", "", "Sitar")
+#' pv <- get_processed_view(rv)
+#' fv <- apply_filter_sgolay(pv, data_points = c("RWrist"), n = 11, p = 4)
+#' sub_fv <- subset(fv, Time >= 15*60 & Time <= 25*60, column = c("RWrist_x", "RWrist_y"))
+#' specgram_plot(sub_fv)
+#'
+#' r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+#' rv_list <- get_raw_views(r2)
+#' pv_list <- lapply(rv_list, get_processed_view)
+#' fv_list <- lapply(pv_list, apply_filter_sgolay, data_points = "RWrist", n = 11, p = 3)
+#' sub_fv <- subset(fv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y"))
+#' specgram_plot(sub_fv)
+#'
+#' specgram_plot(sub_fv, window = 200) + ggplot2::scale_fill_gradient(low = "white", high = "black")
+specgram_plot <- function(obj, ...) {
+  stopifnot("View" %in% class(obj))
+
+  view <- obj$view
+  start_time <- obj$df[1, "Time"]
+  df <- obj$df[-(1:2)]
+
+  sp_list <- lapply(df, signal::specgram, Fs = obj$recording$fps, ...)
+  df_list <- list()
+  for (i in seq_along(data_point)) {
+    df_list[[data_point[i]]] <- expand.grid(X = sp_list[[i]]$t + start_time, Y = sp_list[[i]]$f)
+    df_list[[data_point[i]]]$Z <- as.numeric(20 * log10(t(abs(sp_list[[i]]$S))))
+  }
+  long_df <- dplyr::bind_rows(df_list, .id = "DataPoint")
+
+  subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
+  subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+  ggplot2::ggplot(long_df, aes(X, Y, fill= Z)) +
+    ggplot2::geom_tile() +
+    ggplot2::scale_fill_gradientn(colours = jet(20)) +
+    ggplot2::labs(title = "Specgram", subtitle = subtitle) +
+    ggplot2::theme(legend.position = "none") +
+    ggplot2::xlab("Time / min:sec") +
+    ggplot2::ylab("Frequency") +
+    ggplot2::scale_x_time(expand = c(0,0), labels = function(l) strftime(l, '%M:%S')) +
+    ggplot2::scale_y_continuous(expand = c(0,0)) +
+    ggplot2::facet_grid(rows = vars(DataPoint))
+}
+
+
