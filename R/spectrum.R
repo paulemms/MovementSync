@@ -120,9 +120,9 @@ autoplot.PeriodicityView <- function(obj, time_range = c(0, 10), colour = "blue"
 specgram_plot <- function(obj, ...) {
   stopifnot("View" %in% class(obj))
 
-  view <- obj$view
   start_time <- obj$df[1, "Time"]
   df <- obj$df[-(1:2)]
+  data_point <- colnames(df)
 
   sp_list <- lapply(df, signal::specgram, Fs = obj$recording$fps, ...)
   df_list <- list()
@@ -135,7 +135,10 @@ specgram_plot <- function(obj, ...) {
   subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-  ggplot2::ggplot(long_df, aes(X, Y, fill= Z)) +
+  jet <- grDevices::colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F",
+                                       "yellow", "#FF7F00", "red", "#7F0000"))
+
+  ggplot2::ggplot(long_df, ggplot2::aes(X, Y, fill= Z)) +
     ggplot2::geom_tile() +
     ggplot2::scale_fill_gradientn(colours = jet(20)) +
     ggplot2::labs(title = "Specgram", subtitle = subtitle) +

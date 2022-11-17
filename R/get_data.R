@@ -494,3 +494,28 @@ get_joined_view <- function(l, folder_out = "Joined", save_output = FALSE) {
 
   invisible(output_list)
 }
+
+
+#' Get filtered views
+#'
+#' @param r
+#' @param data_points
+#' @param n
+#' @param p
+#'
+#' @return List of FilteredView objects
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' fv_list <- get_filtered_views(r, "Nose", n = 41, p = 3)
+#' plot(fv_list$Central_Tabla)
+get_filtered_views <- function(r, data_points, n, p) {
+  stopifnot("Recording" == class(r))
+
+  rv_list <- get_raw_views(r)
+  pv_list <- lapply(rv_list, get_processed_view)
+  fv_list <- lapply(pv_list, apply_filter_sgolay, data_points = data_points, n = n, p = p)
+
+  invisible(fv_list)
+}

@@ -3,9 +3,10 @@ devtools::load_all()
 
 # DONE
 # Added a SplicedView and a splicer function that subsets the time line
-# Added a window size and step size splice
-# different functions for spectrum (short time interval) and specgram (over an overlapping SplicedTime data.frame)
+# Added a window size and step size splice based on view object
+# different functions for spectrum (short time interval) and specgram (call to signal::specgram)
 # see spectogram in signals for implementation
+# Added granger_test function and plot
 
 # TODO
 # get_filtered_data convenience function

@@ -74,6 +74,12 @@ granger_test <- function(obj, var1, var2, order = 3, win_size = 3, step_size = 0
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla")
 #' autoplot(g, splicing_df)
+#'
+#' # larger window
+#' splicing_df <- splice_time(jv_sub, win_size = 30, step_size = 5)
+#' sv <- get_spliced_view(jv_sub, splicing_df)
+#' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla")
+#' autoplot(g, splicing_df)
 autoplot.GrangerTime <- function(obj, splicing_df = splicing_df, lev_sig = 0.05) {
 
   df <- obj$df
