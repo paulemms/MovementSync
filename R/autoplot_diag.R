@@ -168,8 +168,11 @@ autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 #' Duration layer for ggplot
 #'
 #' @param obj
+#' @param fill_column
+#' @param geom
+#' @param vline_column
 #' @param expr
-#' @param ...
+#' @param ... passed to geom_vline
 #'
 #' @return
 #' @exportS3Method
@@ -180,19 +183,33 @@ autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 #' d <- get_duration_annotation_data(r)
 #' autoplot(m)
 #' autoplot(m) + autolayer(d)
+#' autoplot(m) + autolayer(d, fill_col = "Tier")
+#'
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d)
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
-autolayer.Duration <- function(obj, expr = 'Tier == "FORM"') {
+#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, geom = "vline", nudge_x = -60, size = 3, colour = "blue")
+autolayer.Duration <- function(obj, expr = 'Tier == "FORM"', fill_column = "Comments",
+                               geom = "rect", vline_column = "In", ...) {
   expr <- rlang::parse_expr(expr)
   rects <- dplyr::filter(obj, !!expr)
-  xmin <- min(obj$In, na.rm = TRUE)
-  xmax <- max(obj$Out, na.rm = TRUE)
 
-  ggplot2::geom_rect(
-    data = rects,
-    ggplot2::aes(xmin = In, xmax = Out, ymin = -Inf, ymax = Inf, fill = Comments),
-    alpha = 0.4)
+  l <- list(...)
+
+  if (geom == "rect") {
+    ggplot2::geom_rect(
+      data = rects,
+      ggplot2::aes(xmin = In, xmax = Out, ymin = -Inf, ymax = Inf, fill = .data[[fill_column]]),
+      alpha = 0.4)
+  } else if (geom == "vline") {
+    colour <-  if ("colour" %in% names(l)) l[["colour"]] else "black"
+    c(ggplot2::geom_vline(data = rects, linetype = 3, colour = colour, ggplot2::aes(xintercept = .data[[vline_column]])),
+      ggplot2::geom_text(
+        data = rects,
+        ggplot2::aes(x = .data[[vline_column]], y = Inf, angle = 90, hjust = "inward", label = paste(vline_column, .data[[fill_column]])),
+        ...)
+      )
+  } else stop("Unsupported geom")
 }
 
 

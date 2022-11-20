@@ -1,4 +1,21 @@
-# Disgnostic plots of S3 objects
+# Diagnostic plots of S3 objects
+
+
+#' Plot a Duration S3 object
+#'
+#' @param obj
+#' @param ... passed to barplot
+#'
+#' @return
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' d <- get_duration_annotation_data(r)
+#' plot(d)
+#' @exportS3Method
+plot.Duration <- function(obj, ...) {
+  barplot(Duration ~ In + Tier, main = "Duration", data = obj, ...)
+}
 
 #' Plot a OnsetsSelected S3 object
 #'

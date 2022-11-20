@@ -33,6 +33,27 @@ splice_time.list <- function(x, ...) {
 }
 
 
+#' Generate spliced timeline using a Duration object
+#'
+#' @param x
+#' @param ...
+#'
+#' @return
+#' @exportS3Method
+#'
+#' @examples
+#' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+#' d <- get_duration_annotation_data(r)
+#' splice_time(d)
+splice_time.Duration <- function(x, expr = 'Tier == "FORM"', ...) {
+  expr <- rlang::parse_expr(expr)
+  df <- dplyr::filter(x, !!expr)
+  df <- df[c("Comments", "In", "Out")]
+  colnames(df) <- c("Tier", "Start", "End")
+  df
+}
+
+
 #' Generate spliced timeline using a view
 #'
 #' @param x

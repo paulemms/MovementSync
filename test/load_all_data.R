@@ -2,29 +2,36 @@ rm(list = ls())
 devtools::load_all()
 
 # DONE
-# Added a SplicedView and a splicer function that subsets the time line
-# Added a window size and step size splice based on view object
-# different functions for spectrum (short time interval) and specgram (call to signal::specgram)
-# see spectogram in signals for implementation
-# Added granger_test function and plot
+# Comments in the duration MD - influence superimposed on p-values - influence T > S sections in Tier - autolayer
+# Compare processed views vs filtered views on specgram and granger_test
+# Diagnostic duration plot
+# Different visualisation of p-values in ggplot
+# Looked at unsmoothed data for granger test
+# Add sections from duration object onto specgram plots
 
 # TODO
-# get_filtered_data convenience function
-# wrist and nose focus as points -lag over a second, 2 or 3 seconds nose
+# Limit colour to panels for GrangerTime
+# conditional granger time in R packages ?
+# infer wavelet the relative phase of two ts
+# maybe some other filters?
+# wrist (faster) and nose focus as points -lag over a second, 2 or 3 seconds nose
 # motiongram - displacement gives velocity
 # * Added periodicity FFT plot - yet to do windowing
-# grangers - extension - stats ?, lmtest - tables - p number against time
-# granger packge
+# grangers - extension - stats ?, vars, lmtest - tables - p number against time
+# granger package
 # periodicity - restrict time domain, windowed 10s version
 # overlay audio onto video - autolayers - test on last performance - stack the rects for inst?
 # gganimate? https://rpubs.com/jedoenriquez/animatingchartsintro - on processed
 # iii, iv - color code position of features
 # order onsetselected data
-# Diagnostic duration plot?
 # Generalise autolayer to accept parameters or expr
 # Generalise interpolation methods
 # https://stackoverflow.com/questions/68022639/combining-time-trend-plot-with-timeline
 # dedicated zoo methods?
+
+# QUERY
+# NIR_DBh_Malhar_2Gats_Annotation has an empty second column
+# No annotation data on 3rd recording? NIRP1_MAK_Jaun ?
 
 
 ################################################################################
@@ -45,7 +52,7 @@ autoplot(m1)
 
 d1 <- get_duration_annotation_data(r1)
 summary(d1)
-# plot(d1) Gantt?
+plot(d1)
 
 rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 summary(rv1)
@@ -98,6 +105,7 @@ plot(fv2, nc = 3)
 r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 o2 <- get_onsets_selected_data(r2)
 m2 <- get_metre_data(r2)
+d2 <- get_duration_annotation_data(r2)
 plot(m2)
 # 4 views
 rv2_SideL_Guitar <- get_raw_view(r2, "SideL", "", "Guitar")
@@ -175,10 +183,11 @@ colnames(d5) <- c("Tier", "Comments", "In", "Out", "Duration")
 rv_view <- get_raw_views(r5)
 names(rv_view)
 plot(rv_view$V1_M_Taiko, nc = 3)
-# View(rv_view)
-
 pv_view <- lapply(rv_view, get_processed_view)
-fv_view <- lapply(pv_view, apply_filter_sgolay, data_points=c("Nose"), n = 19, p = 4)
+View(pv_view)
+
+# 8 filtered views
+fv_view <- get_filtered_views(r5, data_points = c("Nose"), n = 19, p = 4)
 
 autoplot(fv_view$V3_Ryuteki)
 autoplot(fv_view$V3_Ryuteki) + autolayer(d5, expr = 'Tier == "Section"')

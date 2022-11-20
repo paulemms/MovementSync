@@ -105,6 +105,8 @@ autoplot.PeriodicityView <- function(obj, time_range = c(0, 10), colour = "blue"
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
+#' sub_pv <- subset(pv, Time >= 15*60 & Time <= 25*60, column = c("RWrist_x", "RWrist_y"))
+#' specgram_plot(sub_pv)
 #' fv <- apply_filter_sgolay(pv, data_points = c("RWrist"), n = 11, p = 4)
 #' sub_fv <- subset(fv, Time >= 15*60 & Time <= 25*60, column = c("RWrist_x", "RWrist_y"))
 #' specgram_plot(sub_fv)
@@ -112,6 +114,8 @@ autoplot.PeriodicityView <- function(obj, time_range = c(0, 10), colour = "blue"
 #' r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 #' rv_list <- get_raw_views(r2)
 #' pv_list <- lapply(rv_list, get_processed_view)
+#' sub_pv <- subset(pv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y"))
+#' specgram_plot(sub_pv)
 #' fv_list <- lapply(pv_list, apply_filter_sgolay, data_points = "RWrist", n = 11, p = 3)
 #' sub_fv <- subset(fv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y"))
 #' specgram_plot(sub_fv)
@@ -138,10 +142,10 @@ specgram_plot <- function(obj, ...) {
   jet <- grDevices::colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F",
                                        "yellow", "#FF7F00", "red", "#7F0000"))
 
-  ggplot2::ggplot(long_df, ggplot2::aes(X, Y, fill= Z)) +
-    ggplot2::geom_tile() +
+  ggplot2::ggplot(long_df) +
+    ggplot2::geom_tile(ggplot2::aes(X, Y, fill= Z)) +
     ggplot2::scale_fill_gradientn(colours = jet(20)) +
-    ggplot2::labs(title = "Specgram", subtitle = subtitle) +
+    ggplot2::labs(title = paste("Specgram for", class(obj)[1]), subtitle = subtitle) +
     ggplot2::theme(legend.position = "none") +
     ggplot2::xlab("Time / min:sec") +
     ggplot2::ylab("Frequency") +

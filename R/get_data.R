@@ -107,7 +107,7 @@ get_metre_data <- function(recording) {
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 #' df <- get_duration_annotation_data(r)
 get_duration_annotation_data <- function(recording) {
 
@@ -121,11 +121,13 @@ get_duration_annotation_data <- function(recording) {
 
   output_list <- list()
   for (fil in duration_files) {
-    output_list[[basename(fil)]] <- read.csv(fil, header = FALSE)
+    df <- read.csv(fil, header = FALSE)
+    df <- df[, colSums(is.na(df)) != nrow(df), drop=FALSE] # remove any all NA columns
+    colnames(df) <- c("Tier", "In", "Out", "Duration", "Comments")
+    output_list[[basename(fil)]] <- df
   }
 
   output_dfr <- do.call(rbind.data.frame, c(output_list, make.row.names = FALSE))
-  colnames(output_dfr) <- c("Tier", "In", "Out", "Duration", "Comments")
   class(output_dfr) <- c("Duration", class(output_dfr))
 
   output_dfr
@@ -473,14 +475,27 @@ get_data_points <- function(obj) {
 #' jv <- get_joined_view(rv_list)
 #' plot(jv, columns = c("LEar_x_Central_Sitar", "LEar_x_Central_Tabla"), yax.flip=T)
 get_joined_view <- function(l, folder_out = "Joined", save_output = FALSE) {
+  stopifnot(is.list(l), length(l) > 1)
   stopifnot(all(sapply(l, function(x) "View" %in% class(x))))
 
-  join_pair <- function(x, y) {
-    dplyr::inner_join(l[[x]]$df, l[[y]]$df, by = c("Frame", "Time"),
-    suffix = paste0("_", c(x, y)), copy = TRUE)
+  # join_pair <- function(x, y) {
+  #   df <- dplyr::inner_join(l[[x]]$df, l[[y]]$df, by = c("Frame", "Time"),
+  #   suffix = paste0("_", c(x, y)), copy = TRUE)
+  #   df
+  # }
+  # joined_df <- Reduce(join_pair, names(l))
+
+  # Rename the columns to reflect the view
+  nl <- names(l)
+  for (nm in names(l)) {
+    colnames(l[[nm]]$df)[-(1:2)] <- paste0(colnames(l[[nm]]$df)[-(1:2)], paste0("_", nm))
   }
 
-  joined_df <- Reduce(join_pair, names(l))
+  # Inner joins for each element in list
+  joined_df <- l[[1]]$df
+  for (i in seq_along(nl)[-1]) {
+    joined_df <- dplyr::inner_join(joined_df, l[[i]]$df, by = c("Frame", "Time"), copy = TRUE)
+  }
 
   if (save_output) {
     out_folder <- file.path(l[[1]]$recording$data_home, folder_out)
