@@ -12,6 +12,23 @@ summary.Recording <- function(obj) {
   obj
 }
 
+
+#' Summarise Duration object
+#'
+#' @param obj
+#'
+#' @return
+#' @exportS3Method
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' d <- get_duration_annotation_data(r)
+#' summary(d)
+summary.Duration <- function(obj) {
+  obj
+}
+
+
 #' Summarise OnsetsSelected object
 #'
 #' @param obj

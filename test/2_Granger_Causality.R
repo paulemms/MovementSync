@@ -1,6 +1,7 @@
 rm(list=ls())
 library(lmtest)
 library(dplyr)
+library(ggplot2)
 devtools::load_all(".")
 
 # Get recording meta data

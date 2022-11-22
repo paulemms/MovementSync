@@ -47,7 +47,7 @@ splice_time.list <- function(x, ...) {
 #' splice_time(d)
 splice_time.Duration <- function(x, expr = 'Tier == "FORM"', ...) {
   expr <- rlang::parse_expr(expr)
-  df <- dplyr::filter(x, !!expr)
+  df <- dplyr::filter(as.data.frame(x), !!expr)
   df <- df[c("Comments", "In", "Out")]
   colnames(df) <- c("Tier", "Start", "End")
   df
@@ -106,8 +106,10 @@ get_spliced_view <- function(v, splicing_df) {
 
   df_list <- list()
   for (r in seq_len(nrow(splicing_df))) {
-    df_list[[splicing_df[r, "Tier"]]] <-
-      df[df$Time >= splicing_df[r, "Start"] & df$Time <= splicing_df[r, "End"],, drop = FALSE]
+    tier <- splicing_df[r, "Tier"]
+    spliced_df <- df[df$Time >= splicing_df[r, "Start"] & df$Time <= splicing_df[r, "End"],, drop = FALSE]
+    df_list[[tier]] <- dplyr::bind_rows(df_list[[tier]], spliced_df)
+
   }
 
   l <- list(df_list = dplyr::bind_rows(df_list, .id = "Tier"), vid = v$vid,
@@ -157,3 +159,30 @@ autoplot.SplicedView <- function(obj, columns=NULL, maxpts=1000) {
     ggplot2::facet_grid( ~ Tier, scales = "free_x")
 }
 
+#' Get a list of Views from a SplicedView
+#'
+#' @param obj SplicedView object
+#'
+#' @return list of Views
+#' @exportS3Method
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' rv <- get_raw_view(r, "Central", "", "Sitar")
+#' pv <- get_processed_view(rv)
+#' l <- list(a = c(0, 300), b = c(300, 600), c = c(600, 900))
+#' splicing_df <- splice_time(l)
+#' sv <- get_spliced_view(pv, splicing_df)
+#' v_list <- split(sv)
+split.SplicedView <- function(obj) {
+  df_list <- split(obj$df_list, obj$df_list$Tier)
+  v_list <- lapply(df_list, function(x) {
+    df <- x[, colnames(x) != "Tier", drop = FALSE]
+    l <- list(df = df, vid = obj$vid, direct = obj$direct,
+         inst = obj$inst, recording = obj$recording)
+    class(l) <- class(obj)[-1]
+    l
+  })
+
+  v_list
+}

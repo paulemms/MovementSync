@@ -192,7 +192,7 @@ autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 autolayer.Duration <- function(obj, expr = 'Tier == "FORM"', fill_column = "Comments",
                                geom = "rect", vline_column = "In", ...) {
   expr <- rlang::parse_expr(expr)
-  rects <- dplyr::filter(obj, !!expr)
+  rects <- dplyr::filter(as.data.frame(obj), !!expr)
 
   l <- list(...)
 

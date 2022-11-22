@@ -1,38 +1,7 @@
+# Test we can load all the data and provide diagnostic plots
+
 rm(list = ls())
 devtools::load_all()
-
-# DONE
-# Comments in the duration MD - influence superimposed on p-values - influence T > S sections in Tier - autolayer
-# Compare processed views vs filtered views on specgram and granger_test
-# Diagnostic duration plot
-# Different visualisation of p-values in ggplot
-# Looked at unsmoothed data for granger test
-# Add sections from duration object onto specgram plots
-
-# TODO
-# Limit colour to panels for GrangerTime
-# conditional granger time in R packages ?
-# infer wavelet the relative phase of two ts
-# maybe some other filters?
-# wrist (faster) and nose focus as points -lag over a second, 2 or 3 seconds nose
-# motiongram - displacement gives velocity
-# * Added periodicity FFT plot - yet to do windowing
-# grangers - extension - stats ?, vars, lmtest - tables - p number against time
-# granger package
-# periodicity - restrict time domain, windowed 10s version
-# overlay audio onto video - autolayers - test on last performance - stack the rects for inst?
-# gganimate? https://rpubs.com/jedoenriquez/animatingchartsintro - on processed
-# iii, iv - color code position of features
-# order onsetselected data
-# Generalise autolayer to accept parameters or expr
-# Generalise interpolation methods
-# https://stackoverflow.com/questions/68022639/combining-time-trend-plot-with-timeline
-# dedicated zoo methods?
-
-# QUERY
-# NIR_DBh_Malhar_2Gats_Annotation has an empty second column
-# No annotation data on 3rd recording? NIRP1_MAK_Jaun ?
-
 
 ################################################################################
 ### Recording 1
@@ -134,6 +103,8 @@ r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)
 o3 <- get_onsets_selected_data(r3)
 m3 <- get_metre_data(r3)
 plot(m3)
+d3 <- get_duration_annotation_data(r3)
+plot(d3)
 o3 <- get_onsets_selected_data(r3)
 # 3 views
 rv3_Cam1_Guitar <- get_raw_view(r3, "Cam1", "", "Harmonium")

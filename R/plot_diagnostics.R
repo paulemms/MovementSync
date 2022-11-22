@@ -14,7 +14,7 @@
 #' plot(d)
 #' @exportS3Method
 plot.Duration <- function(obj, ...) {
-  barplot(Duration ~ In + Tier, main = "Duration", data = obj, ...)
+  barplot(Duration ~ In + Tier, main = "Duration Object", data = obj, ...)
 }
 
 #' Plot a OnsetsSelected S3 object
@@ -33,7 +33,7 @@ plot.Duration <- function(obj, ...) {
 plot.OnsetsSelected <- function(obj, column="Inst.Peak", ...) {
   zoo_list <- lapply(obj, function(x) zoo::zoo(x[[column]], order.by = as.numeric(rownames(x))))
   z <- do.call(merge, zoo_list)
-  plot(z, xlab = "Row Number", main = paste("OnsetsSelected", column), ...)
+  plot(z, xlab = "Row Number", main = paste("OnsetsSelected Object -", column), ...)
 }
 
 
@@ -87,7 +87,7 @@ plot.View <- function(obj, columns=NULL, maxpts = 1000, ...) {
   title <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
   title <- paste(title[title != ""], collapse="_")
   if (is.null(ncol(z))) {
-    plot(z, xlab = "Time / s", ylab = columns[-1], main = paste(class(obj)[1], "for", title), ...)
+    plot(z, xlab = "Time / s", ylab = columns[-1], main = paste(class(obj)[1], "Object for", title), ...)
   } else {
     plot(z, xlab = "Time / s", main = paste(class(obj)[1], "for", title), ...)
   }
