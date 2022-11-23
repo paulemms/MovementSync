@@ -1,17 +1,16 @@
 # DONE
-# Added in duration annotation CSV for NIRP1_MAK_Jaun - updated diagnostic plot
 # Add influence diagram (p-value arrows) to package library
 # Scripted igraph influence graph
-# Scripted some wavelet plots
-# Looked at some possible conditional granger implementations
+# Updated wavelet spec script
+# Added simple summary function to analyze.wavelet
 
 # TODO
-# period in seconds divide by fps
+# Look at some possible conditional granger implementations
+# Added in duration annotation CSV for NIRP1_MAK_Jaun - add autoplot
+# summary functions for data objects - add to summary.R
 # option to make the split time durations unique by appending a number
-# Bar widths on p-value plot reflect time interval?
-# Modify duration object to annotate with granger tests
-# Limit colour to panels for GrangerTime - curently in script
-# conditional granger time in R packages ? - possibly adapt FIAR package implementation
+# Limit colour to panels for GrangerTime - currently in script
+# conditional granger time in R packages ? - modify lmtest
 # infer wavelet the relative phase of two ts
 # maybe some other filters?
 # wrist (faster) and nose focus as points -lag over a second, 2 or 3 seconds nose

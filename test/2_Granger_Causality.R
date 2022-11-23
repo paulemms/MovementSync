@@ -12,31 +12,26 @@ fv_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p =3)
 
 # Put individual ts into one data frame using a JoinedView
 jv <- get_joined_view(fv_list)
-plot(jv, yax.flip=TRUE)
+autoplot(jv)
 
 # Get duration annotation object
 d1 <- get_duration_annotation_data(r1)
 
 # Subset the time line to first 10 minutes
 jv_sub <- subset(jv, Time <= 10*60)
-plot(jv_sub, yax.flip=TRUE)
+autoplot(jv_sub)
 
-# Do Grangers - time domain
-grangertest(Nose_x_Central_Sitar ~ Nose_x_Central_Tabla, order = 1*25, data = jv_sub$df)
-grangertest(Nose_x_Central_Tabla ~ Nose_x_Central_Sitar, order = 1*25, data = jv_sub$df)
-# Sitar Nose follows Tabla Nose at 5% confidence level with one second lag
-
-# function to take jv_sub and generated a spliced_df
+# Dunction to take jv_sub and generated a spliced_df
 splicing_df <- splice_time(jv_sub, win_size = 30, step_size = 5)
+splicing_df
 
-# apply spliced_df to jv_sub
+# Apply spliced_df to jv_sub
 sv <- get_spliced_view(jv_sub, splicing_df)
 
-# it will have a lot of sub-divisions so to view each piece need to subset
-sv_sub <- subset(sv, Tier %in% paste0('w', 1:5))
-autoplot(sv_sub)
+# It will have a lot of sub-divisions so autoplot only shows first 10
+autoplot(sv)
 
-# apply granger_test to each Tier in spliced_df using 0.1s lag
+# Apply granger_test to each Tier in spliced_df using 0.1s lag, then 1s
 g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 0.1)
 g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
 g
@@ -53,48 +48,62 @@ autoplot(g, splicing_df = splicing_df) +
   autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
             fill_col = "Comments")
 
-# data for arrows showing causality direction
-library(dplyr)
-library(tidyr)
-obj <- g
-df <- obj$df
-sig_level <- 0.05
-#df$P_Value[df$P_Value > sig_level] <- NA
-#df$mlog10p <- ifelse(df$Var1 == "Nose_x_Central_Sitar", -log10(df$P_Value), log10(df$P_Value))
-splicing_df$Centre <- (splicing_df$Start + splicing_df$End) / 2
-df <- dplyr::inner_join(df, splicing_df[c('Tier', 'Centre')], by = 'Tier')
-x <- df[c("Var1", "Centre", "P_Value")]
-wide_df <- pivot_wider(x, names_from = "Var1", values_from = "P_Value") %>%
-  mutate(Value = if_else(
-    Nose_x_Central_Sitar < sig_level | Nose_x_Central_Tabla < sig_level,
-    log10(Nose_x_Central_Tabla/Nose_x_Central_Sitar), NA_real_)) %>%
-  select(Centre, Value)
+# Data for arrows showing causality direction
+plot_influence_diagram(g, splicing_df = splicing_df)
 
-ggplot2::ggplot(wide_df) +
-  geom_segment(colour="black", aes(x=Centre, xend=Centre, y=0, yend=Value),
-                 arrow = arrow(length = unit(0.3, "cm"), type = "closed")) +
-  ggplot2::labs(title = "Influence Diagram", subtitle = obj$recording$stem) +
-  ggplot2::xlab("Time / min:sec") +
-  ggplot2::ylab("-log10(P_Value) difference if one significant") +
-  ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
-  annotate("text", label = unique(df$Var1)[1], x=max(df$Centre)/2, y=max(-log10(df$P_Value))) +
-  annotate("text", label = unique(df$Var1)[2], x=max(df$Centre)/2, y=min(log10(df$P_Value))) +
+# Influence diagram with duration autolayer superimposed using Tier column
+plot_influence_diagram(g, splicing_df = splicing_df) +
   autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
             fill_col = "Tier")
 
-ggplot2::ggplot(wide_df) +
-  geom_segment(colour="black", aes(x=Centre, xend=Centre, y=0, yend=Value),
-               arrow = arrow(length = unit(0.3, "cm"), type = "closed")) +
-  ggplot2::labs(title = "Influence Diagram", subtitle = obj$recording$stem) +
-  ggplot2::xlab("Time / min:sec") +
-  ggplot2::ylab("-log10(P_Value) difference if one significant") +
-  ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
-  annotate("text", label = unique(df$Var1)[1], x=max(df$Centre)/2, y=max(-log10(df$P_Value))) +
-  annotate("text", label = unique(df$Var1)[2], x=max(df$Centre)/2, y=min(log10(df$P_Value))) +
+# Influence diagram with duration autolayer superimposed using Comment column
+plot_influence_diagram(g, splicing_df = splicing_df) +
   autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
             fill_col = "Comments")
 
-# facet stack interactions on top of each time line
+# Splice time using Tier for larger time intervals
+splicing_tier_df <- splice_time(d1)
+splicing_tier_df
 
-# igraph for data_point causality on time segments
+# apply splicing_df to full joined view
+sv_tier <- get_spliced_view(jv, splicing_tier_df)
+autoplot(sv_tier)
 
+# Granger Causality Test on each Tiered time slice
+g_tier <- granger_test(sv_tier, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
+autoplot(g_tier, splicing_df = splicing_tier_df) +
+  autolayer(d1, 'Tier == "FORM"', fill_col = "Comments")
+
+# Data for arrows showing causality direction
+plot_influence_diagram(g_tier, splicing_df = splicing_tier_df) +
+  autolayer(d1, 'Tier == "FORM"', fill_col = "Comments")
+
+# Use igraph to illustrate causality on time segments
+gi <- get_granger_interactions(sv_tier, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"))
+plot(gi)
+
+# Now use a recording with three instruments
+r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)
+
+# Join the views
+fv3_list <- get_filtered_views(r3, data_points = "Nose", n = 41, p = 3)
+jv3 <- get_joined_view(fv3_list)
+autoplot(jv3)
+
+# splice time based on duration object
+d3 <- get_duration_annotation_data(r3)
+splicing3_df <- splice_time(d3, expr = "Tier == 'Form'")
+splicing3_df
+
+# get a spliced view object
+sv3 <- get_spliced_view(jv3, splicing_df = splicing3_df)
+autoplot(sv3)
+
+# Plot Granger Causality tests on each splice of data
+gi3 <- get_granger_interactions(sv3, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer",
+                                 "Nose_x_Cam2_Tabla"))
+plot(gi3)
+
+# Retrieve first test results from gi3
+t1 <- gi3$gc_list$`Nose_x_Cam1_Harmonium <--> Nose_x_Cam2_Singer`
+autoplot(t1, splicing_df = splicing3_df)

@@ -2,6 +2,7 @@ rm(list=ls())
 library(igraph)
 library(dplyr)
 library(png)
+library(ggraph)
 devtools::load_all()
 
 r4 <- get_recording("NIRP1_VS_Hams", fps = 25)
@@ -56,33 +57,6 @@ df$mlog10pv <- ifelse(df$P_Value < sig_level, -log10(df$P_Value), NA_real_)
 par(mfrow=c(2,5), mar=c(1,1,1,1))
 
 # Select a Tier for network diagram
-
-for (tier in unique(df$Tier)) {
-
-  splice_df <- df %>% filter(Tier == !!tier)
-  print(splice_df)
-
-  nodes <- data.frame(id = sapply(strsplit(unique(df$Var1), "_"), function(x) x[4]))
-
-  splice_df$Var1 <- sapply(strsplit(splice_df$Var1, "_"), function(x) x[4])
-  splice_df$Var2 <- sapply(strsplit(splice_df$Var2, "_"), function(x) x[4])
-  links <- data.frame(from = splice_df$Var2, to = splice_df$Var1, x = splice_df$mlog10pv)
-
-  net <- graph_from_data_frame(d=links, vertices=nodes, directed=T)
-  net
-
-  l <- layout_in_circle(net)
-  #V(net)$label <- nodes[,1]
-  V(net)$size <- 80
-  #E(net)$width <- E(net)$x
-  # E(net)$arrow.size <- 1:6
-  #E(net)$arrow.size <- ifelse(!is.na(E(net)$x), .1*E(net)$x, 0)
-  #E(net)$length <- E(net)$length*10
-  E(net)$color <- ifelse(!is.na(E(net)$x), "grey", "white")
-  E(net)$label <- round(E(net)$x, 1)
-  E(net)$label.color <- ifelse(!is.na(E(net)$x), "red", "white")
-  plot(net, layout=l, edge.curved=.4, main=tier)
-}
 # Arrows are 'is influencing'
 
 # Focus on Harmonium Solo - split the SplicedView into individual views
@@ -108,6 +82,23 @@ for (tier in unique(df$Tier)) {
 
   net <- graph_from_data_frame(d=links, vertices=nodes, directed=T)
 
-  ggn <- ggnetwork(net)
+  l <- layout_in_circle(net)
+  # #V(net)$label <- nodes[,1]
+  # V(net)$size <- 80
+  # #E(net)$width <- E(net)$x
+  # # E(net)$arrow.size <- 1:6
+  # #E(net)$arrow.size <- ifelse(!is.na(E(net)$x), .1*E(net)$x, 0)
+  # #E(net)$length <- E(net)$length*10
+  # E(net)$color <- ifelse(!is.na(E(net)$x), "grey", "white")
+  # E(net)$label <- round(E(net)$x, 1)
+  # E(net)$label.color <- ifelse(!is.na(E(net)$x), "red", "white")
+
+  ggraph(net, layout = l) +
+    geom_edge_fan(color="gray", width=0.8,
+                  arrow = grid::arrow(type = "closed", length = unit(4, "mm")),
+                                      end_cap = circle(10, 'mm')) +
+    geom_node_point(color = "orange", alpha = 0.5, size=20) +
+    geom_node_text(aes(label = name), size=5, hjust = "middle") +
+    theme_void()
 
 }

@@ -111,53 +111,16 @@ get_spliced_view <- function(v, splicing_df) {
     df_list[[tier]] <- dplyr::bind_rows(df_list[[tier]], spliced_df)
 
   }
+  output_df <- dplyr::bind_rows(df_list, .id = "Tier")
+  output_df <- dplyr::arrange(output_df, Frame, Tier)
 
-  l <- list(df_list = dplyr::bind_rows(df_list, .id = "Tier"), vid = v$vid,
+  l <- list(df_list = output_df, vid = v$vid,
             direct = v$direct, inst = v$inst, recording = v$recording)
   class(l) <- c("SplicedView", class(v))
 
   invisible(l)
 }
 
-
-#' Plot a SplicedView S3 object
-#'
-#' @param obj
-#' @param columns
-#' @param maxpts
-#'
-#' @return
-#' @exportS3Method
-#'
-#' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' rv <- get_raw_view(r, "Central", "", "Sitar")
-#' pv <- get_processed_view(rv)
-#' l <- list(a = c(0, 300), b = c(300, 600), c = c(600, 900))
-#' splicing_df <- splice_time(l)
-#' sv <- get_spliced_view(pv, splicing_df)
-#' autoplot(sv, columns = c("LEar_x", "LEar_y"), maxpts = 1000)
-autoplot.SplicedView <- function(obj, columns=NULL, maxpts=1000) {
-
-  # Restrict points and columns to plot
-  columns <- if (is.null(columns)) seq_len(min(ncol(obj$df), 9)) else c("Tier", "Frame", "Time", columns)
-  sp <- if (nrow(obj$df) > maxpts) sample(nrow(obj$df), maxpts) else seq_len(nrow(obj$df))
-
-  df <- obj$df[sp, columns, drop = FALSE]
-  long_df <- tidyr::pivot_longer(df, cols = columns[-(1:3)],
-                                 names_to = "Series", values_to = "Value")
-
-  #browser()
-  subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
-  subtitle <- paste(subtitle[subtitle != ""], collapse="_")
-
-  ggplot2::ggplot(long_df, ggplot2::aes(x = Time, y = Value, col = Series)) +
-    ggplot2::geom_point() + ggplot2::geom_line() +
-    ggplot2::labs(title = class(obj)[1], subtitle = subtitle) +
-    ggplot2::xlab("Time / min:sec") +
-    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
-    ggplot2::facet_grid( ~ Tier, scales = "free_x")
-}
 
 #' Get a list of Views from a SplicedView
 #'

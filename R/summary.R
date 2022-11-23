@@ -81,3 +81,21 @@ summary.View <- function(obj) {
 }
 
 
+#' Summarise an analyze.wavelet object
+#'
+#' @param obj
+#'
+#' @return
+#' @exportS3Method
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' rv <- get_raw_view(r, "Central", "", "Sitar")
+#' pv <- get_processed_view(rv)
+#' w <- analyze_wavelet(pv2, "Nose_x")
+#' summary(w, pv)
+summary.analyze.wavelet <- function(obj, v) {
+  d <- data.frame(Period = obj$Period / v$recording$fps,
+             Average_Power = obj$Power.avg)
+  summary(d)
+}
