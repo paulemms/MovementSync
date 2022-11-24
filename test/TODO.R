@@ -1,15 +1,15 @@
 # DONE
-# Add influence diagram (p-value arrows) to package library
-# Scripted igraph influence graph
-# Updated wavelet spec script
+# Went through wavelet functionality in a spec script
 # Added simple summary function to analyze.wavelet
 
 # TODO
+# find out what it does on the lag with regard to frames
+# option for arrows both ways
+# Longer time spans for network diagram, - Filter on harmonium in network diagrams
 # Look at some possible conditional granger implementations
 # Added in duration annotation CSV for NIRP1_MAK_Jaun - add autoplot
 # summary functions for data objects - add to summary.R
-# option to make the split time durations unique by appending a number
-# Limit colour to panels for GrangerTime - currently in script
+# Limit colour to panels for GrangerTime - currently in script - improve function?
 # conditional granger time in R packages ? - modify lmtest
 # infer wavelet the relative phase of two ts
 # maybe some other filters?

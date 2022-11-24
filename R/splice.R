@@ -36,7 +36,9 @@ splice_time.list <- function(x, ...) {
 #' Generate spliced timeline using a Duration object
 #'
 #' @param x
-#' @param ...
+#' @param expr
+#' @param make.unique
+#' @param ... passed to [make.unique()]
 #'
 #' @return
 #' @exportS3Method
@@ -45,10 +47,11 @@ splice_time.list <- function(x, ...) {
 #' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 #' d <- get_duration_annotation_data(r)
 #' splice_time(d)
-splice_time.Duration <- function(x, expr = 'Tier == "FORM"', ...) {
+splice_time.Duration <- function(x, expr = 'Tier == "FORM"', make.unique = FALSE, ...) {
   expr <- rlang::parse_expr(expr)
   df <- dplyr::filter(as.data.frame(x), !!expr)
   df <- df[c("Comments", "In", "Out")]
+  if (make.unique) df$Comments <- make.unique(df$Comments, ...)
   colnames(df) <- c("Tier", "Start", "End")
   df
 }

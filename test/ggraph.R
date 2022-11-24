@@ -95,7 +95,7 @@ for (tier in unique(df$Tier)) {
 
   ggraph(net, layout = l) +
     geom_edge_fan(color="gray", width=0.8,
-                  arrow = grid::arrow(type = "closed", length = unit(4, "mm")),
+                  arrow = grid::arrow(type = "closed", length = ggplot2::unit(4, "mm")),
                                       end_cap = circle(10, 'mm')) +
     geom_node_point(color = "orange", alpha = 0.5, size=20) +
     geom_node_text(aes(label = name), size=5, hjust = "middle") +

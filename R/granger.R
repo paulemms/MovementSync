@@ -5,8 +5,8 @@
 #' @param obj SplicedView object
 #' @param var1
 #' @param var2
-#' @param splicing_df
 #' @param lag in seconds
+#' @param granger_fn
 #'
 #' @return
 #' @export
@@ -23,8 +23,8 @@
 #' splicing_df <- splice_time(jv_sub, win_size = 5, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla")
-#'
-granger_test <- function(obj, var1, var2, lag = 1) {
+
+granger_test <- function(obj, var1, var2, lag = 1, granger_fn = ms_grangertest2) {
   stopifnot("SplicedView" %in% class(obj))
 
   df <- obj$df
@@ -37,8 +37,8 @@ granger_test <- function(obj, var1, var2, lag = 1) {
     stop("There must be more than one data point in all time slices")
   }
 
-  l1 <- dplyr::group_map(df, ~ lmtest::grangertest(.[[var1]], .[[var2]], order = order))
-  l2 <- dplyr::group_map(df, ~ lmtest::grangertest(.[[var2]], .[[var1]], order = order))
+  l1 <- dplyr::group_map(df, ~ granger_fn(.[[var1]], .[[var2]], order = order))
+  l2 <- dplyr::group_map(df, ~ granger_fn(.[[var2]], .[[var1]], order = order))
 
   df1 <- as.data.frame(t(sapply(l1, function(x) as.numeric(x[2,]))))
   df2 <- as.data.frame(t(sapply(l2, function(x) as.numeric(x[2,]))))
@@ -82,17 +82,19 @@ granger_test <- function(obj, var1, var2, lag = 1) {
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
 #' autoplot(g, splicing_df)
+
 autoplot.GrangerTime <- function(obj, splicing_df = splicing_df, lev_sig = 0.05) {
 
   df <- obj$df
 
   title <- paste0(class(obj)[1], ": Lagged at ", obj$order / obj$recording$fps, "s")
   splicing_df$Centre <- (splicing_df$Start + splicing_df$End) / 2
-  df <- dplyr::inner_join(df, splicing_df[c('Tier', 'Centre')], by = 'Tier')
+  splicing_df$Width <- splicing_df$End - splicing_df$Start
+  df <- dplyr::inner_join(df, splicing_df[c('Tier', 'Centre', 'Width')], by = 'Tier')
   df$Test <- paste(df$Var1, df$Var2, sep = ' <- \n')
 
   ggplot2::ggplot(df) +
-    ggplot2::geom_col(ggplot2::aes(x = Centre, y = P_Value), fill = 'black') +
+    ggplot2::geom_col(ggplot2::aes(x = Centre, y = P_Value), width = max(df$Width)/10, fill = 'black') +
     ggplot2::geom_hline(yintercept = lev_sig, colour = 'blue') +
     ggplot2::labs(title = title, subtitle = obj$recording$stem) +
     ggplot2::xlab("Time / min:sec") +
@@ -125,6 +127,7 @@ autoplot.GrangerTime <- function(obj, splicing_df = splicing_df, lev_sig = 0.05)
 #' plot_influence_diagram(g, splicing_df) +
 #' autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 60',
 #'           fill_col = "Tier")
+
 plot_influence_diagram <- function(obj, splicing_df = splicing_df, lev_sig = 0.05) {
 
   df <- obj$df
@@ -133,20 +136,20 @@ plot_influence_diagram <- function(obj, splicing_df = splicing_df, lev_sig = 0.0
   df <- dplyr::inner_join(df, splicing_df[c('Tier', 'Centre')], by = 'Tier')
   x <- df[c("Var1", "Centre", "P_Value")]
   wide_df <- tidyr::pivot_wider(x, names_from = "Var1", values_from = "P_Value")
-  wide_df <- dplyr::mutate(wide_df, Value = if_else(
+  wide_df <- dplyr::mutate(wide_df, Value = dplyr::if_else(
       Nose_x_Central_Sitar < lev_sig | Nose_x_Central_Tabla < lev_sig,
       log10(Nose_x_Central_Tabla/Nose_x_Central_Sitar), NA_real_))
-  wide_df <- select(wide_df, Centre, Value)
+  wide_df <- dplyr::select(wide_df, Centre, Value)
 
   ggplot2::ggplot(wide_df) +
-    ggplot2::geom_segment(colour="black", aes(x=Centre, xend=Centre, y=0, yend=Value),
-                 arrow = ggplot2::arrow(length = unit(0.3, "cm"), type = "closed")) +
+    ggplot2::geom_segment(colour="black", ggplot2::aes(x=Centre, xend=Centre, y=0, yend=Value),
+                 arrow = ggplot2::arrow(length = ggplot2::unit(0.3, "cm"), type = "closed")) +
     ggplot2::labs(title = "Influence Diagram", subtitle = obj$recording$stem) +
     ggplot2::xlab("Time / min:sec") +
     ggplot2::ylab("-log10(P_Value) difference if one significant") +
     ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
-    annotate("text", label = unique(df$Var1)[1], x=max(df$Centre)/2, y=max(-log10(df$P_Value))) +
-    annotate("text", label = unique(df$Var1)[2], x=max(df$Centre)/2, y=min(log10(df$P_Value)))
+    ggplot2::annotate("text", label = unique(df$Var1)[1], x=max(df$Centre)/2, y=max(-log10(df$P_Value))) +
+    ggplot2::annotate("text", label = unique(df$Var1)[2], x=max(df$Centre)/2, y=min(log10(df$P_Value)))
 }
 
 
@@ -167,9 +170,10 @@ plot_influence_diagram <- function(obj, splicing_df = splicing_df, lev_sig = 0.0
 #' jv_sub <- subset(jv, Time <= 1*60)
 #' splicing_df <- splice_time(jv_sub, win_size = 5, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
-#' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla")
+#' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1/25)
 #' d <- get_duration_annotation_data(r)
 #' map_to_granger_test(d, g, "Influence T>S", "Influence S>T")
+
 map_to_granger_test <- function(d, g, influence1, influence2) {
 
   d <- dplyr::mutate(d, Test = dplyr::case_when(
@@ -186,6 +190,8 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #' @param sv
 #' @param columns
 #' @param sig_level
+#' @param lag
+#' @param granger_fn
 #'
 #' @return
 #' @export
@@ -198,8 +204,9 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #' l <- list(a = c(0, 300), b = c(300, 600), c = c(600, 900))
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
-#' get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"))
-get_granger_interactions <- function(sv, columns, sig_level = 0.05) {
+#' get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"), lag = 1/25)
+get_granger_interactions <- function(sv, columns, sig_level = 0.05, lag = 1,
+                                     granger_fn = ms_grangertest2) {
   stopifnot(all(c("SplicedView", "JoinedView") %in% class(sv)))
 
   # Calculate granger tests for all combinations of columns
@@ -211,20 +218,22 @@ get_granger_interactions <- function(sv, columns, sig_level = 0.05) {
     var2 <- a[2, j]
     g_test <- paste0(var1, " <--> ", var2)
     message("Calculating Granger Test: ", g_test)
-    gc_list[[g_test]] <- granger_test(sv, var1, var2)
+    gc_list[[g_test]] <- granger_test(sv, var1, var2, lag = lag, granger_fn = granger_fn)
   }
-  l <- list(gc_list = gc_list, sig_level = sig_level)
+  l <- list(gc_list = gc_list, sig_level = sig_level, lag = lag)
   class(l) <- "GrangerInteraction"
 
   invisible(l)
 }
 
 
-#' Plot network diagram
+#' Plot network diagram of Granger Causalities
 #'
 #' @param obj
 #' @param mfrow
 #' @param mar
+#' @param oma
+#' @param ... passed through to [plot.igraph()]
 #'
 #' @return
 #' @export
@@ -237,9 +246,10 @@ get_granger_interactions <- function(sv, columns, sig_level = 0.05) {
 #' l <- list(a = c(0, 100), b = c(100, 200), c = c(200, 300))
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(jv, splicing_df)
-#' gi <- get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"))
+#' gi <- get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"), lag = 1/25)
 #' plot(gi)
-plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1)) {
+plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1),
+                                    oma = c(1, 1, 1, 1), ...) {
 
   gc_list <- obj$gc_list
 
@@ -249,34 +259,161 @@ plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1)) {
 
   if (is.null(mfrow)) {
     num_tiers <- length(unique(df$Tier))
-    mfrow <- c(num_tiers %/% 5 + 1, min(num_tiers, 5))
+    mfrow <- c(num_tiers %/% 4 + (num_tiers %% 4 > 0), min(num_tiers, 4))
   }
 
+  old_params <- par(mfrow=mfrow, oma=oma, mar=mar)
 
-  old_params <- par(mfrow=mfrow, mar=mar)
+  # Extract the node names
+  nodes <- data.frame(id = sapply(strsplit(unique(df$Var1), "_"), function(x) x[4]))
 
   # Loop through Tiers
   for (tier in unique(df$Tier)) {
+
+    # Extract the links and removing missings
     splice_df <- dplyr::filter(df, Tier == !!tier)
-
-    nodes <- data.frame(id = sapply(strsplit(unique(df$Var1), "_"), function(x) x[4]))
-
     splice_df$Var1 <- sapply(strsplit(splice_df$Var1, "_"), function(x) x[4])
     splice_df$Var2 <- sapply(strsplit(splice_df$Var2, "_"), function(x) x[4])
     links <- data.frame(from = splice_df$Var2, to = splice_df$Var1, x = splice_df$mlog10pv)
-
+    links <- links[!is.na(links$x),,drop = FALSE]
     net <- igraph::graph_from_data_frame(d=links, vertices=nodes, directed=T)
 
     l <- igraph::layout_in_circle(net)
-    igraph::V(net)$size <- 80
-    igraph::E(net)$color <- ifelse(!is.na(igraph::E(net)$x), "grey", "white")
-    igraph::E(net)$label <- round(igraph::E(net)$x, 1)
-    igraph::E(net)$label.color <- ifelse(!is.na(igraph::E(net)$x), "red", "white")
-    plot(net, layout=l, edge.curved=.4, main=tier)
-
+    igraph::V(net)$size <- max(nchar(nodes$id)) * 10
+    igraph::V(net)$label.cex <- 1.25
+    if (nrow(links) > 0) {
+      igraph::E(net)$color <- "grey"
+      igraph::E(net)$label <- round(igraph::E(net)$x, 1)
+      igraph::E(net)$label.color <- "red"
+    }
+    plot(net, layout=l, edge.curved=.4, main=tier, ...)
   }
 
+  main_title <- paste0("Recording: ", obj$gc_list[[1]]$recording$stem, ", Lag = ",
+                       obj$lag, "s")
+  mtext(text = main_title, side = 1, line = -1, outer = TRUE)
   par(old_params)
 
   invisible(df)
 }
+
+
+#' Test for Granger Causality
+#'
+#' Faster implementation of the vector version of  [lmtest::grangertest()]
+#' which uses a vectorised lag operation.
+#'
+#' @param x
+#' @param y
+#' @param order
+#' @param na.action
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' data(ChickEgg, package = "lmtest")
+#' ms_grangertest1(ChickEgg, order = 3)
+
+ms_grangertest1 <- function(x, y, order = 1, na.action = na.omit, ...) {
+  ## either x is a 2-column time series
+  ## or x and y are univariate time series
+  if((NCOL(x) == 2) && missing(y)) {
+    xnam <- colnames(x)[1]
+    ynam <- colnames(x)[2]
+    x <- zoo::as.zoo(x)
+    y <- x[,2]
+    x <- x[,1]
+  } else {
+    xnam <- deparse(substitute(x))
+    ynam <- deparse(substitute(y))
+    x <- zoo::as.zoo(x)
+    y <- zoo::as.zoo(y)
+    stopifnot((NCOL(x) == 1), (NCOL(y) == 1))
+  }
+
+  ## compute lagged observations
+  #lagX <- do.call("merge", lapply(1:order, function(k) stats::lag(x, -k)))
+  #lagY <- do.call("merge", lapply(1:order, function(k) stats::lag(y, -k)))
+  lagX <- stats::lag(x, -seq_len(order))
+  lagY <- stats::lag(y, -seq_len(order))
+
+  ## collect series, handle NAs and separate results again
+  all <- zoo::merge.zoo(x, y, lagX, lagY)
+  colnames(all) <- c("x", "y", paste("x", 1:order, sep = "_"), paste("y", 1:order, sep = "_"))
+  all <- na.action(all)
+  y <- as.vector(all[,2])
+  lagX <- as.matrix(all[,(1:order + 2)])
+  lagY <- as.matrix(all[,(1:order + 2 + order)])
+
+  ## fit full model
+  fm <- lm(y ~ lagY + lagX)
+
+  ## compare models with waldtest
+  rval <- lmtest::waldtest(fm, 2, ...)
+
+  ## adapt annotation
+  attr(rval, "heading") <- c("Granger causality test\n",
+                             paste("Model 1: ", ynam, " ~ ", "Lags(", ynam, ", 1:", order, ") + Lags(", xnam, ", 1:", order,
+                                   ")\nModel 2: ", ynam, " ~ ", "Lags(", ynam, ", 1:", order, ")", sep = ""))
+
+  return(rval)
+}
+
+
+#' Test for Granger Causality
+#'
+#' Faster implementation of the vector version of  [lmtest::grangertest()]. The
+#' function assumes time series always have the same start date, which is true
+#' for the data in this package.
+#'
+#' @param x
+#' @param y
+#' @param order
+#' @param na.action
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' data(ChickEgg, package = "lmtest")
+#' ms_grangertest2(ChickEgg, order = 3)
+
+ms_grangertest2 <- function(x, y, order = 1, na.action = na.omit, ...) {
+  ## either x is a 2-column time series
+  ## or x and y are univariate time series
+  if((NCOL(x) == 2) && missing(y)) {
+    xnam <- colnames(x)[1]
+    ynam <- colnames(x)[2]
+    y <- x[,2]
+    x <- x[,1]
+  } else {
+    xnam <- deparse(substitute(x))
+    ynam <- deparse(substitute(y))
+    stopifnot((NCOL(x) == 1), (NCOL(y) == 1))
+  }
+
+  ## compute lagged observations
+  x1 <- c(rep(NA, order - 1), x)
+  y1 <- c(rep(NA, order - 1), y)
+  lagX <- embed(x1, order + 1)[,-1,drop=FALSE]
+  lagY <- embed(y1, order + 1)
+  y <- lagY[,1]
+  lagY <- lagY[,-1,drop=FALSE]
+
+  ## fit full model
+  fm <- lm(y ~ lagY + lagX, na.action = na.action)
+
+  ## compare models with waldtest
+  rval <- lmtest::waldtest(fm, 2, ...)
+
+  ## adapt annotation
+  attr(rval, "heading") <- c("Granger causality test\n",
+                             paste("Model 1: ", ynam, " ~ ", "Lags(", ynam, ", 1:", order, ") + Lags(", xnam, ", 1:", order,
+                                   ")\nModel 2: ", ynam, " ~ ", "Lags(", ynam, ", 1:", order, ")", sep = ""))
+
+  return(rval)
+}
+

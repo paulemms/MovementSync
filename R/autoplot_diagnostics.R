@@ -182,7 +182,7 @@ autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(pv, splicing_df)
 #' autoplot(sv, columns = c("LEar_x", "LEar_y"), maxpts = 1000)
-autoplot.SplicedView <- function(obj, columns=NULL, maxpts=1000) {
+autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
 
   # Restrict points, columns, splices to plot
   columns <- if (is.null(columns)) {
@@ -198,10 +198,15 @@ autoplot.SplicedView <- function(obj, columns=NULL, maxpts=1000) {
   } else seq_len(nrow(obj$df))
 
   df <- obj$df[sp, columns, drop = FALSE]
-  tiers <- unique(obj$df$Tier)
-  if (length(tiers) > 10) {
-    warning("Only plotting the first 10 splices")
-    df <- df[df$Tier %in% tiers[1:10], , drop=FALSE]
+  df_tiers <- unique(obj$df$Tier)
+  if (is.null(tiers)) {
+    if (length(df_tiers) > 10) {
+      warning("Only plotting the first 10 splices")
+      df <- df[df$Tier %in% df_tiers[1:10], , drop=FALSE]
+    }
+  } else {
+    if (!all(tiers %in% df_tiers)) stop('Tiers not found in SplitView')
+    df <- df[df$Tier %in% tiers, , drop=FALSE]
   }
 
   long_df <- tidyr::pivot_longer(df, cols = columns[-(1:3)],

@@ -1,7 +1,7 @@
 rm(list=ls())
-library(lmtest)
-library(dplyr)
-library(ggplot2)
+#library(lmtest)
+#library(dplyr)
+#library(ggplot2)
 devtools::load_all(".")
 
 # Get recording meta data
@@ -21,7 +21,7 @@ d1 <- get_duration_annotation_data(r1)
 jv_sub <- subset(jv, Time <= 10*60)
 autoplot(jv_sub)
 
-# Dunction to take jv_sub and generated a spliced_df
+# Function to take jv_sub and generated a spliced_df
 splicing_df <- splice_time(jv_sub, win_size = 30, step_size = 5)
 splicing_df
 
@@ -106,4 +106,27 @@ plot(gi3)
 
 # Retrieve first test results from gi3
 t1 <- gi3$gc_list$`Nose_x_Cam1_Harmonium <--> Nose_x_Cam2_Singer`
-autoplot(t1, splicing_df = splicing3_df)
+autoplot(t1, splicing_df = splicing3_df) +
+  autolayer(d3, 'Tier == "Form"', fill_col = "Comments")
+
+# Focus on Harmonium time slice Events
+harmonium_splicing_df <- splice_time(
+  d3, expr = "Tier == 'Event' & grepl('harmonium', Comments, fixed=TRUE)")
+harmonium_splicing_df
+
+# Plot Granger Causality interactions
+harmonium_sv <- get_spliced_view(jv3, splicing_df = harmonium_splicing_df)
+harmonium_gi <- get_granger_interactions(
+  harmonium_sv, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer", "Nose_x_Cam2_Tabla"))
+plot(harmonium_gi)
+autoplot(harmonium_sv) # lines show gaps
+
+# Unique splicing
+uharmonium_splicing_df <- splice_time(
+  d3, expr = "Tier == 'Event' & grepl('harmonium', Comments, fixed=TRUE)", make.unique = T)
+uharmonium_splicing_df
+uharmonium_sv <- get_spliced_view(jv3, splicing_df = uharmonium_splicing_df)
+autoplot(uharmonium_sv)
+uharmonium_gi <- get_granger_interactions(
+  uharmonium_sv, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer", "Nose_x_Cam2_Tabla"))
+plot(uharmonium_gi, edge.arrow.size = 0.3, vertex.color = "yellow")

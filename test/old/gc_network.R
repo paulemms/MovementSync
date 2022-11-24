@@ -90,8 +90,7 @@ v_list <- split(sv)
 autoplot(v_list$`harmonium solo`) # only a few seconds - quite short events
 
 par(mfrow=c(1,1), mar=c(1,1,1,1))
-# filter on harmonium
-# longer spans - whole, FORM, Event
+
 
 library(ggnetwork)
 
