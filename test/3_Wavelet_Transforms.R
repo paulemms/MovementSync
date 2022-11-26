@@ -1,5 +1,4 @@
 rm(list=ls())
-library(WaveletComp)
 devtools::load_all()
 
 r1 <- get_recording("NIR_ABh_Puriya", fps = 25)

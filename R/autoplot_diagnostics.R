@@ -1,11 +1,33 @@
 # Diagnostic plots of S3 objects
 
-#' Autoplot methods
+#' Diagnostic plots
 #'
+#' Autoplot methods for S3 objects in the movementsync package.
+#' @param obj S3 object
+#' @param columns names of columns in input data
+#' @param maxpts maximum number of points to plot
+#' @param ... passed to [zoo::plot.zoo()]
+#'
+#' @return ggplot object
 #' @importFrom ggplot2 autoplot
 #' @name autoplot
 #' @export
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' d <- get_duration_annotation_data(r)
+#' autoplot(d)
+#' o <- get_onsets_selected_data(r)
+#' autoplot(o)
+#' m <- get_metre_data(r)
+#' autoplot(m)
+#' v <- get_raw_view(r, "Central", "", "Sitar")
+#' autoplot(v, columns = c("LEar_x", "LEar_y"))
+#' l <- list(a = c(0, 300), b = c(300, 600), c = c(600, 900))
+#' splicing_df <- splice_time(l)
+#' sv <- get_spliced_view(v, splicing_df)
+#' autoplot(sv, columns = c("LEar_x", "LEar_y"), maxpts = 1000)
 NULL
+
 
 #' Autolayer methods
 #'
@@ -14,18 +36,22 @@ NULL
 #' @export
 NULL
 
-#' Autoplot a OnsetsSelected S3 object
-#'
-#' @importFrom ggplot2 autoplot
-#' @param obj
-#'
-#' @return
+
 #' @exportS3Method
-#'
-#' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' o <- get_onsets_selected_data(r)
-#' autoplot(o)
+#' @rdname autoplot
+autoplot.Duration <- function(obj) {
+  ggplot2::ggplot(obj) +
+    ggplot2::geom_col(ggplot2::aes(x = Tier, y = Duration, fill = In),
+                      position = "stack") +
+    ggplot2::labs(title = "Duration Object") +
+    ggplot2::scale_fill_viridis_b() +
+    ggplot2::ylab("Duration / min:sec") +
+    ggplot2::scale_y_time(labels = function(l) strftime(l, '%M:%S'))
+}
+
+
+#' @exportS3Method
+#' @rdname autoplot
 autoplot.OnsetsSelected <- function(obj) {
   class(obj) <- NULL
   df <- dplyr::bind_rows(obj, .id = "Rhythm")
@@ -37,6 +63,113 @@ autoplot.OnsetsSelected <- function(obj) {
     ggplot2::xlab("Inst / min:sec") +
     ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
 
+}
+
+
+#' @exportS3Method
+#' @rdname autoplot
+autoplot.Metre <- function(obj) {
+  zoo_list <- lapply(obj, function(x) zoo::zoo(diff(x$Time), order.by = x$Time))
+  z <- do.call(merge, zoo_list)
+
+  if (is.null(ncol(z))) {
+    autoplot(z) +
+      ggplot2::labs(title = "Metre Object", subtitle = "Time Between Cycles") +
+      ggplot2::xlab("Time / min:sec") + ggplot2::ylab("")  +
+      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+  } else {
+    autoplot(z) +
+      ggplot2::facet_grid(Series ~ ., scales="free_y") +
+      ggplot2::labs(title = "Metre Object", subtitle = "Time Between Cycles") +
+      ggplot2::xlab("Time / min:sec") +
+      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+  }
+}
+
+
+#' @exportS3Method
+#' @rdname autoplot
+autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
+
+  # Restrict points and columns to plot
+  columns <- if (is.null(columns)) seq_len(min(ncol(obj$df), 11))[-1] else c("Time", columns)
+  sp <- if (nrow(obj$df) > maxpts) sample(nrow(obj$df), maxpts) else seq_len(nrow(obj$df))
+
+  df <- obj$df[sp, columns, drop = FALSE]
+  zoo_list <- lapply(df[-1], function(x) zoo::zoo(x, order.by = df$Time))
+  z <- do.call(merge, zoo_list)
+
+  subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
+  subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+  autoplot(z) +
+    ggplot2::facet_wrap(Series ~ ., scales="free_y") +
+    ggplot2::labs(title = class(obj)[1], subtitle = subtitle) +
+    ggplot2::xlab("Time / min:sec") +
+    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+}
+
+
+#' @exportS3Method
+#' @rdname autoplot
+autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
+
+  df <- obj$df
+
+  # Restrict points, columns, splices to plot
+  columns <- if (is.null(columns)) {
+    if (ncol(df) > 9) warning("Only plotting first six data columns")
+    colnames(df)[seq_len(min(ncol(df), 9))]
+  } else c("Tier", "Frame", "Time", columns)
+
+  stopifnot(all(columns %in% colnames(df)))
+
+  df_tiers <- unique(df$Tier)
+  num_tiers <- length(df_tiers)
+  if (is.null(tiers)) {
+    if (num_tiers > 10) {
+      warning("Only plotting the first 10 splices")
+      df <- df[df$Tier %in% df_tiers[1:10], , drop=FALSE]
+      num_tiers <- 10
+    }
+  } else {
+    if (!all(tiers %in% df_tiers)) stop('Tiers not found in SplitView')
+    df <- df[df$Tier %in% tiers, , drop=FALSE]
+  }
+
+  sp <- if (nrow(df) > maxpts) {
+    warning("Sampling rows for plotting")
+    sample(nrow(df), maxpts)
+  } else seq_len(nrow(obj$df))
+  df <- df[sp, columns, drop = FALSE]
+
+  columns_to_remove <- match(c("Tier", "Frame", "Time"), colnames(df), nomatch = 0)
+  long_df <- tidyr::pivot_longer(df, cols = -columns_to_remove,
+                                 names_to = "Series", values_to = "Value")
+  start_df <- dplyr::group_by(long_df, Tier)
+  start_df <- dplyr::summarize(start_df, Start = min(Time, na.rm=TRUE),
+                               Duration = max(Time, na.rm=TRUE) - Start)
+  start_df <- dplyr::arrange(start_df, Start)
+
+  long_df$Tier_f <- factor(long_df$Tier, levels = start_df$Tier)
+
+  subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
+  subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+  # Find maximum duration over all splices
+  if (max(start_df$Duration, na.rm = TRUE) < 60) {
+    xlab <- ggplot2::xlab("Time / sec")
+    scale_x_time <- NULL
+  } else {
+    xlab <- ggplot2::xlab("Time / min:sec")
+    scale_x_time <- ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+  }
+
+  ggplot2::ggplot(long_df, ggplot2::aes(x = Time, y = Value, col = Series)) +
+    ggplot2::geom_point() + ggplot2::geom_line() +
+    ggplot2::labs(title = class(obj)[1], subtitle = subtitle) +
+    xlab + scale_x_time +
+    ggplot2::facet_wrap(~Tier_f, scales = "free_x")
 }
 
 
@@ -72,37 +205,6 @@ autolayer.OnsetsSelected <- function(obj, colour = "Inst.Name", fill = "Tala",
 }
 
 
-#' Autoplot a Metre S3 object
-#'
-#' @importFrom ggplot2 autoplot
-#' @param obj
-#'
-#' @return
-#' @exportS3Method
-#'
-#' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' m <- get_metre_data(r)
-#' autoplot(m)
-autoplot.Metre <- function(obj) {
-  zoo_list <- lapply(obj, function(x) zoo::zoo(diff(x$Time), order.by = x$Time))
-  z <- do.call(merge, zoo_list)
-
-  if (is.null(ncol(z))) {
-    autoplot(z) +
-      ggplot2::labs(title = "Metre Object", subtitle = "Time Between Cycles") +
-      ggplot2::xlab("Time / min:sec") + ggplot2::ylab("")  +
-      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
-  } else {
-    autoplot(z) +
-      ggplot2::facet_grid(Series ~ ., scales="free_y") +
-      ggplot2::labs(title = "Metre Object", subtitle = "Time Between Cycles") +
-      ggplot2::xlab("Time / min:sec") +
-      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
-  }
-}
-
-
 #' Metre layer for ggplot
 #'
 #' @param obj
@@ -128,104 +230,6 @@ autolayer.Metre <- function(obj, xmin = -Inf, xmax = Inf, color = "hotpink", alp
   x[x > xmax] <- NA
 
   ggplot2::geom_vline(xintercept = x, color = color, alpha = alpha, ...)
-}
-
-
-#' Plot a View S3 object
-#'
-#' @param obj
-#' @param columns
-#' @param ... passed to plot.zoo
-#'
-#' @return
-#' @exportS3Method
-#'
-#' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' v <- get_raw_view(r, "Central", "", "Sitar")
-#' autoplot(v, columns = c("LEar_x", "LEar_y"))
-autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
-
-  # Restrict points and columns to plot
-  columns <- if (is.null(columns)) seq_len(min(ncol(obj$df), 11))[-1] else c("Time", columns)
-  sp <- if (nrow(obj$df) > maxpts) sample(nrow(obj$df), maxpts) else seq_len(nrow(obj$df))
-
-  df <- obj$df[sp, columns, drop = FALSE]
-  zoo_list <- lapply(df[-1], function(x) zoo::zoo(x, order.by = df$Time))
-  z <- do.call(merge, zoo_list)
-
-  subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
-  subtitle <- paste(subtitle[subtitle != ""], collapse="_")
-
-  autoplot(z) +
-    ggplot2::facet_wrap(Series ~ ., scales="free_y") +
-    ggplot2::labs(title = class(obj)[1], subtitle = subtitle) +
-    ggplot2::xlab("Time / min:sec") +
-    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
-}
-
-
-#' Plot a SplicedView S3 object
-#'
-#' @param obj
-#' @param columns
-#' @param maxpts
-#'
-#' @return
-#' @exportS3Method
-#'
-#' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' rv <- get_raw_view(r, "Central", "", "Sitar")
-#' pv <- get_processed_view(rv)
-#' l <- list(a = c(0, 300), b = c(300, 600), c = c(600, 900))
-#' splicing_df <- splice_time(l)
-#' sv <- get_spliced_view(pv, splicing_df)
-#' autoplot(sv, columns = c("LEar_x", "LEar_y"), maxpts = 1000)
-autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
-
-  # Restrict points, columns, splices to plot
-  columns <- if (is.null(columns)) {
-    if (ncol(obj$df) > 9) warning("Only plotting first six data columns")
-    colnames(obj$df)[seq_len(min(ncol(obj$df), 9))]
-  } else c("Tier", "Frame", "Time", columns)
-
-  stopifnot(all(columns %in% colnames(obj$df_list)))
-
-  sp <- if (nrow(obj$df) > maxpts) {
-    warning("Sampling rows for plotting")
-    sample(nrow(obj$df), maxpts)
-  } else seq_len(nrow(obj$df))
-
-  df <- obj$df[sp, columns, drop = FALSE]
-  df_tiers <- unique(obj$df$Tier)
-  if (is.null(tiers)) {
-    if (length(df_tiers) > 10) {
-      warning("Only plotting the first 10 splices")
-      df <- df[df$Tier %in% df_tiers[1:10], , drop=FALSE]
-    }
-  } else {
-    if (!all(tiers %in% df_tiers)) stop('Tiers not found in SplitView')
-    df <- df[df$Tier %in% tiers, , drop=FALSE]
-  }
-
-  long_df <- tidyr::pivot_longer(df, cols = columns[-(1:3)],
-                                 names_to = "Series", values_to = "Value")
-  start_df <- dplyr::group_by(long_df, Tier)
-  start_df <- dplyr::summarize(start_df, Start = min(Frame, na.rm=TRUE))
-  start_df <- dplyr::arrange(start_df, Start)
-
-  long_df$Tier_f <- factor(long_df$Tier, levels = start_df$Tier)
-
-  subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
-  subtitle <- paste(subtitle[subtitle != ""], collapse="_")
-
-  ggplot2::ggplot(long_df, ggplot2::aes(x = Time, y = Value, col = Series)) +
-    ggplot2::geom_point() + ggplot2::geom_line() +
-    ggplot2::labs(title = class(obj)[1], subtitle = subtitle) +
-    ggplot2::xlab("Time / min:sec") +
-    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
-    ggplot2::facet_wrap(~Tier_f, scales = "free_x")
 }
 
 

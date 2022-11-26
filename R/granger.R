@@ -192,6 +192,7 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #' @param sig_level
 #' @param lag
 #' @param granger_fn
+#' @param ...
 #'
 #' @return
 #' @export

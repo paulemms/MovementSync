@@ -1,6 +1,6 @@
 # Functions to return a set of time intervals for analysis
 
-#' Splice
+#' S3 generic function to splice a timeline
 #'
 #' @param x
 #' @param ...
@@ -12,6 +12,42 @@
 splice_time <- function(x, ...) {
   UseMethod("splice_time", x)
 }
+
+
+#' Generate spliced timeline using a Metre object
+#'
+#' @param x
+#' @param window_duration
+#' @param rhythms
+#' @param ...
+#'
+#' @return
+#' @exportS3Method
+#'
+#' @examples
+#' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+#' m <- get_metre_data(r)
+#' splicing_df <- splice_time(m, window_duration = 1)
+#' head(splicing_df)
+splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
+  if (is.null(rhythms)) rhythms <- names(x)
+  stopifnot(all(rhythms %in% names(x)))
+
+  df_list <- list()
+  for (j in seq_along(rhythms)) {
+    df <- x[[j]]
+    df$Start <- df$Time - window_duration / 2
+    df$End <- df$Time + window_duration / 2
+    df <- df[-match(c("Time", "Notes"), colnames(df), nomatch = 0)]
+    colnames(df)[1] <- "Tier"
+    df$Tier <- paste(rhythms[j], 'Cycle', as.character(df$Tier), sep="_")
+    df_list[[j]] <- df
+  }
+  output_df <- dplyr::bind_rows(df_list)
+  output_df <- dplyr::arrange(output_df, Start)
+  as.data.frame(output_df)
+}
+
 
 #' Generate spliced timeline using a list
 #'
@@ -44,10 +80,21 @@ splice_time.list <- function(x, ...) {
 #' @exportS3Method
 #'
 #' @examples
-#' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' d <- get_duration_annotation_data(r)
 #' splice_time(d)
-splice_time.Duration <- function(x, expr = 'Tier == "FORM"', make.unique = FALSE, ...) {
+#' splice_time(d, tier = 'Event', comments = 'tabla solo')
+splice_time.Duration <- function(x, expr = NULL, make.unique = FALSE,
+                                 tier = NULL, comments = NULL, ...) {
+  stopifnot(!is.null(expr) || (!is.null(tier) || !is.null(comments)))
+
+  if (is.null(expr)) {
+    expr_list <- list()
+    expr_list[[1]] <- if (!is.null(tier)) paste0('Tier %in% ', '"', tier, '"') else NA
+    expr_list[[2]] <- if (!is.null(comments)) paste0('Comments %in% ', '"', comments, '"') else NA
+    expr_list <- expr_list[!is.na(expr_list)]
+    expr <- if (length(expr_list) > 1) paste0(expr_list, collapse = " & ") else expr_list[[1]]
+  }
   expr <- rlang::parse_expr(expr)
   df <- dplyr::filter(as.data.frame(x), !!expr)
   df <- df[c("Comments", "In", "Out")]
@@ -104,13 +151,14 @@ splice_time.View <- function(x, win_size, step_size, ...) {
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(rv, splicing_df)
 get_spliced_view <- function(v, splicing_df) {
-  stopifnot("View" %in% class(v))
+  stopifnot("View" %in% class(v), class(splicing_df[['Tier']]) == "character")
   df <- v$df
 
   df_list <- list()
   for (r in seq_len(nrow(splicing_df))) {
     tier <- splicing_df[r, "Tier"]
     spliced_df <- df[df$Time >= splicing_df[r, "Start"] & df$Time <= splicing_df[r, "End"],, drop = FALSE]
+    # Tiers with the same name get appended to df_list[[tier]]
     df_list[[tier]] <- dplyr::bind_rows(df_list[[tier]], spliced_df)
 
   }
@@ -141,7 +189,7 @@ get_spliced_view <- function(v, splicing_df) {
 #' sv <- get_spliced_view(pv, splicing_df)
 #' v_list <- split(sv)
 split.SplicedView <- function(obj) {
-  df_list <- split(obj$df_list, obj$df_list$Tier)
+  df_list <- split(obj$df, obj$df_list$Tier)
   v_list <- lapply(df_list, function(x) {
     df <- x[, colnames(x) != "Tier", drop = FALSE]
     l <- list(df = df, vid = obj$vid, direct = obj$direct,

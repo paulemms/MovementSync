@@ -62,7 +62,7 @@ plot_influence_diagram(g, splicing_df = splicing_df) +
             fill_col = "Comments")
 
 # Splice time using Tier for larger time intervals
-splicing_tier_df <- splice_time(d1)
+splicing_tier_df <- splice_time(d1, tier = 'FORM')
 splicing_tier_df
 
 # apply splicing_df to full joined view
@@ -92,7 +92,7 @@ autoplot(jv3)
 
 # splice time based on duration object
 d3 <- get_duration_annotation_data(r3)
-splicing3_df <- splice_time(d3, expr = "Tier == 'Form'")
+splicing3_df <- splice_time(d3, tier = 'Form')
 splicing3_df
 
 # get a spliced view object

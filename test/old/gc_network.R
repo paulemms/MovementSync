@@ -25,7 +25,7 @@ splicing_df
 # get a spliced view object
 sv <- get_spliced_view(jv, splicing_df = splicing_df)
 autoplot(sv)
-tabla_fill_df <- dplyr::filter(sv$df_list, Tier == 'tabla fill')
+tabla_fill_df <- dplyr::filter(sv$df, Tier == 'tabla fill')
 
 # apply grangertest on each Tier
 g <- granger_test(sv, "Nose_x_Central_Harmonium", "Nose_x_Central_Tabla")
