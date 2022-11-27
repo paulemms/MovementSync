@@ -114,12 +114,15 @@ autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 #' @rdname autoplot
 autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
 
+  max_num_tiers <- 10
+  max_num_cols <- 9
   df <- obj$df
 
   # Restrict points, columns, splices to plot
   columns <- if (is.null(columns)) {
-    if (ncol(df) > 9) warning("Only plotting first six data columns")
-    colnames(df)[seq_len(min(ncol(df), 9))]
+    if (ncol(df) > max_num_cols)
+      warning(paste("Only plotting first", max_num_cols - 3, "data columns"))
+    colnames(df)[seq_len(min(ncol(df), max_num_cols))]
   } else c("Tier", "Frame", "Time", columns)
 
   stopifnot(all(columns %in% colnames(df)))
@@ -127,10 +130,10 @@ autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
   df_tiers <- unique(df$Tier)
   num_tiers <- length(df_tiers)
   if (is.null(tiers)) {
-    if (num_tiers > 10) {
-      warning("Only plotting the first 10 splices")
-      df <- df[df$Tier %in% df_tiers[1:10], , drop=FALSE]
-      num_tiers <- 10
+    if (num_tiers > max_num_tiers) {
+      warning(paste("Only plotting the first", max_num_tiers, "splices"))
+      df <- df[df$Tier %in% df_tiers[seq_len(max_num_tiers)], , drop=FALSE]
+      num_tiers <- max_num_tiers
     }
   } else {
     if (!all(tiers %in% df_tiers)) stop('Tiers not found in SplitView')
@@ -140,12 +143,15 @@ autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
   sp <- if (nrow(df) > maxpts) {
     warning("Sampling rows for plotting")
     sample(nrow(df), maxpts)
-  } else seq_len(nrow(obj$df))
+  } else seq_len(nrow(df))
   df <- df[sp, columns, drop = FALSE]
 
+  # Convert data to long form
   columns_to_remove <- match(c("Tier", "Frame", "Time"), colnames(df), nomatch = 0)
   long_df <- tidyr::pivot_longer(df, cols = -columns_to_remove,
                                  names_to = "Series", values_to = "Value")
+
+  # Find Start and Duration of each Tier
   start_df <- dplyr::group_by(long_df, Tier)
   start_df <- dplyr::summarize(start_df, Start = min(Time, na.rm=TRUE),
                                Duration = max(Time, na.rm=TRUE) - Start)
@@ -156,7 +162,7 @@ autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
   subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-  # Find maximum duration over all splices
+  # Use seconds to time scale if max Duration less than a minute
   if (max(start_df$Duration, na.rm = TRUE) < 60) {
     xlab <- ggplot2::xlab("Time / sec")
     scale_x_time <- NULL

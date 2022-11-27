@@ -17,30 +17,37 @@ sv_duration <- get_spliced_view(jv1, splicing_df = splicing_duration_df)
 autoplot(sv_duration)
 
 # Mutual look and smile
+splicing_duration1_df <- splice_time(
+  d1, tier ='INTERACTION', comments = 'Mutual look and smile', make.unique = TRUE
+)
+splicing_duration1_df
+sv_duration1 <- get_spliced_view(jv1, splicing_df = splicing_duration1_df)
+autoplot(sv_duration1)
+
+# Mutual head and body movement
 splicing_duration2_df <- splice_time(
-  d1, tier ='INTERACTION', comments = 'Mutual look and smile',
-  make.unique = TRUE
+  d1, tier = 'INTERACTION', comments = 'Mutual head and body movement'
 )
 splicing_duration2_df
 sv_duration2 <- get_spliced_view(jv1, splicing_df = splicing_duration2_df)
 autoplot(sv_duration2)
 
-# Mutual head and body movement
-splicing_duration3_df <- splice_time(
-  d1, tier = 'INTERACTION', comments = 'Mutual head and body movement',
-  make.unique = TRUE
-)
-splicing_duration3_df
-sv_duration3 <- get_spliced_view(jv1, splicing_df = splicing_duration3_df)
-autoplot(sv_duration3)
+# downsample\
+sv_list1 <- sample_spliced_views(a = sv_duration1, b = sv_duration2, num_samples = 100)
+autoplot(sv_list1$a)
+autoplot(sv_list1$b)
 
-# sample 100 from sv_duration2 and sample 100 from sv_duration3? OK
-# return SplicedView again - Mutual look and smile 100 rows, Mutual head and body movement 100 rows?
-# can do this easier if not unique splices
-# any number of spliced views...
-# set operations on the SplicedViews? - see generics package for setops
+# upsample 10000 points from each SplicedView and return a SplicedView object list
+sv_list2 <- sample_spliced_views(a = sv_duration1, b = sv_duration2, num_samples = 10000,
+                        replace = TRUE)
+autoplot(sv_list2$a)
+autoplot(sv_list2$b)
 
-# apply type functions to SplicedView - return list of objects from function output OK
+
+v_list <- split(sv_list$a)
+autoplot(v_list[[1]])
+w1 <- analyze_wavelet(fv2, "Nose_x")
+plot_power_spectrum(w1, fv2)
 
 # Tabla solos
 splicing_duration4_df <- splice_time(d1, tier = 'Event',

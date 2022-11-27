@@ -59,9 +59,10 @@ autoplot(fv1)
 autoplot(fv1) + autolayer(d1)
 
 # Save the filtered objected in an RDS file
-saveRDS(fv1, file = "C:/temp/fv1.rds")
+fv1_file <- file.path(tempdir(), "fv1.rds")
+saveRDS(fv1, file = fv1_file)
 rm(fv1)
-fv1 <- readRDS("C:/temp/fv1.rds")
+fv1 <- readRDS(fv1_file)
 plot(fv1, nc = 3)
 
 # Different filter

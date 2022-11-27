@@ -8,10 +8,12 @@
 # Added simple summary function to analyze.wavelet
 
 # TODO
+# how to handle replacement with movement sampling? spline then draw random times?
 # sample 100 from sv_duration2 and sample 100 from sv_duration3? OK
 # return SplicedView again - Mutual look and smile 100 rows, Mutual head and body movement 100 rows?
 # can do this easier if not unique splices
 # any number of spliced views...
+# apply type functions to SplicedView - return list of objects from function output OK
 # set operations on the SplicedViews? - see generics package for setops
 # steal sync_sample_paired from onsetsync - see email
 # find out what it does on the lag with regard to frames

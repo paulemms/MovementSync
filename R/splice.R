@@ -138,10 +138,9 @@ splice_time.View <- function(x, win_size, step_size, ...) {
 #' Get spliced view from view object
 #'
 #' @param v View object
-#' @param save_output
-#' @param folder_out
+#' @param splicing_df
 #'
-#' @return ProcessedView object
+#' @return SplicedView object
 #' @export
 #'
 #' @examples
@@ -165,7 +164,7 @@ get_spliced_view <- function(v, splicing_df) {
   output_df <- dplyr::bind_rows(df_list, .id = "Tier")
   output_df <- dplyr::arrange(output_df, Frame, Tier)
 
-  l <- list(df_list = output_df, vid = v$vid,
+  l <- list(df = output_df, splicing_df = splicing_df, vid = v$vid,
             direct = v$direct, inst = v$inst, recording = v$recording)
   class(l) <- c("SplicedView", class(v))
 
@@ -187,9 +186,9 @@ get_spliced_view <- function(v, splicing_df) {
 #' l <- list(a = c(0, 300), b = c(300, 600), c = c(600, 900))
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(pv, splicing_df)
-#' v_list <- split(sv)
+#' sv_list <- split(sv)
 split.SplicedView <- function(obj) {
-  df_list <- split(obj$df, obj$df_list$Tier)
+  df_list <- split(obj$df, obj$df$Tier)
   v_list <- lapply(df_list, function(x) {
     df <- x[, colnames(x) != "Tier", drop = FALSE]
     l <- list(df = df, vid = obj$vid, direct = obj$direct,
@@ -199,4 +198,58 @@ split.SplicedView <- function(obj) {
   })
 
   v_list
+}
+
+
+#' Sample from a list of Views
+#'
+#' @param ...
+#' @param num_samples
+#' @param replace
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' fv1_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p = 3)
+#' jv1 <- get_joined_view(fv1_list)
+#' splicing_duration1_df <- splice_time(
+#'   d1, tier ='INTERACTION', comments = 'Mutual look and smile')
+#' sv_duration1 <- get_spliced_view(jv1, splicing_df = splicing_duration1_df)
+#' splicing_duration2_df <- splice_time(
+#'   d1, tier = 'INTERACTION', comments = 'Mutual head and body movement')
+#' sv_duration2 <- get_spliced_view(jv1, splicing_df = splicing_duration2_df)
+#' sv_new <- sample_views(sv_duration1, num_samples = 100)
+#' sv_list <- sample_views(a=sv_duration1, b=sv_duration2, num_samples = 100)
+sample_spliced_views <- function(..., num_samples, replace = FALSE) {
+  input_sv <- list(...)
+  stopifnot(all(sapply(input_sv, function(x) "SplicedView" %in% class(x))))
+  stopifnot(num_samples > 0)
+
+  sv_list <- list()
+  i <- 1
+  for (sv in input_sv) {
+
+    if (replace) {
+      browser()
+      # invert the CDF ...
+      sv$splicing_df
+
+      new_times <- runif(num_samples, min_time, max_time)
+      new_df[['Time']] <- new_times
+    } else {
+      row_nums <- sample(seq_len(nrow(sv$df)), size = num_samples, replace = replace)
+      new_df <- sv$df[row_nums,,drop = FALSE]
+    }
+
+    new_df <- new_df[order(new_df[['Time']]),,drop=FALSE]
+    sv_list[[i]] <- sv
+    sv_list[[i]]$df <- new_df
+    i <- i + 1
+  }
+  names(sv_list) <- names(input_sv)
+
+  if (length(sv_list) == 1) sv_list <- sv_list[[1]]
+  sv_list
 }
