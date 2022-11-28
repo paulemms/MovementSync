@@ -1,7 +1,5 @@
+# Test we can do Granger Tests
 rm(list=ls())
-#library(lmtest)
-#library(dplyr)
-#library(ggplot2)
 devtools::load_all(".")
 
 # Get recording meta data
@@ -116,17 +114,8 @@ harmonium_splicing_df
 
 # Plot Granger Causality interactions
 harmonium_sv <- get_spliced_view(jv3, splicing_df = harmonium_splicing_df)
+autoplot(harmonium_sv)
 harmonium_gi <- get_granger_interactions(
   harmonium_sv, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer", "Nose_x_Cam2_Tabla"))
 plot(harmonium_gi)
-autoplot(harmonium_sv) # lines show gaps
-
-# Unique splicing
-uharmonium_splicing_df <- splice_time(
-  d3, expr = "Tier == 'Event' & grepl('harmonium', Comments, fixed=TRUE)", make.unique = T)
-uharmonium_splicing_df
-uharmonium_sv <- get_spliced_view(jv3, splicing_df = uharmonium_splicing_df)
-autoplot(uharmonium_sv)
-uharmonium_gi <- get_granger_interactions(
-  uharmonium_sv, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer", "Nose_x_Cam2_Tabla"))
-plot(uharmonium_gi, edge.arrow.size = 0.3, vertex.color = "yellow")
+plot(harmonium_gi, edge.arrow.size = 0.3, vertex.color = "yellow")

@@ -1,3 +1,5 @@
+# Test the statistical analysis functions
+
 rm(list=ls())
 devtools::load_all()
 
@@ -18,7 +20,7 @@ autoplot(sv_duration)
 
 # Mutual look and smile
 splicing_duration1_df <- splice_time(
-  d1, tier ='INTERACTION', comments = 'Mutual look and smile', make.unique = TRUE
+  d1, tier ='INTERACTION', comments = 'Mutual look and smile'
 )
 splicing_duration1_df
 sv_duration1 <- get_spliced_view(jv1, splicing_df = splicing_duration1_df)
@@ -28,26 +30,44 @@ autoplot(sv_duration1)
 splicing_duration2_df <- splice_time(
   d1, tier = 'INTERACTION', comments = 'Mutual head and body movement'
 )
-splicing_duration2_df
+splicing_duration2_df # Multiple intervals in a single Tier
 sv_duration2 <- get_spliced_view(jv1, splicing_df = splicing_duration2_df)
 autoplot(sv_duration2)
 
-# downsample\
-sv_list1 <- sample_spliced_views(a = sv_duration1, b = sv_duration2, num_samples = 100)
+# Downsample time series - restricted by num points available
+sv_list1 <- sample_time_spliced_views(a = sv_duration1, b = sv_duration2,
+                                      num_samples = 100, replace = FALSE)
 autoplot(sv_list1$a)
 autoplot(sv_list1$b)
 
-# upsample 10000 points from each SplicedView and return a SplicedView object list
-sv_list2 <- sample_spliced_views(a = sv_duration1, b = sv_duration2, num_samples = 10000,
-                        replace = TRUE)
+# simple upsample 1000 points from each SplicedView and return a SplicedView
+sv_list2 <- sample_time_spliced_views(a = sv_duration1, b = sv_duration2,
+                                      num_samples = 5000, replace = TRUE)
 autoplot(sv_list2$a)
 autoplot(sv_list2$b)
 
+# Convert sampled view to a list for applying functions
+v_list <- split(sv_list2$a)
 
-v_list <- split(sv_list$a)
-autoplot(v_list[[1]])
-w1 <- analyze_wavelet(fv2, "Nose_x")
-plot_power_spectrum(w1, fv2)
+# Plot a single View
+autoplot(v_list$`Mutual look and smile.10`)
+
+# Number of rows on each segment
+sapply(v_list, function(x) nrow(x$df))
+
+# Apply function to each data point column in a SplicedView
+sapply_view <- function(sv, FUN, ...) {
+  v_list <- split(sv_list2$a)
+  sapply(v_list, function(x) {
+    keys <- match(c('Tier', 'Frame', 'Time'), colnames(x$df), nomatch = 0)
+    dfr <- x$df[-keys]
+    apply(dfr, 2, function(y) FUN(y, ...))
+  })
+}
+
+# Simple stats on each data column - gives named matrices
+sapply_view(sv_list$a, max, na.rm=TRUE)
+sapply_view(sv_list$a, sd, na.rm=TRUE)
 
 # Tabla solos
 splicing_duration4_df <- splice_time(d1, tier = 'Event',
@@ -56,7 +76,6 @@ splicing_duration4_df
 
 # randomly create matching segments? how?
 
-# Tier    Start      End
 # 1   tabla solo 1168.218 1209.722
 # 2 tabla solo.1 1334.148 1374.912
 # 3 tabla solo.2 1552.906 1610.111

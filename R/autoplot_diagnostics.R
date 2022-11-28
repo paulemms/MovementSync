@@ -142,7 +142,7 @@ autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
 
   sp <- if (nrow(df) > maxpts) {
     warning("Sampling rows for plotting")
-    sample(nrow(df), maxpts)
+    sample(seq_len(nrow(df)), maxpts)
   } else seq_len(nrow(df))
   df <- df[sp, columns, drop = FALSE]
 

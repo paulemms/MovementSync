@@ -1,3 +1,5 @@
+# Tests Wavelet functionality in the package
+
 rm(list=ls())
 devtools::load_all()
 

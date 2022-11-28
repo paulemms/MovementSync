@@ -29,10 +29,17 @@ granger_test <- function(obj, var1, var2, lag = 1, granger_fn = ms_grangertest2)
 
   df <- obj$df
   order <- lag * obj$recording$fps
-  df <- dplyr::select(df, Tier, !!var1, !!var2)
+  df <- dplyr::select(df, Frame, Tier, !!var1, !!var2)
   df <- dplyr::group_by(df, Tier)
-  n_df_group <- dplyr::pull(dplyr::summarise(df, n = dplyr::n()), "n")
 
+
+  # Error tests
+  splicing_df <- obj$splicing_df
+  if (any(duplicated(splicing_df[['Tier']]))) {
+    stop("Not a valid splicing data.frame for Granger testing")
+  }
+
+  n_df_group <- dplyr::pull(dplyr::summarise(df, n = dplyr::n()), "n")
   if (any(n_df_group <= 1)) {
     stop("There must be more than one data point in all time slices")
   }

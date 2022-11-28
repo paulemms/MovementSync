@@ -61,11 +61,16 @@ splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
 #' l <- list(a = c(0, 10), b = c(10, 20), c = c(20, 30))
 #' splice_time(l)
 splice_time.list <- function(x, ...) {
+  stopifnot(all(sapply(x, length) == 2), all(sapply(x, function(x) x[1] < x[2])))
+
   df <- t(as.data.frame(x))
   rownames(df) <- NULL
   colnames(df) <- c("Start", "End")
   df <- cbind.data.frame(Tier = names(x), df)
-  df[c("Tier", "Start", "End")]
+  df <- df[c("Tier", "Start", "End")]
+
+  stopifnot(is_valid_splice(df))
+  df
 }
 
 
@@ -84,7 +89,7 @@ splice_time.list <- function(x, ...) {
 #' d <- get_duration_annotation_data(r)
 #' splice_time(d)
 #' splice_time(d, tier = 'Event', comments = 'tabla solo')
-splice_time.Duration <- function(x, expr = NULL, make.unique = FALSE,
+splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
                                  tier = NULL, comments = NULL, ...) {
   stopifnot(!is.null(expr) || (!is.null(tier) || !is.null(comments)))
 
@@ -139,6 +144,7 @@ splice_time.View <- function(x, win_size, step_size, ...) {
 #'
 #' @param v View object
 #' @param splicing_df
+#' @param na.pad
 #'
 #' @return SplicedView object
 #' @export
@@ -152,6 +158,7 @@ splice_time.View <- function(x, win_size, step_size, ...) {
 get_spliced_view <- function(v, splicing_df) {
   stopifnot("View" %in% class(v), class(splicing_df[['Tier']]) == "character")
   df <- v$df
+  fps <- v$recording$fps
 
   df_list <- list()
   for (r in seq_len(nrow(splicing_df))) {
@@ -163,6 +170,21 @@ get_spliced_view <- function(v, splicing_df) {
   }
   output_df <- dplyr::bind_rows(df_list, .id = "Tier")
   output_df <- dplyr::arrange(output_df, Frame, Tier)
+
+  # if (na.pad) {
+  #   remove_cols <- match(c('Tier', 'Frame', 'Time'), colnames(output_df), nomatch = 0)
+  #   l <- split(output_df, output_df[['Tier']])
+  #   for (tier in names(l)) {
+  #     df <- l[[tier]]
+  #     frame_num <- df[['Frame']]
+  #     z <- zoo::zoo(df[,-remove_cols,drop=FALSE], order.by = as.integer(frame_num))
+  #     new_index <- seq(min(frame_num, na.rm = TRUE), max(frame_num, na.rm = TRUE))
+  #     new_z <- merge(z, zoo::zoo(,new_index))
+  #     l[[tier]] <- cbind(Tier = tier, Frame = zoo::index(new_z), Time = zoo::index(new_z) / fps,
+  #                        as.data.frame(new_z))
+  #   }
+  #   output_df <- dplyr::bind_rows(l)
+  # }
 
   l <- list(df = output_df, splicing_df = splicing_df, vid = v$vid,
             direct = v$direct, inst = v$inst, recording = v$recording)
@@ -188,7 +210,7 @@ get_spliced_view <- function(v, splicing_df) {
 #' sv <- get_spliced_view(pv, splicing_df)
 #' sv_list <- split(sv)
 split.SplicedView <- function(obj) {
-  df_list <- split(obj$df, obj$df$Tier)
+  df_list <- split(obj$df, obj$df[['Tier']])
   v_list <- lapply(df_list, function(x) {
     df <- x[, colnames(x) != "Tier", drop = FALSE]
     l <- list(df = df, vid = obj$vid, direct = obj$direct,
@@ -214,15 +236,20 @@ split.SplicedView <- function(obj) {
 #' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' fv1_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p = 3)
 #' jv1 <- get_joined_view(fv1_list)
-#' splicing_duration1_df <- splice_time(
-#'   d1, tier ='INTERACTION', comments = 'Mutual look and smile')
-#' sv_duration1 <- get_spliced_view(jv1, splicing_df = splicing_duration1_df)
-#' splicing_duration2_df <- splice_time(
-#'   d1, tier = 'INTERACTION', comments = 'Mutual head and body movement')
-#' sv_duration2 <- get_spliced_view(jv1, splicing_df = splicing_duration2_df)
-#' sv_new <- sample_views(sv_duration1, num_samples = 100)
-#' sv_list <- sample_views(a=sv_duration1, b=sv_duration2, num_samples = 100)
-sample_spliced_views <- function(..., num_samples, replace = FALSE) {
+#' l <- list(a=c(1, 2), b = c(2, 3))
+#' splicing_df <- splice_time(l)
+#' sv <- get_spliced_view(jv1, splicing_df = splicing_df, na.pad = FALSE)
+#' autoplot(sv)
+#' sv_new <- sample_time_spliced_views(sv, num_samples = 10, replace = FALSE)
+#' autoplot(sv_new)
+#' sv_new <- sample_time_spliced_views(sv, num_samples = 10, replace = TRUE)
+#' autoplot(sv_new)
+#' l <- list(a=c(1, 2), a = c(10, 20), b = c(30, 40))
+#' splicing_df <- splice_time(l)
+#' sv <- get_spliced_view(jv1, splicing_df = splicing_df)
+#' sv_new <- sample_time_spliced_views(sv, num_samples = 20, replace = TRUE)
+#' autoplot(sv_new)
+sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.action = na.pass) {
   input_sv <- list(...)
   stopifnot(all(sapply(input_sv, function(x) "SplicedView" %in% class(x))))
   stopifnot(num_samples > 0)
@@ -230,26 +257,79 @@ sample_spliced_views <- function(..., num_samples, replace = FALSE) {
   sv_list <- list()
   i <- 1
   for (sv in input_sv) {
+    dfr <- sv$df
+    keys <- match(c('Tier', 'Frame', 'Time'), colnames(dfr), nomatch = 0)
+    data_columns <- colnames(dfr)[-keys]
 
+    # invert the CDF to pick equally between intervals?
     if (replace) {
-      browser()
-      # invert the CDF ...
-      sv$splicing_df
+      # stack the time intervals
+      duration_dfr <- dplyr::mutate(
+        sv$splicing_df,
+        Duration = End - Start,
+        Cumulative_Duration = cumsum(Duration),
+        Start_Duration = dplyr::lag(Cumulative_Duration, 1, default = 0)
+      )
+      cumduration_times <- duration_dfr[, 'Cumulative_Duration']
+      # Sample from [0, total length of intervals]
+      new_cumdurations <- runif(num_samples, 0, cumduration_times[length(cumduration_times)])
+      # Find the interval each new time belongs to
+      interval_idx <- findInterval(new_cumdurations, c(0, cumduration_times))
+      # Generate a list of linear approximation functions for each data column
+      new_times <- duration_dfr[interval_idx, 'Start'] + new_cumdurations -
+        duration_dfr[interval_idx, 'Start_Duration']
 
-      new_times <- runif(num_samples, min_time, max_time)
-      new_df[['Time']] <- new_times
+      new_data <- sapply(
+        data_columns,
+        function(col) approx(x = dfr[['Time']], y = dfr[[col]], xout = new_times, ties = 'ordered')$y
+        )
+
+      # Build new sampled data.frame
+      new_dfr <- cbind.data.frame(Tier = duration_dfr[interval_idx, 'Tier'], Frame = NA, Time = new_times, new_data)
+
     } else {
-      row_nums <- sample(seq_len(nrow(sv$df)), size = num_samples, replace = replace)
-      new_df <- sv$df[row_nums,,drop = FALSE]
+      dfr <- na.action(sv$df)
+      row_nums <- sample(seq_len(nrow(dfr)), size = num_samples, replace = replace)
+      new_dfr <- dfr[row_nums,,drop = FALSE]
     }
 
-    new_df <- new_df[order(new_df[['Time']]),,drop=FALSE]
+    new_dfr <- new_dfr[order(new_dfr[['Time']]),,drop=FALSE]
+    rownames(new_dfr) <- NULL
     sv_list[[i]] <- sv
-    sv_list[[i]]$df <- new_df
+    sv_list[[i]]$df <- new_dfr
     i <- i + 1
   }
   names(sv_list) <- names(input_sv)
 
   if (length(sv_list) == 1) sv_list <- sv_list[[1]]
   sv_list
+}
+
+
+#' Checks for valid splice
+#'
+#' Invalid splices contain overlapping Tiers.
+#'
+#' @param dfr
+#'
+#' @return logical
+#' @export
+#'
+#' @examples
+#' l1 <- list(a=c(1, 2))
+#' is_valid_splice(splice_time(l1))
+#' l2 <- list(a=c(1, 15), a = c(10, 20), b = c(30, 40))
+#' is_valid_splice(splice_time(l2))
+#' l3 <- list(a=c(1, 2), a = c(10, 20), b = c(3, 5))
+#' is_valid_splice(splice_time(l2))
+is_valid_splice <- function(dfr) {
+
+  duration_dfr <- dplyr::mutate(
+    dfr[order(dfr$Start),,drop=FALSE],
+    Next_Start = dplyr::lead(Start, 1),
+    Valid = End <= Next_Start
+  )
+
+  all(duration_dfr[['Valid']], na.rm = TRUE)
+
 }

@@ -1,18 +1,24 @@
 # QUERY
-# Are the cameras synced? i.e. does frame 1 in one camera file correspond in
-# time to frame 1 in another camera. If so, time series start at same time in
-# terms of the data returned - could be NAs but for granger fns thats ok
+# Should we pad disjoint intervals in a single tier with NAs for granger causality?
+# If not lagged variables will immediately bleed into following interval
+# If padded and lag is large enough then lagged vars will bleed into following interval??? - may or may not be desirable
+# DO you really want a granger test on irregular time series i.e. a collection of disjoint intervals?
+# Simplest thing to force unique tier names so granger tests only on distinct intervals
+
+# how to handle replacement with movement sampling? regression then draw random times?
+#  - lots of ways to do bootstrapping - package?
+# Can the spliced time intervals overlap - if so then multi-value time series might not be desirable
+# Padded time series with NAs if they have gaps in a single Tier of a SplicedView - throw error ow
+
 
 # DONE
-# Went through wavelet functionality in a spec script
 # Added simple summary function to analyze.wavelet
+# Sample 100 rows from a number of split views with/without replacement
+# - returned List of sample in each Tier
 
 # TODO
-# how to handle replacement with movement sampling? spline then draw random times?
-# sample 100 from sv_duration2 and sample 100 from sv_duration3? OK
-# return SplicedView again - Mutual look and smile 100 rows, Mutual head and body movement 100 rows?
-# can do this easier if not unique splices
-# any number of spliced views...
+# add default data set
+# ensure we treat granger test data as time series so lags computed correctly
 # apply type functions to SplicedView - return list of objects from function output OK
 # set operations on the SplicedViews? - see generics package for setops
 # steal sync_sample_paired from onsetsync - see email
