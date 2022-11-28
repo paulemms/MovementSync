@@ -1,20 +1,15 @@
 # QUERY
-# Should we pad disjoint intervals in a single tier with NAs for granger causality?
-# If not lagged variables will immediately bleed into following interval
-# If padded and lag is large enough then lagged vars will bleed into following interval??? - may or may not be desirable
-# DO you really want a granger test on irregular time series i.e. a collection of disjoint intervals?
-# Simplest thing to force unique tier names so granger tests only on distinct intervals
 
 # how to handle replacement with movement sampling? regression then draw random times?
 #  - lots of ways to do bootstrapping - package?
 # Can the spliced time intervals overlap - if so then multi-value time series might not be desirable
-# Padded time series with NAs if they have gaps in a single Tier of a SplicedView - throw error ow
 
 
 # DONE
 # Added simple summary function to analyze.wavelet
 # Sample 100 rows from a number of split views with/without replacement
 # - returned List of sample in each Tier
+# Segements need to be unique for Granger Causality Tests
 
 # TODO
 # add default data set
