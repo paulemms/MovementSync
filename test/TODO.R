@@ -1,4 +1,4 @@
-# QUERY
+# QUERIES
 
 # how to handle replacement with movement sampling? regression then draw random times?
 #  - lots of ways to do bootstrapping - package?
