@@ -333,3 +333,27 @@ is_valid_splice <- function(dfr) {
   all(duration_dfr[['Valid']], na.rm = TRUE)
 
 }
+
+
+#' Checks if two splicing data.frames overlap
+#'
+#' @param dfr1 splicing data.frame
+#' @param dfr2 splicing data.frame
+#'
+#' @return logical
+#' @export
+#'
+#' @examples
+#' l1 <- list(a=c(1, 10), a = c(20, 30), b = c(30, 40))
+#' dfr1 <- splice_time(l1)
+#' l2 <- list(a=c(10, 15), b = c(15, 25))
+#' dfr2 <- splice_time(l2)
+#' is_splice_overlapping(dfr1, dfr2)
+is_splice_overlapping <- function(dfr1, dfr2) {
+
+  splice_dfr <- dplyr::bind_rows(dfr1, dfr2)
+  splice_dfr <- dplyr::arrange(splice_dfr, Start)
+
+  is_valid_splice(splice_dfr)
+}
+

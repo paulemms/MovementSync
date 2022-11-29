@@ -23,70 +23,165 @@ splicing_duration1_df <- splice_time(
   d1, tier ='INTERACTION', comments = 'Mutual look and smile'
 )
 splicing_duration1_df
-sv_duration1 <- get_spliced_view(jv1, splicing_df = splicing_duration1_df)
-autoplot(sv_duration1)
+sv_duration_smile <- get_spliced_view(jv1, splicing_df = splicing_duration1_df)
+autoplot(sv_duration_smile)
 
 # Mutual head and body movement
 splicing_duration2_df <- splice_time(
   d1, tier = 'INTERACTION', comments = 'Mutual head and body movement'
 )
-splicing_duration2_df # Multiple intervals in a single Tier
-sv_duration2 <- get_spliced_view(jv1, splicing_df = splicing_duration2_df)
-autoplot(sv_duration2)
+splicing_duration2_df
+sv_duration_body <- get_spliced_view(jv1, splicing_df = splicing_duration2_df)
+autoplot(sv_duration_body)
 
-# Downsample time series - restricted by num points available
-sv_list1 <- sample_time_spliced_views(a = sv_duration1, b = sv_duration2,
-                                      num_samples = 100, replace = FALSE)
-autoplot(sv_list1$a)
-autoplot(sv_list1$b)
+# Convert SplicedViews to lists to get individual segment data
+view_smile_list <- split(sv_duration_smile)
+view_body_list <- split(sv_duration_body)
 
-# simple upsample 1000 points from each SplicedView and return a SplicedView
-sv_list2 <- sample_time_spliced_views(a = sv_duration1, b = sv_duration2,
-                                      num_samples = 5000, replace = TRUE)
-autoplot(sv_list2$a)
-autoplot(sv_list2$b)
+# Plot a single segment in SplicedView
+segment_10_view <- view_smile_list$`Mutual look and smile.10`
+autoplot(segment_10_view)
 
-# Convert sampled view to a list for applying functions
-v_list <- split(sv_list2$a)
+# Calculate power spectrum for this segment
+w <- analyze_wavelet(segment_10_view, column = "Nose_x_Central_Sitar")
+plot_power_spectrum(w, segment_10_view)
+plot_average_power(w, segment_10_view)
+plot(w$Power.avg) # raw data from wavelet object using base R plot
 
-# Plot a single View
-autoplot(v_list$`Mutual look and smile.10`)
+# Number of rows on each segment in a list of Tiers using base R
+sapply(view_smile_list, function(x) nrow(x$df))
 
-# Number of rows on each segment
-sapply(v_list, function(x) nrow(x$df))
-
-# Apply function to each data point column in a SplicedView
-sapply_view <- function(sv, FUN, ...) {
-  v_list <- split(sv_list2$a)
+# Apply summary function to each data point column in a SplicedView and return list of output data
+apply_summary_spliceview <- function(sv, FUN, simplify = FALSE, USE.NAMES = FALSE, ...) {
+  v_list <- split(sv)
   sapply(v_list, function(x) {
     keys <- match(c('Tier', 'Frame', 'Time'), colnames(x$df), nomatch = 0)
     dfr <- x$df[-keys]
     apply(dfr, 2, function(y) FUN(y, ...))
-  })
+  }, simplify = simplify, USE.NAMES = USE.NAMES)
+}
+# Simplify list to matrix
+sapply_summary_spliceview <- function(sv, FUN, simplify = TRUE, USE.NAMES = TRUE, ...) {
+  apply_summary_spliceview(sv, FUN, simplify = simplify, USE.NAMES = USE.NAMES, ...)
 }
 
-# Simple stats on each data column - gives named matrices
-sapply_view(sv_list$a, max, na.rm=TRUE)
-sapply_view(sv_list$a, sd, na.rm=TRUE)
+# Simple stats on each view data column - sapply gives named matrices
+View(sapply_summary_spliceview(sv_duration_smile, mean, na.rm=TRUE))
+View(sapply_summary_spliceview(sv_duration_body, sd, na.rm=TRUE))
+
+# More complex functions - apply fun to each Tier in a SplicedView
+view_smile_list <- split(sv_duration_smile)
+view_body_list <- split(sv_duration_body)
+wavelet_smile_list <- lapply(view_smile_list, analyze_wavelet, column = "Nose_x_Central_Sitar")
+wavelet_body_list <- lapply(view_body_list, analyze_wavelet, column = "Nose_x_Central_Sitar")
+plot_power_spectrum(wavelet_smile_list$`Mutual look and smile.10`, view_smile_list$`Mutual look and smile.10`)
+
+# Units on base R plot reflects internal data
+plot(wavelet_smile_list$`Mutual look and smile.10`$Power.avg)
+
+# Get the average power for each segment in a named list
+ave_power_smile <- sapply(wavelet_smile_list, function(x) x$Power.avg)
+ave_power_body <- sapply(wavelet_body_list, function(x) x$Power.avg)
+View(ave_power_smile)
+plot.ts(ave_power_smile[, 1:10], ann = FALSE)
+plot.ts(ave_power_body[, 1:10], ann = FALSE)
+
+# Draw 1000 samples from random segments with replacement
+num_samples <- 1000
+period_sample <- sample(nrow(ave_power_smile), num_samples, replace = TRUE)
+segment_sample <- sample(ncol(ave_power_smile), 1000, replace = TRUE)
+sampled_avgpow_smile <- ave_power_smile[cbind(period_sample, segment_sample)]
+barplot(sampled_avgpow_smile)
+
+# or convert to vector
+total_sample <- sample(nrow(ave_power_smile) * ncol(ave_power_smile), num_samples, replace = TRUE)
+sampled_avgpow_smile <- as.vector(ave_power_smile)[total_sample]
+barplot(sampled_avgpow_smile)
 
 # Tabla solos
-splicing_duration4_df <- splice_time(d1, tier = 'Event',
-                                     comments = 'tabla solo', make.unique = TRUE)
-splicing_duration4_df
+splicing_tabla_solo_df <- splice_time(d1, tier = 'Event', comments = 'tabla solo')
+splicing_tabla_solo_df
 
-# randomly create matching segments? how?
+# randomly create matching segments - add a random offset and use rejection sampling
 
-# 1   tabla solo 1168.218 1209.722
-# 2 tabla solo.1 1334.148 1374.912
-# 3 tabla solo.2 1552.906 1610.111
-# 4 tabla solo.3 1752.424 1856.106
-# 5 tabla solo.4 1975.688 2025.760
-# 6 tabla solo.5 2295.255 2372.199
-# 7 tabla solo.6 2791.923 2860.007
+# find max possible offset based on recording length
+max_time <- max(jv1$df$Time, na.rm = TRUE)
 
-# fixed random addition to all start times? (clip at end, avoid existing intervals)?
+# total span of segments
+total_span <- max(splicing_tabla_solo_df$Start, na.rm = TRUE) -
+  min(splicing_tabla_solo_df$Start, na.rm = TRUE)
+
+# random start times
+stopifnot(total_span <= max_time)
+num_samples <- 100
+start_times <- runif(num_samples, min = 0, max = max_time - total_span)
+
+# Generate a list of new sampling data.frames
+splicing_list <- lapply(start_times, function(x) {
+  splicing_tabla_solo_df$Start <- splicing_tabla_solo_df$Start + x
+  splicing_tabla_solo_df$End <- splicing_tabla_solo_df$End + x
+  splicing_tabla_solo_df
+})
+names(splicing_list) <- paste('Sample splice', seq_along(splicing_list))
+
+# Which ones overlap the original splicing?
+is_overlapped <- sapply(splicing_list,
+                        function(x) is_splice_overlapping(x, splicing_tabla_solo_df))
+
+# remove the overlapping ones
+splicing_list <- splicing_list[!is_overlapped]
+
+# Repeat until we get the desired number of samples - stick with what we have for now
+
+# Add in the original for comparison
+splicing_list$Original <- splicing_tabla_solo_df
+
+# Apply each sample splice to JoinedView to get a list of SplicedViews
+sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv1, splicing_df = x))
+
+autoplot(sv_list$Original)
+autoplot(sv_list$`Sample splice 1`)
+
+# Extract a named segment from each sample
+segment_list <- lapply(sv_list, function(x) {
+  view_list <- split(x)
+  view_list[[which(names(view_list) == 'tabla solo.1')]]
+})
+autoplot(segment_list$`Sample splice 1`)
+
+# Power spectrum of named segment from each sample
+wavelet_tabla_list <- lapply(segment_list, analyze_wavelet, column = "Nose_x_Central_Sitar")
+plot_power_spectrum(wavelet_tabla_list$Original, segment_list$Original)
+plot_power_spectrum(wavelet_tabla_list$`Sample splice 1`, segment_list$`Sample splice 1`)
+ave_power_tabla <- sapply(wavelet_tabla_list, function(x) x$Power.avg)
+View(ave_power_tabla)
+plot.ts(ave_power_tabla[, 1:10], ann = FALSE)
+
+# Compare original with samples - how? max ave power?
+max_ave_power_original <- max(ave_power_tabla)
+max_ave_power_dist <- apply(ave_power_tabla, 2, max, na.rm = TRUE)
+plot(max_ave_power_dist)
+abline(h=max_ave_power_original)
+
 # avoid some sections? with a condition? OK
-# same durations but not necessarily same gaps? distribution of gaps? uniform?
+# Add extra splicing data frames that contain regions of avoidance and reject them as above
+
+# same durations but not necessarily same gaps? distribution of gaps between starts?
+gap_dfr <- dplyr::mutate(splicing_duration1_df, Prev_Start = dplyr::lag(Start, default = 0))
+gap_dfr <- dplyr::mutate(gap_dfr, Duration = End - Start)
+gap_dfr <- dplyr::mutate(gap_dfr, Gap = Start - Prev_Start)
+ave_gap_splice <- mean(gap_dfr$Gap, na.rm = TRUE) # seconds
+# interarrival time between gaps exponentially distributed - so start time Poisson (rate)
+gap_dfr$New_Gap <- rexp(nrow(splicing_duration1_df), rate = 1/ave_gap_splice)
+gap_dfr <- dplyr::mutate(gap_dfr, New_Start = cumsum(New_Gap), New_End = New_Start + Duration)
+gap_dfr
+
+# First Gap gives start of initial segment
+# Need to reject samples going beyond recording length
+
+
+# plot sampling data frame as horizontal line and stack to visualise areas of avoidance
+# https://stackoverflow.com/questions/64334320/r-horizontal-bar-chart-simple-gantt-chart
 
 # Splices based on Metre object
 m1 <- get_metre_data(r1)
