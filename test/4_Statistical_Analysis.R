@@ -12,12 +12,6 @@ autoplot(jv1)
 d1 <- get_duration_annotation_data(r1)
 autoplot(d1)
 
-splicing_duration_df <- splice_time(d1, tier = 'FORM')
-head(splicing_duration_df)
-
-sv_duration <- get_spliced_view(jv1, splicing_df = splicing_duration_df)
-autoplot(sv_duration)
-
 # Mutual look and smile
 splicing_duration1_df <- splice_time(
   d1, tier ='INTERACTION', comments = 'Mutual look and smile'
@@ -93,7 +87,9 @@ segment_sample <- sample(ncol(ave_power_smile), 1000, replace = TRUE)
 sampled_avgpow_smile <- ave_power_smile[cbind(period_sample, segment_sample)]
 barplot(sampled_avgpow_smile)
 
-# or convert to vector
+# Weight on segment length / total length of segments ? NO
+
+# or convert to vector (sampled in different way)
 total_sample <- sample(nrow(ave_power_smile) * ncol(ave_power_smile), num_samples, replace = TRUE)
 sampled_avgpow_smile <- as.vector(ave_power_smile)[total_sample]
 barplot(sampled_avgpow_smile)
@@ -123,6 +119,7 @@ splicing_list <- lapply(start_times, function(x) {
   splicing_tabla_solo_df
 })
 names(splicing_list) <- paste('Sample splice', seq_along(splicing_list))
+splicing_list[1:2]
 
 # Which ones overlap the original splicing?
 is_overlapped <- sapply(splicing_list,
@@ -147,12 +144,12 @@ segment_list <- lapply(sv_list, function(x) {
   view_list <- split(x)
   view_list[[which(names(view_list) == 'tabla solo.1')]]
 })
-autoplot(segment_list$`Sample splice 1`)
+autoplot(segment_list$`Sample splice 3`)
 
 # Power spectrum of named segment from each sample
 wavelet_tabla_list <- lapply(segment_list, analyze_wavelet, column = "Nose_x_Central_Sitar")
 plot_power_spectrum(wavelet_tabla_list$Original, segment_list$Original)
-plot_power_spectrum(wavelet_tabla_list$`Sample splice 1`, segment_list$`Sample splice 1`)
+plot_power_spectrum(wavelet_tabla_list$`Sample splice 3`, segment_list$`Sample splice 3`)
 ave_power_tabla <- sapply(wavelet_tabla_list, function(x) x$Power.avg)
 View(ave_power_tabla)
 plot.ts(ave_power_tabla[, 1:10], ann = FALSE)
@@ -166,14 +163,16 @@ abline(h=max_ave_power_original)
 # avoid some sections? with a condition? OK
 # Add extra splicing data frames that contain regions of avoidance and reject them as above
 
-# same durations but not necessarily same gaps? distribution of gaps between starts?
-gap_dfr <- dplyr::mutate(splicing_duration1_df, Prev_Start = dplyr::lag(Start, default = 0))
+# same durations but not necessarily same gaps? number of gaps follows Poisson process?
+gap_dfr <- dplyr::mutate(splicing_duration1_df, Next_Start = dplyr::lead(Start))
 gap_dfr <- dplyr::mutate(gap_dfr, Duration = End - Start)
-gap_dfr <- dplyr::mutate(gap_dfr, Gap = Start - Prev_Start)
-ave_gap_splice <- mean(gap_dfr$Gap, na.rm = TRUE) # seconds
-# interarrival time between gaps exponentially distributed - so start time Poisson (rate)
-gap_dfr$New_Gap <- rexp(nrow(splicing_duration1_df), rate = 1/ave_gap_splice)
-gap_dfr <- dplyr::mutate(gap_dfr, New_Start = cumsum(New_Gap), New_End = New_Start + Duration)
+gap_dfr <- dplyr::mutate(gap_dfr, Gap = Next_Start - Start)
+gap_dfr <- dplyr::mutate(gap_dfr, Prev_Gap = dplyr::lag(Gap, default = Start[1]))
+ave_gap_splice <- mean(gap_dfr$Prev_Gap, na.rm = TRUE) # seconds
+# interarrival time gap occuring is exponentially distributed
+gap_dfr <- dplyr::mutate(gap_dfr, New_Gap = rexp(nrow(splicing_duration1_df), rate = 1/ave_gap_splice))
+gap_dfr <- dplyr::mutate(gap_dfr, New_Start = cumsum(New_Gap + dplyr::lag(Duration, default = 0)),
+                         New_End = New_Start + Duration)
 gap_dfr
 
 # First Gap gives start of initial segment
@@ -194,14 +193,31 @@ head(splicing_metre_df)
 sv_metre <- get_spliced_view(jv1, splicing_df = splicing_metre_df)
 autoplot(sv_metre)
 
-# do it for proportion of interval
-
 # Splices based on OnsetSelected object
 o1 <- get_onsets_selected_data(r1)
+r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+o2 <- get_onsets_selected_data(r2)
+r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)
+o3 <- get_onsets_selected_data(r3)
+r4 <- get_recording("NIRP1_VS_Hams", fps = 25)
+o4 <- get_onsets_selected_data(r4)
+r5 <- get_recording("Gagaku_5_Juha", fps = 60)
 
+instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa",
+                 "Ryuteki", "Hichiriki", "Sho", "Biwa_RW", "Shoko_RW", "Taiko_LW",
+                 "Taiko_RW")
+o5 <- get_onsets_selected_data(r5, instrument_cols = instruments)
+
+
+instruments <- c('Inst', "Tabla")
+instrument_list <- lapply(o5, function(x) x[,instruments,drop=FALSE])
+diff_dfr <- dplyr::bind_rows(instrument_list, .id = 'Tala')
+
+# Change default plot for onset selected to something simpler - force column to plot to be specified?
 # difference based Inst, + others and add differences in time as columns
 # generate a reference beat time point from the mean
 # mean sd, mean of absolute  from second object
+# subset onset and summary on sections in annotation
 
 # Windows around reference points and then set operations to
 # subset onset data with a condition based on duration annotation data

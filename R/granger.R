@@ -373,8 +373,8 @@ ms_grangertest1 <- function(x, y, order = 1, na.action = na.omit, ...) {
 #' Test for Granger Causality
 #'
 #' Faster implementation of the vector version of  [lmtest::grangertest()]. The
-#' function assumes time series always have the same start date, which is true
-#' for the data in this package.
+#' function assumes time series always have the same start date and periodicity,
+#' which is true for the data in this package.
 #'
 #' @param x
 #' @param y
@@ -406,13 +406,19 @@ ms_grangertest2 <- function(x, y, order = 1, na.action = na.omit, ...) {
   ## compute lagged observations
   x1 <- c(rep(NA, order - 1), x)
   y1 <- c(rep(NA, order - 1), y)
-  lagX <- embed(x1, order + 1)[,-1,drop=FALSE]
+  lagX <- embed(x1, order + 1)
   lagY <- embed(y1, order + 1)
-  y <- lagY[,1]
-  lagY <- lagY[,-1,drop=FALSE]
+
+  # Apply na.action
+  numcolX <- ncol(lagX)
+  numcolY <- ncol(lagY)
+  lag_temp <- na.action(cbind(lagY, lagX))
+  y <- as.vector(lag_temp[,1])
+  lagY <- as.matrix(lag_temp[,2:numcolY,drop=FALSE]) # skip y
+  lagX <- as.matrix(lag_temp[,(numcolY + 2):ncol(lag_temp),drop=FALSE]) # skip x
 
   ## fit full model
-  fm <- lm(y ~ lagY + lagX, na.action = na.action)
+  fm <- lm(y ~ lagY + lagX)
 
   ## compare models with waldtest
   rval <- lmtest::waldtest(fm, 2, ...)
@@ -424,4 +430,77 @@ ms_grangertest2 <- function(x, y, order = 1, na.action = na.omit, ...) {
 
   return(rval)
 }
+
+
+#' Test for Conditional Granger Causality
+#'
+#' Faster implementation of the vector version of  [lmtest::grangertest()] with
+#' conditioning on a third variable. The function assumes time series always
+#' have the same start date and periodicity, which is true for the data in this
+#' package.
+#'
+#' @param x
+#' @param y
+#' @param z
+#' @param order
+#' @param na.action
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' data(wages, package = "lmtest")
+#' diff_wages <- diff(wages)
+#'
+#' # Granger tests
+#' lmtest::grangertest(diff_wages[, 'w'], diff_wages[, 'CPI'], order = 3)
+#' ms_grangertest1(diff_wages[, 'w'], diff_wages[, 'CPI'], order = 3)
+#' ms_grangertest2(diff_wages[, 'w'], diff_wages[, 'CPI'], order = 3)
+#'
+#' ms_condgrangertest(diff_wages[, 'w'], diff_wages[, 'CPI'], diff_wages[, 'w'], order = 3)
+
+ms_condgrangertest <- function(x, y, z, order = 1, na.action = na.omit, ...) {
+
+  xnam <- deparse(substitute(x))
+  ynam <- deparse(substitute(y))
+  znam <- deparse(substitute(z))
+  stopifnot((NCOL(x) == 1), (NCOL(y) == 1), (NCOL(z) == 1))
+
+  ## compute lagged observations
+  x1 <- c(rep(NA, order - 1), x)
+  y1 <- c(rep(NA, order - 1), y)
+  lagX <- embed(x1, order + 1)
+  lagY <- embed(y1, order + 1)
+  z <- as.vector(z)
+
+  # Apply na.action
+  numcolX <- ncol(lagX)
+  numcolY <- ncol(lagY)
+  lag_temp <- na.action(cbind(lagY, lagX, z[-1]))
+
+  y <- as.vector(lag_temp[,1])
+  lagY <- as.matrix(lag_temp[,2:numcolY,drop=FALSE]) # skip y
+  lagX <- as.matrix(lag_temp[,(numcolY + 2):(ncol(lag_temp) - 1),drop=FALSE]) # skip x
+  z <- as.vector(lag_temp[,ncol(lag_temp)])
+
+  ## fit full model
+  fm <- lm(y ~ lagY + lagX + z)
+
+  ## compare models with waldtest
+  rval <- lmtest::waldtest(fm, 2, ...)
+
+  ## adapt annotation
+  model_1 <- paste0("Model 1: ", ynam, " ~ ", "Lags(", ynam, ", 1:", order, ") + Lags(", xnam, ", 1:", order,
+        ") + ", znam)
+  model_2 <- paste0("Model 2: ", ynam, " ~ ", "Lags(", ynam, ", 1:", order, ") + ", znam)
+  attr(rval, "heading") <- paste0(
+    "Conditional Granger causality test\n",
+    model_1, "\n", model_2, "\n"
+    )
+
+  return(rval)
+}
+
+
 

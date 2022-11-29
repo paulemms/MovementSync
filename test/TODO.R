@@ -1,17 +1,11 @@
 # QUERIES
 
-# how to handle replacement with movement sampling? regression then draw random times?
-#  - lots of ways to do bootstrapping - package?
-# Can the spliced time intervals overlap - if so then multi-value time series might not be desirable
-
-
 # DONE
-# Added simple summary function to analyze.wavelet
-# Sample 100 rows from a number of split views with/without replacement
-# - returned List of sample in each Tier
-# Segements need to be unique for Granger Causality Tests
+# Tabular summary functions: added simple summary function to analyze.wavelet
 
 # TODO
+# Splicing for proportion of interval on metre objects
+# generate splicing table from annotation data such that segments of equal length
 # add default data set
 # ensure we treat granger test data as time series so lags computed correctly
 # apply type functions to SplicedView - return list of objects from function output OK
@@ -21,8 +15,7 @@
 # option for arrows both ways
 # Longer time spans for network diagram, - Filter on harmonium in network diagrams
 # Look at some possible conditional granger implementations
-# Added in duration annotation CSV for NIRP1_MAK_Jaun - add autoplot
-# summary functions for data objects - add to summary.R
+# Added in duration annotation CSV for NIRP1_MAK_Jaun - add autoplot - improve?
 # Limit colour to panels for GrangerTime - currently in script - improve function?
 # conditional granger time in R packages ? - modify lmtest
 # infer wavelet the relative phase of two ts
@@ -39,5 +32,4 @@
 # Generalise interpolation methods
 # https://stackoverflow.com/questions/68022639/combining-time-trend-plot-with-timeline
 # dedicated zoo methods?
-# Make the scripts in test/ reflect sections of the spec
 

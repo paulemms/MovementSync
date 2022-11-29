@@ -29,14 +29,6 @@
 NULL
 
 
-#' Autolayer methods
-#'
-#' @importFrom ggplot2 autolayer
-#' @name autolayer
-#' @export
-NULL
-
-
 #' @exportS3Method
 #' @rdname autoplot
 autoplot.Duration <- function(obj) {
@@ -179,23 +171,44 @@ autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
 }
 
 
-#' OnsetsSelected layer for ggplot
+#' Autolayer methods
 #'
-#' @param obj
-#' @param xmin
-#' @param xmax
-#' @param ...
-#' @param color
-#' @param alpha
+#' Layers of annotation data to add to ggplots.
+#' @param obj S3 object
 #'
-#' @return ggplot geom_rect object
-#' @exportS3Method
+#' @return ggplot geom object
 #'
+#' @importFrom ggplot2 autolayer
+#' @name autolayer
+#' @export
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o <- get_onsets_selected_data(r)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' autoplot(v, columns = c("LEar_x", "LEar_y"), maxpts=5000) + autolayer(o)
+#'
+#' m <- get_metre_data(r)
+#' autoplot(v, columns = c("LEar_x", "LEar_y"), maxpts=5000) +
+#' ggplot2::xlim(1000, 2000) + autolayer(m)
+#'
+#' d <- get_duration_annotation_data(r)
+#' autoplot(m)
+#' autoplot(m) + autolayer(d)
+#' autoplot(m) + autolayer(d, fill_col = "Tier")
+#'
+#' v <- get_raw_view(r, "Central", "", "Sitar")
+#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d)
+#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
+#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, geom = "vline", nudge_x = -60, size = 3, colour = "blue")
+NULL
+
+
+#' @param alpha
+#' @param colour
+#' @param fill
+#'
+#' @exportS3Method
+#' @rdname autolayer
 autolayer.OnsetsSelected <- function(obj, colour = "Inst.Name", fill = "Tala",
                                      alpha = 0.4, ...) {
   class(obj) <- NULL
@@ -211,58 +224,28 @@ autolayer.OnsetsSelected <- function(obj, colour = "Inst.Name", fill = "Tala",
 }
 
 
-#' Metre layer for ggplot
-#'
-#' @param obj
 #' @param xmin
 #' @param xmax
-#' @param ...
-#' @param color
+#' @param colour
 #' @param alpha
-#'
-#' @return ggplot geom_vline object
+#' @param ...
 #' @exportS3Method
-#'
-#' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' m <- get_metre_data(r)
-#' v <- get_raw_view(r, "Central", "", "Sitar")
-#' autoplot(v, columns = c("LEar_x", "LEar_y"), maxpts=5000) +
-#' ggplot2::xlim(1000, 2000) +
-#' autolayer(m)
-autolayer.Metre <- function(obj, xmin = -Inf, xmax = Inf, color = "hotpink", alpha = 0.4, ...) {
+#' @rdname autolayer
+autolayer.Metre <- function(obj, xmin = -Inf, xmax = Inf, colour = "hotpink", alpha = 0.4, ...) {
   x <- unlist(lapply(obj, function(y) y$Time))
   x[x < xmin] <- NA
   x[x > xmax] <- NA
 
-  ggplot2::geom_vline(xintercept = x, color = color, alpha = alpha, ...)
+  ggplot2::geom_vline(xintercept = x, colour = colour, alpha = alpha, ...)
 }
 
-
-#' Duration layer for ggplot
-#'
-#' @param obj
-#' @param fill_column
+#' @param expr logical expression for filtering
+#' @param fill_column data column used for fill
 #' @param geom
 #' @param vline_column
-#' @param expr
-#' @param ... passed to geom_vline
-#'
-#' @return
+#' @param ...
 #' @exportS3Method
-#'
-#' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' m <- get_metre_data(r)
-#' d <- get_duration_annotation_data(r)
-#' autoplot(m)
-#' autoplot(m) + autolayer(d)
-#' autoplot(m) + autolayer(d, fill_col = "Tier")
-#'
-#' v <- get_raw_view(r, "Central", "", "Sitar")
-#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d)
-#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
-#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, geom = "vline", nudge_x = -60, size = 3, colour = "blue")
+#' @rdname autolayer
 autolayer.Duration <- function(obj, expr = 'Tier == "FORM"', fill_column = "Comments",
                                geom = "rect", vline_column = "In", ...) {
   expr <- rlang::parse_expr(expr)

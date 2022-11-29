@@ -6,8 +6,7 @@ devtools::load_all()
 r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 pv1 <- get_processed_view(rv1)
-features <- c("Nose")
-fv1 <- apply_filter_sgolay(pv1, data_points = features, n = 41, p = 3)
+fv1 <- apply_filter_sgolay(pv1, data_points = c("Nose"), n = 41, p = 3)
 
 plot(fv1)
 
