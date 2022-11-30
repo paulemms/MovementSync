@@ -1,12 +1,16 @@
 # QUERIES
+# Do we want summary statistics for onsets to be broken down by Tala?
 
 # DONE
-# Tabular summary functions: added simple summary function to analyze.wavelet
+# Updated default onsetselected graphs, added autoplots
+# Generated a reference beat time point from the mean
+# Tabular summary functions: added simple summary function to analyze.wavelet - maybe output table as CSV?
 
 # TODO
+# Rename Tier column as Segment in splicing tables
 # Splicing for proportion of interval on metre objects
-# generate splicing table from annotation data such that segments of equal length
-# add default data set
+# Generate splicing table from annotation data such that segments of equal length
+# Add default data set
 # ensure we treat granger test data as time series so lags computed correctly
 # apply type functions to SplicedView - return list of objects from function output OK
 # set operations on the SplicedViews? - see generics package for setops

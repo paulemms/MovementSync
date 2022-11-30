@@ -1,5 +1,6 @@
 # Test the statistical analysis functions
-
+library(ggplot2)
+library(GGally)
 rm(list=ls())
 devtools::load_all()
 
@@ -123,25 +124,25 @@ splicing_list$Original <- splicing_tabla_solo_df
 sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv1, splicing_df = x))
 
 autoplot(sv_list$Original)
-autoplot(sv_list$`Sample splice 1`)
+autoplot(sv_list[[1]])
 
 # Extract a named segment from each sample
 segment_list <- lapply(sv_list, function(x) {
   view_list <- split(x)
   view_list[[which(names(view_list) == 'tabla solo.1')]]
 })
-autoplot(segment_list$`Sample splice 3`)
+autoplot(segment_list[[1]])
 
 # Power spectrum of named segment from each sample
 wavelet_tabla_list <- lapply(segment_list, analyze_wavelet, column = "Nose_x_Central_Sitar")
 plot_power_spectrum(wavelet_tabla_list$Original, segment_list$Original)
-plot_power_spectrum(wavelet_tabla_list$`Sample splice 3`, segment_list$`Sample splice 3`)
+plot_power_spectrum(wavelet_tabla_list[[1]], segment_list[[1]])
 ave_power_tabla <- sapply(wavelet_tabla_list, function(x) x$Power.avg)
 View(ave_power_tabla)
 plot.ts(ave_power_tabla[, 1:10], ann = FALSE)
 
 # Compare original with samples - how? max ave power?
-max_ave_power_original <- max(ave_power_tabla)
+max_ave_power_original <- max(ave_power_tabla[, 'Original'])
 max_ave_power_dist <- apply(ave_power_tabla, 2, max, na.rm = TRUE)
 plot(max_ave_power_dist)
 abline(h=max_ave_power_original)
@@ -183,47 +184,68 @@ autoplot(sv_metre)
 r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 o1 <- get_onsets_selected_data(r1)
 plot(o1)
+autoplot(o1)
 r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 o2 <- get_onsets_selected_data(r2)
 plot(o2)
+autoplot(o2)
 r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)
 o3 <- get_onsets_selected_data(r3)
 plot(o3, instrument = 'Onset')
+autoplot(o3, instrument = 'Onset')
 r4 <- get_recording("NIRP1_VS_Hams", fps = 25)
 o4 <- get_onsets_selected_data(r4)
 plot(o4, instrument = 'Onset')
+autoplot(o4, instrument = 'Onset')
 r5 <- get_recording("Gagaku_5_Juha", fps = 60)
 o5 <- get_onsets_selected_data(r5)
+plot(o5, instrument = 'Hichiriki', matra = 'SD_T')
+autoplot(o5, instrument = 'Hichiriki', matra = 'SD_T')
 
 instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa",
                  "Ryuteki", "Hichiriki", "Sho", "Biwa_RW", "Shoko_RW", "Taiko_LW",
                  "Taiko_RW")
-plot(o5, instrument = 'Kakko', matra = 'SD_T')
 
-# instrument_list <- lapply(o5, function(x) x[,instruments,drop=FALSE])
-# diff_dfr <- dplyr::bind_rows(instrument_list, .id = 'Tala')
-# diff_dfr <- cbind(Ref_Beat_Time = rowMeans(diff_dfr[instruments], na.rm = TRUE), diff_dfr)
-#
-# instrument_combn <- combn(instruments, 2)
-#
-# output_dfr <- data.frame(Ref_Beat_Time = rowMeans(diff_dfr[instruments], na.rm = TRUE))
-# for (j in seq_len(ncol(instrument_combn))) {
-#   inst1 <- instrument_combn[1, j]
-#   inst2 <- instrument_combn[2, j]
-#   col_name <- paste(inst1, inst2, sep = "-")
-#   output_dfr[col_name] <- diff_dfr[inst1] - diff_dfr[inst2]
-# }
+# Difference in onsets for each instrument pair
+difference1_dfr <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
+ggpairs(difference1_dfr, columns = 2:4, aes(colour = Tala))
+difference2_dfr <- difference_onsets(o2, instruments = c('Inst', 'Tabla'))
+ggpairs(difference2_dfr, columns = 2:4, aes(colour = Tala))
+difference5_dfr <- difference_onsets(o5, instruments = instruments)
+ggpairs(difference5_dfr, columns = 2:5, aes(colour = Tala)) # only one Tala in plot
 
-dfr <- get_processed_onsets(o5, instruments = instruments)
-pairs(dfr[1:5])
+# Summary of difference in onsets - currently ignoring Tala ???? but ok for o5 because there is one
+summary_dfr <- summary_onsets(o5, instruments = instruments)
+View(summary_dfr)
+par(mar=c(5,10,2,1))
+barplot(Mean_Absolute_Difference  ~ Instrument_Pair, ylab = "", cex.names = 0.5,
+        las = 2, horiz = TRUE, main = "Mean Absolute Onset Differences of Instrument Pairs",
+        data = summary_dfr)
+ggplot(summary_dfr) +
+  geom_col(aes(x = Mean_Absolute_Difference, y = Instrument_Pair))
 
-# Do autoplots for onsetselected
-# Change default plot for onset selected to something simpler - force column to plot to be specified?
+# Splice the difference
+d5 <- get_duration_annotation_data(r5)
+splicing_dfr <- splice_time(d5, tier = 'Section')
+segmented_differences_dfr <- difference_onsets(o5, instruments = instruments, splicing_dfr = splicing_dfr)
+View(segmented_differences_dfr)
+ggpairs(segmented_differences_dfr, columns = 3:6, aes(colour = Segment))
+ggpairs(segmented_differences_dfr, columns = c(3, 7:9), aes(colour = Segment))
+
+# Calculate summary statistics on the segments
+summary_segmented_list <- summary_onsets(o5, instruments = instruments, splicing_dfr)
+summary_segmented_list$C.v2[1:3, ]
+
+# Visualise stats on segment A
+barplot(Mean_Absolute_Difference  ~ Instrument_Pair, ylab = "", cex.names = 0.5,
+        las = 2, horiz = TRUE, main = "Mean Absolute Onset Differences of Instrument Pairs",
+        data = summary_segmented_list$A.v2)
+
 # difference based Inst, + others and add differences in time as columns
-# generate a reference beat time point from the mean
 # mean sd, mean of absolute  from second object
 # subset onset and summary on sections in annotation
 
+# TODO:
 # Windows around reference points and then set operations to
 # subset onset data with a condition based on duration annotation data
 # subsetting between objects and sampling

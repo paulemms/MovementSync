@@ -44,17 +44,20 @@ autoplot.Duration <- function(obj) {
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.OnsetsSelected <- function(obj) {
+autoplot.OnsetsSelected <- function(obj, instrument = 'Inst', matra = 'Matra') {
 
   dfr_list <- obj[sapply(obj, class) == 'data.frame']
-  df <- dplyr::bind_rows(dfr_list, .id = "Rhythm")
+  df <- dplyr::bind_rows(dfr_list, .id = "Tala")
+  stopifnot(instrument %in% colnames(df), matra %in% colnames(df))
 
-  ggplot2::ggplot(df, ggplot2::aes(Inst, Inst.Peak)) +
-    ggplot2::geom_point() +
-    ggplot2::facet_grid(Rhythm ~ Inst.Name, scales="free_y") +
-    ggplot2::labs(title = "OnsetsSelected Object") +
-    ggplot2::xlab("Inst / min:sec") +
-    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+  df <- dplyr::rename(df, 'Matra' = matra)
+  df <- df[!is.na(df[instrument]),,drop=FALSE]
+
+  ggplot2::ggplot(df) +
+    ggplot2::geom_bar(ggplot2::aes(x = Matra, fill = Tala), stat = "count",
+                      position = ggplot2::position_dodge2(width = 0.9, preserve = 'single')) +
+    ggplot2::ylab("Onset Count") +
+    ggplot2::labs(title = paste("OnsetsSelected Object:", instrument))
 
 }
 

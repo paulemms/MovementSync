@@ -119,7 +119,10 @@ get_duration_annotation_data <- function(recording) {
   for (fil in duration_files) {
     df <- read.csv(fil, header = FALSE)
     df <- df[, colSums(is.na(df)) != nrow(df), drop=FALSE] # remove any all NA columns
-    colnames(df) <- c("Tier", "In", "Out", "Duration", "Comments")
+    is_numeric_col <- sapply(df, function(x) class(x) == "numeric")
+    is_character_col <- sapply(df, function(x) class(x) == "character")
+    colnames(df)[is_numeric_col] <- c("In", "Out", "Duration")
+    colnames(df)[is_character_col] <- c("Tier", "Comments")
     output_list[[basename(fil)]] <- df
   }
 
