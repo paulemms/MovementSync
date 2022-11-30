@@ -102,6 +102,7 @@ plot(fv2_OptFlow_Tabla)
 ################################################################################
 r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)
 o3 <- get_onsets_selected_data(r3)
+plot(o3, instrument = 'Onset')
 m3 <- get_metre_data(r3)
 plot(m3)
 d3 <- get_duration_annotation_data(r3)
@@ -120,6 +121,7 @@ plot(rv3_Cam2_Tabla, nc=3) # Ear only has one point on sampling
 ################################################################################
 r4 <- get_recording("NIRP1_VS_Hams", fps = 25)
 o4 <- get_onsets_selected_data(r4)
+plot(o4, instrument = 'Onset')
 m4 <- get_metre_data(r4)
 plot(m4)
 # 5 views
@@ -142,8 +144,8 @@ instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa"
                  "Taiko_RW")
 
 r5 <- get_recording("Gagaku_5_Juha", fps = 60)
-o5 <- get_onsets_selected_data(r5, instrument_cols = instruments) # not in same format as others
-plot(o5) # Peak set to zero as not in data
+o5 <- get_onsets_selected_data(r5)
+plot(o5, instrument = 'Hichiriki', matra = 'SD_T')
 m5 <- get_metre_data(r5)
 autoplot(m5)
 d5 <- get_duration_annotation_data(r5) # not in same format as others
@@ -165,4 +167,5 @@ autoplot(fv_view$V3_Ryuteki)
 autoplot(fv_view$V3_Ryuteki) + autolayer(d5, expr = 'Tier == "Section"')
 autoplot(fv_view$V3_Ryuteki) + autolayer(m5) +
   xlim_duration(d5, 'Tier == "Section" & Comments == "B"')
-autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", alpha = 0)
+autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", alpha = 0,
+                                         instrument_cols = instruments)

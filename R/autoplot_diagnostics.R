@@ -45,8 +45,9 @@ autoplot.Duration <- function(obj) {
 #' @exportS3Method
 #' @rdname autoplot
 autoplot.OnsetsSelected <- function(obj) {
-  class(obj) <- NULL
-  df <- dplyr::bind_rows(obj, .id = "Rhythm")
+
+  dfr_list <- obj[sapply(obj, class) == 'data.frame']
+  df <- dplyr::bind_rows(dfr_list, .id = "Rhythm")
 
   ggplot2::ggplot(df, ggplot2::aes(Inst, Inst.Peak)) +
     ggplot2::geom_point() +
@@ -204,15 +205,23 @@ NULL
 
 
 #' @param alpha
+#'
 #' @param colour
 #' @param fill
+#' @param obj
+#' @param instrument_cols
+#' @param ...
 #'
 #' @exportS3Method
 #' @rdname autolayer
 autolayer.OnsetsSelected <- function(obj, colour = "Inst.Name", fill = "Tala",
-                                     alpha = 0.4, ...) {
-  class(obj) <- NULL
-  df <- dplyr::bind_rows(obj, .id = "Tala")
+                                     alpha = 0.4, instrument_cols = NULL, ...) {
+  dfr_list <- obj[sapply(obj, class) == 'data.frame']
+  df <- dplyr::bind_rows(dfr_list, .id = "Tala")
+  if (!is.null(instrument_cols)) {
+    df <- tidyr::pivot_longer(df, cols = instrument_cols, names_to = "Inst.Name",
+                              values_to = "Inst")
+  }
   df <- dplyr::group_by(df, Tala, Inst.Name)
   rects <- dplyr::summarise(df, Inst_Min=min(Inst, na.rm=TRUE), Inst_Max=max(Inst, na.rm=TRUE))
 

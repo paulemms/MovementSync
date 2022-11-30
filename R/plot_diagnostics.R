@@ -20,8 +20,9 @@ plot.Duration <- function(obj, ...) {
 #' Plot a OnsetsSelected S3 object
 #'
 #' @param obj
-#' @param columns
-#' @param ... passed to plot.zoo
+#' @param ... passed to [barplot()]
+#' @param instrument
+#' @param matra
 #'
 #' @return
 #'
@@ -30,10 +31,20 @@ plot.Duration <- function(obj, ...) {
 #' o <- get_onsets_selected_data(r)
 #' plot(o)
 #' @exportS3Method
-plot.OnsetsSelected <- function(obj, column="Inst.Peak", ...) {
-  zoo_list <- lapply(obj, function(x) zoo::zoo(x[[column]], order.by = as.numeric(rownames(x))))
-  z <- do.call(merge, zoo_list)
-  plot(z, xlab = "Row Number", main = paste("OnsetsSelected Object -", column), ...)
+plot.OnsetsSelected <- function(obj, instrument = 'Inst', matra = 'Matra', ...) {
+
+  dfr_list <- obj[sapply(obj, class) == 'data.frame']
+  df <- dplyr::bind_rows(dfr_list, .id = 'Tala')
+  stopifnot(instrument %in% colnames(df), matra %in% colnames(df))
+
+  df <- dplyr::rename(df, 'Matra' = matra)
+  df['is_na_column'] <- !is.na(df[instrument])
+
+  group_df <- dplyr::group_by(df, Matra, Tala)
+  output_df <- dplyr::summarise(group_df, Number_of_Onsets = sum(is_na_column))
+
+  barplot(Number_of_Onsets ~ Tala + Matra, beside = T, legend.text = T, data = output_df,
+          main = paste("OnsetsSelected Object:", instrument))
 }
 
 

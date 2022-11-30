@@ -45,20 +45,6 @@ plot(w$Power.avg) # raw data from wavelet object using base R plot
 # Number of rows on each segment in a list of Tiers using base R
 sapply(view_smile_list, function(x) nrow(x$df))
 
-# Apply summary function to each data point column in a SplicedView and return list of output data
-apply_summary_spliceview <- function(sv, FUN, simplify = FALSE, USE.NAMES = FALSE, ...) {
-  v_list <- split(sv)
-  sapply(v_list, function(x) {
-    keys <- match(c('Tier', 'Frame', 'Time'), colnames(x$df), nomatch = 0)
-    dfr <- x$df[-keys]
-    apply(dfr, 2, function(y) FUN(y, ...))
-  }, simplify = simplify, USE.NAMES = USE.NAMES)
-}
-# Simplify list to matrix
-sapply_summary_spliceview <- function(sv, FUN, simplify = TRUE, USE.NAMES = TRUE, ...) {
-  apply_summary_spliceview(sv, FUN, simplify = simplify, USE.NAMES = USE.NAMES, ...)
-}
-
 # Simple stats on each view data column - sapply gives named matrices
 View(sapply_summary_spliceview(sv_duration_smile, mean, na.rm=TRUE))
 View(sapply_summary_spliceview(sv_duration_body, sd, na.rm=TRUE))
@@ -194,25 +180,44 @@ sv_metre <- get_spliced_view(jv1, splicing_df = splicing_metre_df)
 autoplot(sv_metre)
 
 # Splices based on OnsetSelected object
+r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 o1 <- get_onsets_selected_data(r1)
+plot(o1)
 r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 o2 <- get_onsets_selected_data(r2)
+plot(o2)
 r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)
 o3 <- get_onsets_selected_data(r3)
+plot(o3, instrument = 'Onset')
 r4 <- get_recording("NIRP1_VS_Hams", fps = 25)
 o4 <- get_onsets_selected_data(r4)
+plot(o4, instrument = 'Onset')
 r5 <- get_recording("Gagaku_5_Juha", fps = 60)
+o5 <- get_onsets_selected_data(r5)
 
 instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa",
                  "Ryuteki", "Hichiriki", "Sho", "Biwa_RW", "Shoko_RW", "Taiko_LW",
                  "Taiko_RW")
-o5 <- get_onsets_selected_data(r5, instrument_cols = instruments)
+plot(o5, instrument = 'Kakko', matra = 'SD_T')
 
+# instrument_list <- lapply(o5, function(x) x[,instruments,drop=FALSE])
+# diff_dfr <- dplyr::bind_rows(instrument_list, .id = 'Tala')
+# diff_dfr <- cbind(Ref_Beat_Time = rowMeans(diff_dfr[instruments], na.rm = TRUE), diff_dfr)
+#
+# instrument_combn <- combn(instruments, 2)
+#
+# output_dfr <- data.frame(Ref_Beat_Time = rowMeans(diff_dfr[instruments], na.rm = TRUE))
+# for (j in seq_len(ncol(instrument_combn))) {
+#   inst1 <- instrument_combn[1, j]
+#   inst2 <- instrument_combn[2, j]
+#   col_name <- paste(inst1, inst2, sep = "-")
+#   output_dfr[col_name] <- diff_dfr[inst1] - diff_dfr[inst2]
+# }
 
-instruments <- c('Inst', "Tabla")
-instrument_list <- lapply(o5, function(x) x[,instruments,drop=FALSE])
-diff_dfr <- dplyr::bind_rows(instrument_list, .id = 'Tala')
+dfr <- get_processed_onsets(o5, instruments = instruments)
+pairs(dfr[1:5])
 
+# Do autoplots for onsetselected
 # Change default plot for onset selected to something simpler - force column to plot to be specified?
 # difference based Inst, + others and add differences in time as columns
 # generate a reference beat time point from the mean

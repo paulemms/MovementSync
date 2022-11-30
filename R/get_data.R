@@ -25,7 +25,6 @@ get_recording <- function(stem, fps, folder_in = "Original", path = "~/movements
 #' Get onsets selected files
 #'
 #' @param recording
-#' @param instrument_cols
 #'
 #' @return
 #' @export
@@ -33,7 +32,7 @@ get_recording <- function(stem, fps, folder_in = "Original", path = "~/movements
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o <- get_onsets_selected_data(r)
-get_onsets_selected_data <- function(recording, instrument_cols = NULL) {
+get_onsets_selected_data <- function(recording) {
 
   # Identify onset files
   is_onsets_selected_file <- grepl(
@@ -49,14 +48,11 @@ get_onsets_selected_data <- function(recording, instrument_cols = NULL) {
     if ("Matra" %in% colnames(df)) {
       df[["Matra"]] <- suppressWarnings(as.integer(df[["Matra"]]))
     }
-    if (!is.null(instrument_cols)) {
-      df <- tidyr::pivot_longer(df, cols = instrument_cols, names_to = "Inst.Name",
-                          values_to = "Inst")
-      df[["Inst.Peak"]] <- 0
-    }
     output_onsets_selected[[basename(fil)]] <- df
   }
   names(output_onsets_selected) <- sub(".*_Onsets_Selected_(.*)\\.csv", "\\1", names(output_onsets_selected))
+
+  output_onsets_selected$recording <- recording
 
   class(output_onsets_selected) <- "OnsetsSelected"
   invisible(output_onsets_selected)

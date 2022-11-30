@@ -5,7 +5,7 @@
 #' @param obj SplicedView object
 #' @param var1
 #' @param var2
-#' @param lag in seconds
+#' @param lag in seconds (rounded to nearest frame)
 #' @param granger_fn
 #'
 #' @return
@@ -28,10 +28,9 @@ granger_test <- function(obj, var1, var2, lag = 1, granger_fn = ms_grangertest2)
   stopifnot("SplicedView" %in% class(obj))
 
   df <- obj$df
-  order <- lag * obj$recording$fps
+  order <- round(lag * obj$recording$fps)
   df <- dplyr::select(df, Frame, Tier, !!var1, !!var2)
   df <- dplyr::group_by(df, Tier)
-
 
   # Error tests
   splicing_df <- obj$splicing_df
@@ -197,7 +196,7 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #' @param sv
 #' @param columns
 #' @param sig_level
-#' @param lag
+#' @param lag in seconds (rounded to nearest frame)
 #' @param granger_fn
 #' @param ...
 #'
@@ -313,7 +312,7 @@ plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1),
 #'
 #' @param x
 #' @param y
-#' @param order
+#' @param order number of lags (in frames)
 #' @param na.action
 #' @param ...
 #'
@@ -378,7 +377,7 @@ ms_grangertest1 <- function(x, y, order = 1, na.action = na.omit, ...) {
 #'
 #' @param x
 #' @param y
-#' @param order
+#' @param order number of lags (in frames)
 #' @param na.action
 #' @param ...
 #'
@@ -390,6 +389,7 @@ ms_grangertest1 <- function(x, y, order = 1, na.action = na.omit, ...) {
 #' ms_grangertest2(ChickEgg, order = 3)
 
 ms_grangertest2 <- function(x, y, order = 1, na.action = na.omit, ...) {
+
   ## either x is a 2-column time series
   ## or x and y are univariate time series
   if((NCOL(x) == 2) && missing(y)) {
