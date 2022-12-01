@@ -141,6 +141,8 @@ ave_power_tabla <- sapply(wavelet_tabla_list, function(x) x$Power.avg)
 View(ave_power_tabla)
 plot.ts(ave_power_tabla[, 1:10], ann = FALSE)
 
+# Filtering of output segments - process list
+
 # Compare original with samples - how? max ave power?
 max_ave_power_original <- max(ave_power_tabla[, 'Original'])
 max_ave_power_dist <- apply(ave_power_tabla, 2, max, na.rm = TRUE)
@@ -164,7 +166,6 @@ gap_dfr
 
 # First Gap gives start of initial segment
 # Need to reject samples going beyond recording length
-
 
 # plot sampling data frame as horizontal line and stack to visualise areas of avoidance
 # https://stackoverflow.com/questions/64334320/r-horizontal-bar-chart-simple-gantt-chart
