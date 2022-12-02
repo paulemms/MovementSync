@@ -61,6 +61,40 @@ apply_segment_spliceview <- function(sv, FUN, ...) {
   list(output = output_list, input = view_list)
 }
 
+
+#' @export
+#'
+#' @examples
+ave_power_over_samples <- function(jv, splicing_df, num_samples, column,
+                              include_original = TRUE) {
+
+  stopifnot(class(jv)[1] == "JoinedView")
+
+  splicing_list <- sample_splice(splicing_df, jv, num_samples = num_samples)
+  if (include_original) splicing_list$Original <- splicing_df
+
+  sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv, splicing_df = x))
+  df_list <- lapply(sv_list, ave_power_spliceview, column = column)
+  ave_power_df <- dplyr::bind_rows(df_list, .id = 'Sample')
+
+  sample_ave_power <- ave_power_df %>%
+    dplyr::filter(Sample != 'Original') %>%
+    dplyr::group_by(Period) %>%
+    dplyr::summarise(dplyr::across(!Sample, mean, na.rm = TRUE))
+
+  original_ave_power <- ave_power_df %>%
+    dplyr::filter(Sample == 'Original') %>%
+    dplyr::group_by(Period) %>%
+    dplyr::summarise(dplyr::across(!Sample, mean, na.rm = TRUE))
+  ave_power_df <- dplyr::bind_rows(Sample_Mean = sample_ave_power,
+                                   Original = original_ave_power, .id = 'Sample')
+
+  long_ave_power_df <- tidyr::pivot_longer(ave_power_df, cols = !c(Sample, Period),
+                                           names_to = 'Segment', values_to = 'Average_Power')
+  long_ave_power_df
+}
+
+
 #' @export
 #'
 #' @examples
@@ -77,7 +111,11 @@ pull_segment_spliceview <- function(sv, FUN, element, ...) {
 ave_power_spliceview <- function(sv, ...) {
   wavelet_list <- apply_segment_spliceview(sv, FUN = analyze_wavelet, ...)
   output_mat <- sapply(wavelet_list$output, function(x) x$Power.avg)
-  output_mat
+
+  obj <- wavelet_list$output[[1]]
+  period.tick.label <- 2^(obj$axis.2) / sv$recording$fps
+
+  cbind.data.frame(Period = period.tick.label, output_mat)
 }
 
 #' @export
@@ -108,9 +146,11 @@ sample_ave_power_spliceview <- function(sv, num_samples, replace = TRUE, ...) {
 }
 
 
-#' Randomly create matching segments
+#' Randomly create matching segments from a splicing table without overlaps
 #'
-#' Add a random offset and use rejection sampling.
+#' Works by adding a random offset to each start time in the splice. Uses rejection
+#' sampling to avoid overlaps with the input segments and a additional segments
+#' from a list of splices.
 #' @param splicing_dfr
 #' @param v
 #' @param num_samples
@@ -135,10 +175,10 @@ sample_splice <- function(splicing_dfr, v, num_samples, rejection_list = list())
   # Find max possible offset based on recording length
   max_time <- max(v$df[['Time']], na.rm = TRUE)
 
-  # Total span of segments
-  total_span <- max(splicing_dfr[['Start']], na.rm = TRUE) -
-    min(splicing_dfr[['Start']], na.rm = TRUE)
-  stopifnot(total_span <= max_time)
+  # Span of the splice
+  max_splice <- max(splicing_dfr[['End']], na.rm = TRUE)
+  min_splice <- min(splicing_dfr[['Start']], na.rm = TRUE)
+  stopifnot(min_splice >= 0, max_splice <= max_time)
 
   splicing_list <- list()
   current_num_samples <- 0
@@ -147,12 +187,14 @@ sample_splice <- function(splicing_dfr, v, num_samples, rejection_list = list())
   while(current_num_samples < num_samples) {
 
     # Random start times
-    start_times <- runif(num_samples, min = 0, max = max_time - total_span)
+    start_times <- runif(num_samples, min = -min_splice, max = max_time - max_splice)
 
     # Generate a list of new sampling data.frames
     new_splicing_list <- lapply(start_times, function(x) {
-      splicing_dfr[c('Start', 'End')] <- splicing_dfr[c('Start', 'End')] + x
-      splicing_dfr
+      new_splicing_dfr <- splicing_dfr
+      new_splicing_dfr[c('Start', 'End')] <- x + new_splicing_dfr[c('Start', 'End')]
+      if (new_splicing_dfr[nrow(new_splicing_dfr), 'End'] > max_time) browser()
+      new_splicing_dfr
     })
 
     # Which ones overlap the original splicing?
@@ -164,6 +206,89 @@ sample_splice <- function(splicing_dfr, v, num_samples, rejection_list = list())
 
     # Remove the overlapping ones
     splicing_list <- c(splicing_list, new_splicing_list[!is_overlapped])
+    current_num_samples <- length(splicing_list)
+    message(current_num_samples)
+  }
+
+  splicing_list <- splicing_list[seq_len(num_samples)]
+  names(splicing_list) <- paste('Sample splice', seq_along(splicing_list))
+  splicing_list
+}
+
+
+#' Randomly create matching segments from a splicing table without overlaps
+#'
+#' Works by randomly varying the gaps between segments assuming that the gap number
+#' follow a Poisson process with rate given by the average sample gap length in
+#' the input splice. Durations of segments remain the same.
+#'
+#' Uses rejection sampling to avoid overlaps with the input segments and a
+#' additional segments from a list of splices.
+#' @param splicing_dfr
+#' @param v
+#' @param num_samples
+#' @param rejection_list
+#'
+#' @return list of splicing data.frames
+#' @export
+#'
+#' @examples
+#' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' d1 <- get_duration_annotation_data(r1)
+#' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
+#' splicing_df <- splice_time(d1, tier ='INTERACTION', comments = 'Mutual look and smile')
+#' x <- sample_gap_splice(splicing_df, rv1, num_samples = 1000)
+sample_gap_splice <- function(splicing_dfr, v, num_samples, rejection_list = list()) {
+
+  stopifnot(is.data.frame(splicing_dfr), "View" %in% class(v),
+            num_samples > 0, is.list(rejection_list))
+
+  # Discard random splices that appear in the rejection list - includes the original splice
+  rejection_splices <- c(list(splicing_dfr), rejection_list)
+
+  # Find max possible offset based on recording length
+  max_time <- max(v$df[['Time']], na.rm = TRUE)
+
+  # Total span of segments
+  total_span <- max(splicing_dfr[['Start']], na.rm = TRUE) -
+    min(splicing_dfr[['Start']], na.rm = TRUE)
+  stopifnot(total_span <= max_time)
+
+  splicing_list <- list()
+  current_num_samples <- 0
+
+  # Number of gaps follows Poisson process
+  gap_dfr <- dplyr::mutate(splicing_dfr, Next_Start = dplyr::lead(Start))
+  gap_dfr <- dplyr::mutate(gap_dfr, Duration = End - Start)
+  gap_dfr <- dplyr::mutate(gap_dfr, Gap = Next_Start - Start)
+  gap_dfr <- dplyr::mutate(gap_dfr, Prev_Gap = dplyr::lag(Gap, default = Start[1]))
+  duration <- splicing_dfr$End - splicing_dfr$Start
+  lagged_duration <- dplyr::lag(duration, default = 0)
+  ave_gap_splice <- mean(gap_dfr$Prev_Gap, na.rm = TRUE) # seconds
+
+  # Repeat until we get the desired number of samples
+  while(current_num_samples < num_samples) {
+
+    # Generate a list of new sampling data.frames
+    new_splicing_list <- lapply(seq_len(num_samples), function(x) {
+      # gap is interarrival time and exponentially distributed
+      new_gaps <- rexp(nrow(splicing_dfr), rate = 1 / ave_gap_splice)
+      new_splicing_dfr <- splicing_dfr
+      new_splicing_dfr$Start <- cumsum(new_gaps + lagged_duration)
+      new_splicing_dfr$End <- new_splicing_dfr$Start + duration
+      new_splicing_dfr
+    })
+
+    # Which ones overlap the original splicing or go beyond recording?
+    is_rejected <- rep(FALSE, length(new_splicing_list))
+    for (rsp in rejection_splices) {
+      is_rejected <- is_rejected |
+        sapply(new_splicing_list, function(x) is_splice_overlapping(x, rsp)) |
+        sapply(new_splicing_list, function(x) max(x[nrow(x), 'End'], na.rm = TRUE) > max_time)
+    }
+
+    # Remove the overlapping ones
+    splicing_list <- c(splicing_list, new_splicing_list[!is_rejected])
     current_num_samples <- length(splicing_list)
     message(current_num_samples)
   }

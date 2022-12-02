@@ -102,20 +102,15 @@ samp_ave_power_body <- sample_ave_power_spliceview(
 plot(samp_ave_power_smile)
 plot(samp_ave_power_body)
 
-# Tabla solos
+# Set of segments to compare against matching segments elsewhere in performance
 splicing_tabla_solo_df <- splice_time(d1, tier = 'Event', comments = 'tabla solo')
 splicing_tabla_solo_df
 
-# Randomly create matching segments - add a random offset and use rejection sampling
+# Randomly create matching segments - add a random offset to start times
+# and use rejection sampling to avoid tabla solo segments
 splicing_list <- sample_splice(splicing_tabla_solo_df, jv1, num_samples = 100)
 
-# Check distribution of start times
-start_times <- unlist(lapply(splicing_list, function(x) x$Start))
-plot(start_times)
-abline(h=splicing_tabla_solo_df$Start)
-abline(h=splicing_tabla_solo_df$End)
-
-# Plot Start and End times
+# Check distribution of samples - plot superimposed sample Start and End segments
 df <- dplyr::bind_rows(splicing_list)
 ggplot(df, aes(y = Segment)) +
   geom_linerange(aes(xmin = Start, xmax = End)) +
@@ -125,52 +120,56 @@ ggplot(df, aes(y = Segment)) +
 # Add in the original for comparison
 splicing_list$Original <- splicing_tabla_solo_df
 
-# Add see the original segment covering bands
+# Add the original segments covering bands
 df <- dplyr::bind_rows(splicing_list)
 ggplot(df, aes(y = Segment)) +
   geom_linerange(aes(xmin = Start, xmax = End)) +
   geom_rect(data = splicing_tabla_solo_df,
             aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5)
 
-
 # Apply each sample splice to JoinedView to get a list of SplicedViews
 sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv1, splicing_df = x))
-
-autoplot(sv_list$Original)
-autoplot(sv_list[[1]])
 
 # Extract a named segment from each sample
 segment_list <- lapply(sv_list, function(x) {
   view_list <- split(x)
-  view_list[[which(names(view_list) == 'tabla solo.1')]]
+  view_list[[which(names(view_list) == 'tabla solo.2')]]
 })
-autoplot(segment_list[[1]])
 
-# Power spectrum of named segment from each sample
+# Power spectrum of tabla solo.2 segment from each sample
 wavelet_tabla_list <- lapply(segment_list, analyze_wavelet, column = "Nose_x_Central_Sitar")
 plot_power_spectrum(wavelet_tabla_list$Original, segment_list$Original)
+plot_average_power(wavelet_tabla_list$Original, segment_list$Original)
 plot_power_spectrum(wavelet_tabla_list[[1]], segment_list[[1]])
-ave_power_tabla <- sapply(wavelet_tabla_list, function(x) x$Power.avg)
-View(ave_power_tabla)
-plot.ts(ave_power_tabla[, 1:10], ann = FALSE)
+plot_average_power(wavelet_tabla_list[[1]], segment_list[[1]])
 
 # Filtering of output segments - process list - for fixed time - maybe an option on the
 # splice for fixed windows from the provided segments?
 
-# Compare original with samples - how? max ave power?
-max_ave_power_original <- max(ave_power_tabla[, 'Original'])
-max_ave_power_dist <- apply(ave_power_tabla, 2, max, na.rm = TRUE)
-plot(max_ave_power_dist)
-abline(h=max_ave_power_original)
+# Compare original ave power with sampled average power on tabla solo.1 segments
+# max_ave_power_original <- max(ave_power_tabla[, 'Original'])
+# max_ave_power_dist <- apply(ave_power_tabla, 2, max, na.rm = TRUE)
+# plot(max_ave_power_dist)
+# abline(h=max_ave_power_original)
+
+# Apply a function across samples AND segments
+long_ave_power_df <- ave_power_over_samples(jv1, splicing_tabla_solo_df, num_samples = 10,
+                                       column = 'Nose_x_Central_Sitar')
+
+ggplot(long_ave_power_df) +
+  geom_line(aes(x = Period, y = Average_Power, colour = Sample)) +
+  scale_x_continuous(trans='log2') +
+  facet_wrap(~Segment)
 
 # Avoid some sections with a condition
-avoid_list <- list(avoid_segment1 = c(3000, 3100), avoid_segment2 = c(4000, 4100))
+avoid_list <- list(avoid_segment1 = c(10, 100), avoid_segment2 = c(2500, 2600))
 avoid_splice_dfr <- splice_time(avoid_list)
 
 # Randomly create matching segments - add a random offset and use rejection sampling
 splicing2_list <- sample_splice(splicing_tabla_solo_df, jv1, num_samples = 100,
                                 rejection_list = list(avoid_splice_dfr))
 df <- dplyr::bind_rows(splicing2_list, .id = 'Sample')
+avoid_splice_dfr$Segment <- NA
 ggplot(df, aes(y = Segment)) +
   geom_linerange(aes(xmin = Start, xmax = End)) +
   geom_rect(data = splicing_tabla_solo_df,
@@ -188,23 +187,28 @@ ggplot(df) +
   geom_rect(data = avoid_splice_dfr[-1],
             aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
 
-# Same durations but not necessarily same gaps? number of gaps follows Poisson process?
-gap_dfr <- dplyr::mutate(splicing_duration1_df, Next_Start = dplyr::lead(Start))
-gap_dfr <- dplyr::mutate(gap_dfr, Duration = End - Start)
-gap_dfr <- dplyr::mutate(gap_dfr, Gap = Next_Start - Start)
-gap_dfr <- dplyr::mutate(gap_dfr, Prev_Gap = dplyr::lag(Gap, default = Start[1]))
-ave_gap_splice <- mean(gap_dfr$Prev_Gap, na.rm = TRUE) # seconds
-# interarrival time gap occuring is exponentially distributed
-gap_dfr <- dplyr::mutate(gap_dfr, New_Gap = rexp(nrow(splicing_duration1_df), rate = 1/ave_gap_splice))
-gap_dfr <- dplyr::mutate(gap_dfr, New_Start = cumsum(New_Gap + dplyr::lag(Duration, default = 0)),
-                         New_End = New_Start + Duration)
-gap_dfr
+# Sample using a Poisson process to count gaps but maintain segment durations
+splicing3_list <- sample_gap_splice(splicing_tabla_solo_df, jv1, num_samples = 100,
+                                    rejection_list = list(avoid_splice_dfr))
+df <- dplyr::bind_rows(splicing3_list, .id = 'Sample')
+ggplot(df, aes(y = Segment)) +
+  geom_linerange(aes(xmin = Start, xmax = End)) +
+  geom_rect(data = splicing_tabla_solo_df,
+            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5) +
+  geom_rect(data = avoid_splice_dfr,
+            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
 
-# First Gap gives start of initial segment
-# Need to reject samples going beyond recording length
+# Distribution of new segments faceted by original segment
+ggplot(df) +
+  geom_linerange(aes(y = Sample, xmin = Start, xmax = End, colour = Segment)) +
+  theme(axis.ticks.y=element_blank(), axis.text.y=element_blank(), panel.background = element_blank()) +
+  facet_wrap(~Segment) +
+  geom_rect(data = splicing_tabla_solo_df,
+            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5) +
+  geom_rect(data = avoid_splice_dfr[-1],
+            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
 
-# plot sampling data frame as horizontal line and stack to visualise areas of avoidance
-# https://stackoverflow.com/questions/64334320/r-horizontal-bar-chart-simple-gantt-chart
+# Vary the durations of the segments and keep the gaps the same??? durations exponential dist
 
 # Splices based on Metre object
 m1 <- get_metre_data(r1)
@@ -262,13 +266,16 @@ par(old_params)
 ggplot(summary_dfr) +
   geom_col(aes(x = Mean_Absolute_Difference, y = Instrument_Pair))
 
-# Splice the difference
+# Splice the processed onsets
 d5 <- get_duration_annotation_data(r5)
 splicing_dfr <- splice_time(d5, tier = 'Section')
-segmented_differences_dfr <- difference_onsets(o5, instruments = instruments, splicing_dfr = splicing_dfr)
-View(segmented_differences_dfr)
-ggpairs(segmented_differences_dfr, columns = 3:6, aes(colour = Segment))
-ggpairs(segmented_differences_dfr, columns = c(3, 7:9), aes(colour = Segment))
+segmented_po <- difference_onsets(o5, instruments = instruments, splicing_dfr = splicing_dfr)
+View(segmented_po)
+ggpairs(segmented_po, columns = 3:6, aes(colour = Segment))
+ggpairs(segmented_po, columns = c(3, 7:9), aes(colour = Segment))
+
+# Do splicing via a separate function get_spliced_onsets like views
+# spliced_onsets <- get_spliced_onsets(po5, splicing_dfr)
 
 # Calculate summary statistics on the segments
 summary_segmented_list <- summary_onsets(o5, instruments = instruments, splicing_dfr)

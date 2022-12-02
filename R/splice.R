@@ -231,6 +231,41 @@ get_spliced_view <- function(v, splicing_df) {
 }
 
 
+#' Get spliced onset data from OnsetsDifference object
+#'
+#' @param po OnsetsDifference object
+#' @param splicing_df
+#'
+#' @return SplicedOnsetsDifference object
+#' @export
+#'
+#' @examples
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' po1 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
+#' l <- list(a = c(0, 1000), b = c(1000, 2000), c = c(2000, 3000))
+#' splicing_df <- splice_time(l)
+#' so <- get_spliced_onsets(po1, splicing_df)
+get_spliced_onsets <- function(po, splicing_df) {
+  stopifnot("OnsetsDifference" %in% class(po), class(splicing_df[['Segment']]) == "character")
+  df <- na.omit(po)
+
+  df_list <- list()
+  for (r in seq_len(nrow(splicing_df))) {
+    segment <- splicing_df[r, "Segment"]
+    spliced_df <- df[df$Ref_Beat_Time >= splicing_df[r, "Start"] &
+                       df$Ref_Beat_Time <= splicing_df[r, "End"],, drop = FALSE]
+    # Segments with the same name get appended to df_list[[segment]]
+    df_list[[segment]] <- dplyr::bind_rows(df_list[[segment]], spliced_df)
+    df_list[[segment]] <- dplyr::arrange(df_list[[segment]], Ref_Beat_Time, Segment)
+  }
+
+  l <- list(df_list = df_list, splicing_df = splicing_df)
+  class(l) <- c("SplicedOnsetsDifference")
+
+  invisible(l)
+}
+
+
 #' Get a list of Views from a SplicedView
 #'
 #' @param obj SplicedView object
