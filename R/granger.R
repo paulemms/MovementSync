@@ -29,12 +29,12 @@ granger_test <- function(obj, var1, var2, lag = 1, granger_fn = ms_grangertest2)
 
   df <- obj$df
   order <- round(lag * obj$recording$fps)
-  df <- dplyr::select(df, Frame, Tier, !!var1, !!var2)
-  df <- dplyr::group_by(df, Tier)
+  df <- dplyr::select(df, Frame, Segment, !!var1, !!var2)
+  df <- dplyr::group_by(df, Segment)
 
   # Error tests
   splicing_df <- obj$splicing_df
-  if (any(duplicated(splicing_df[['Tier']]))) {
+  if (any(duplicated(splicing_df[['Segment']]))) {
     stop("Not a valid splicing data.frame for Granger testing")
   }
 
@@ -50,8 +50,8 @@ granger_test <- function(obj, var1, var2, lag = 1, granger_fn = ms_grangertest2)
   df2 <- as.data.frame(t(sapply(l2, function(x) as.numeric(x[2,]))))
   colnames(df1) <- c("Res.Df", "Df", "F", "P_Value")
   colnames(df2) <- c("Res.Df", "Df", "F", "P_Value")
-  df1_add <- data.frame(Tier = unique(df$Tier), Var1 = var1, Var2 = var2)
-  df2_add <- data.frame(Tier = unique(df$Tier), Var1 = var2, Var2 = var1)
+  df1_add <- data.frame(Segment = unique(df$Segment), Var1 = var1, Var2 = var2)
+  df2_add <- data.frame(Segment = unique(df$Segment), Var1 = var2, Var2 = var1)
   output_df <- dplyr::bind_rows(dplyr::bind_cols(df1, df1_add),
                                 dplyr::bind_cols(df2, df2_add))
 
@@ -96,7 +96,7 @@ autoplot.GrangerTime <- function(obj, splicing_df = splicing_df, lev_sig = 0.05)
   title <- paste0(class(obj)[1], ": Lagged at ", obj$order / obj$recording$fps, "s")
   splicing_df$Centre <- (splicing_df$Start + splicing_df$End) / 2
   splicing_df$Width <- splicing_df$End - splicing_df$Start
-  df <- dplyr::inner_join(df, splicing_df[c('Tier', 'Centre', 'Width')], by = 'Tier')
+  df <- dplyr::inner_join(df, splicing_df[c('Segment', 'Centre', 'Width')], by = 'Segment')
   df$Test <- paste(df$Var1, df$Var2, sep = ' <- \n')
 
   ggplot2::ggplot(df) +
@@ -111,7 +111,7 @@ autoplot.GrangerTime <- function(obj, splicing_df = splicing_df, lev_sig = 0.05)
 
 #' Plot influence diagram from a GrangerTest object
 #'
-#' Shows arrows showing causality direction.
+#' Arrows show causality direction.
 #' @param obj GrangerTest object
 #' @param splicing_df
 #' @param lev_sig
@@ -139,7 +139,7 @@ plot_influence_diagram <- function(obj, splicing_df = splicing_df, lev_sig = 0.0
   df <- obj$df
 
   splicing_df$Centre <- (splicing_df$Start + splicing_df$End) / 2
-  df <- dplyr::inner_join(df, splicing_df[c('Tier', 'Centre')], by = 'Tier')
+  df <- dplyr::inner_join(df, splicing_df[c('Segment', 'Centre')], by = 'Segment')
   x <- df[c("Var1", "Centre", "P_Value")]
   wide_df <- tidyr::pivot_wider(x, names_from = "Var1", values_from = "P_Value")
   wide_df <- dplyr::mutate(wide_df, Value = dplyr::if_else(
@@ -265,8 +265,8 @@ plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1),
   df$mlog10pv <- ifelse(df$P_Value < obj$sig_level, -log10(df$P_Value), NA_real_)
 
   if (is.null(mfrow)) {
-    num_tiers <- length(unique(df$Tier))
-    mfrow <- c(num_tiers %/% 4 + (num_tiers %% 4 > 0), min(num_tiers, 4))
+    num_segments <- length(unique(df$Segment))
+    mfrow <- c(num_segments %/% 4 + (num_segments %% 4 > 0), min(num_segments, 4))
   }
 
   old_params <- par(mfrow=mfrow, oma=oma, mar=mar)
@@ -274,11 +274,11 @@ plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1),
   # Extract the node names
   nodes <- data.frame(id = sapply(strsplit(unique(df$Var1), "_"), function(x) x[4]))
 
-  # Loop through Tiers
-  for (tier in unique(df$Tier)) {
+  # Loop through Segments
+  for (segment in unique(df$Segment)) {
 
     # Extract the links and removing missings
-    splice_df <- dplyr::filter(df, Tier == !!tier)
+    splice_df <- dplyr::filter(df, Segment == !!segment)
     splice_df$Var1 <- sapply(strsplit(splice_df$Var1, "_"), function(x) x[4])
     splice_df$Var2 <- sapply(strsplit(splice_df$Var2, "_"), function(x) x[4])
     links <- data.frame(from = splice_df$Var2, to = splice_df$Var1, x = splice_df$mlog10pv)
@@ -293,7 +293,7 @@ plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1),
       igraph::E(net)$label <- round(igraph::E(net)$x, 1)
       igraph::E(net)$label.color <- "red"
     }
-    plot(net, layout=l, edge.curved=.4, main=tier, ...)
+    plot(net, layout=l, edge.curved=.4, main=segment, ...)
   }
 
   main_title <- paste0("Recording: ", obj$gc_list[[1]]$recording$stem, ", Lag = ",
@@ -404,10 +404,10 @@ ms_grangertest2 <- function(x, y, order = 1, na.action = na.omit, ...) {
   }
 
   ## compute lagged observations
-  x1 <- c(rep(NA, order - 1), x)
-  y1 <- c(rep(NA, order - 1), y)
-  lagX <- embed(x1, order + 1)
-  lagY <- embed(y1, order + 1)
+  x1 <- c(rep(NA, order), x)
+  y1 <- c(rep(NA, order), y)
+  lagX <- embed(x1, order + 1) # first column contains x
+  lagY <- embed(y1, order + 1) # first column contains y
 
   # Apply na.action
   numcolX <- ncol(lagX)
@@ -458,7 +458,7 @@ ms_grangertest2 <- function(x, y, order = 1, na.action = na.omit, ...) {
 #' ms_grangertest1(diff_wages[, 'w'], diff_wages[, 'CPI'], order = 3)
 #' ms_grangertest2(diff_wages[, 'w'], diff_wages[, 'CPI'], order = 3)
 #'
-#' ms_condgrangertest(diff_wages[, 'w'], diff_wages[, 'CPI'], diff_wages[, 'w'], order = 3)
+#' ms_condgrangertest(diff_wages[, 'w'], diff_wages[, 'CPI'], diff_wages[, 'u'], order = 3)
 
 ms_condgrangertest <- function(x, y, z, order = 1, na.action = na.omit, ...) {
 
@@ -468,8 +468,8 @@ ms_condgrangertest <- function(x, y, z, order = 1, na.action = na.omit, ...) {
   stopifnot((NCOL(x) == 1), (NCOL(y) == 1), (NCOL(z) == 1))
 
   ## compute lagged observations
-  x1 <- c(rep(NA, order - 1), x)
-  y1 <- c(rep(NA, order - 1), y)
+  x1 <- c(rep(NA, order), as.vector(x))
+  y1 <- c(rep(NA, order), as.vector(y))
   lagX <- embed(x1, order + 1)
   lagY <- embed(y1, order + 1)
   z <- as.vector(z)
@@ -477,7 +477,7 @@ ms_condgrangertest <- function(x, y, z, order = 1, na.action = na.omit, ...) {
   # Apply na.action
   numcolX <- ncol(lagX)
   numcolY <- ncol(lagY)
-  lag_temp <- na.action(cbind(lagY, lagX, z[-1]))
+  lag_temp <- na.action(cbind(lagY, lagX, z))
 
   y <- as.vector(lag_temp[,1])
   lagY <- as.matrix(lag_temp[,2:numcolY,drop=FALSE]) # skip y

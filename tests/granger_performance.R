@@ -33,8 +33,8 @@ system.time(granger_test(sv3, "Nose_x_Cam2_Singer", "Nose_x_Cam2_Tabla"))
 system.time(granger_test(sv3, "Nose_x_Cam2_Tabla", "Nose_x_Cam1_Harmonium"))
 
 # Calls
-unique(sv3$df$Tier) # second longest
-df <- filter(sv3$df, Tier == 'vilambit rupak')
+unique(sv3$df$Segment) # second longest
+df <- filter(sv3$df, Segment == 'vilambit rupak')
 nrow(df)
 
 # lmtest::grangertest taking 6s

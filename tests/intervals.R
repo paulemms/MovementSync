@@ -19,7 +19,7 @@ sets<-function(start, end, group, overlap=length(unique(group))) {
 
 }
 
-new_segments <- function(..., operation) {
+merge_splice <- function(..., operation) {
   l <- list(...)
   stopifnot(operation %in% c('union', 'intersection'))
   overlap <- switch(operation, 'union' = 1, 'intersection' = length(l))
@@ -75,5 +75,5 @@ l3 <- list(c1 = c(275, 325), c2 = c(600, 675), c3 = c(700, 725))
 split3_dfr <- splice_time(l3)
 split3_dfr
 
-new_segments(x = split1_dfr, y = split2_dfr, z = split3_dfr, operation = 'union')
-new_segments(x = split1_dfr, y = split2_dfr, z = split3_dfr, operation = 'intersection')
+merge_splice(x = split1_dfr, y = split2_dfr, z = split3_dfr, operation = 'union')
+merge_splice(x = split1_dfr, y = split2_dfr, z = split3_dfr, operation = 'intersection')

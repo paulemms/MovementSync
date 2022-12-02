@@ -14,6 +14,42 @@ splice_time <- function(x, ...) {
 }
 
 
+#' Generate spliced timeline using an OnsetsDifference object
+#'
+#' @param x
+#' @param window_duration
+#' @param ...
+#' @param talas
+#'
+#' @return
+#' @exportS3Method
+#'
+#' @examples
+#' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+#' o1 <- get_onsets_selected_data(r1)
+#' po1 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
+#' splicing_df <- splice_time(po1, window_duration = 1)
+#' head(splicing_df)
+splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, ...) {
+  stopifnot(all(talas %in% unique(x$Tala)))
+  if (!is.null(talas)) {
+    df <- dplyr::filter(x, Tala %in% unique(x$Tala))
+  } else {
+    df <- x
+  }
+
+  # Generate Splicing table
+  df$Start <- df$Ref_Beat_Time - window_duration / 2
+  df$End <- df$Ref_Beat_Time + window_duration / 2
+  df$Segment <- paste(as.character(df$Tala), 'Reference_Beat', as.character(df$Segment), sep="_")
+  df <- df[match(c("Segment", "Start", "End"), colnames(df), nomatch = 0)]
+  df <- na.omit(df)
+
+  output_df <- dplyr::arrange(df, Start)
+  as.data.frame(output_df)
+}
+
+
 #' Generate spliced timeline using a Metre object
 #'
 #' @param x
@@ -39,8 +75,8 @@ splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
     df$Start <- df$Time - window_duration / 2
     df$End <- df$Time + window_duration / 2
     df <- df[-match(c("Time", "Notes"), colnames(df), nomatch = 0)]
-    colnames(df)[1] <- "Tier"
-    df$Tier <- paste(rhythms[j], 'Cycle', as.character(df$Tier), sep="_")
+    colnames(df)[1] <- "Segment"
+    df$Segment <- paste(rhythms[j], 'Cycle', as.character(df$Segment), sep="_")
     df_list[[j]] <- df
   }
   output_df <- dplyr::bind_rows(df_list)
@@ -66,10 +102,10 @@ splice_time.list <- function(x, ...) {
   df <- t(as.data.frame(x))
   rownames(df) <- NULL
   colnames(df) <- c("Start", "End")
-  df <- cbind.data.frame(Tier = names(x), df)
-  df <- df[c("Tier", "Start", "End")]
+  df <- cbind.data.frame(Segment = names(x), df)
+  df <- df[c("Segment", "Start", "End")]
 
-  stopifnot(is_valid_splice(df))
+  stopifnot(!is_splice_overlapping(df))
   df
 }
 
@@ -80,6 +116,8 @@ splice_time.list <- function(x, ...) {
 #' @param expr
 #' @param make.unique
 #' @param ... passed to [make.unique()]
+#' @param tier
+#' @param comments
 #'
 #' @return
 #' @exportS3Method
@@ -87,7 +125,6 @@ splice_time.list <- function(x, ...) {
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' d <- get_duration_annotation_data(r)
-#' splice_time(d)
 #' splice_time(d, tier = 'Event', comments = 'tabla solo')
 splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
                                  tier = NULL, comments = NULL, ...) {
@@ -104,7 +141,7 @@ splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
   df <- dplyr::filter(as.data.frame(x), !!expr)
   df <- df[c("Comments", "In", "Out")]
   if (make.unique) df$Comments <- make.unique(df$Comments, ...)
-  colnames(df) <- c("Tier", "Start", "End")
+  colnames(df) <- c("Segment", "Start", "End")
   df
 }
 
@@ -136,7 +173,7 @@ splice_time.View <- function(x, win_size, step_size, ...) {
     stop("Time series length too small for window")
   }
 
-  data.frame(Tier = paste0("w", seq_along(offset)), Start = offset, End = offset + win_size)
+  data.frame(Segment = paste0("w", seq_along(offset)), Start = offset, End = offset + win_size)
 }
 
 
@@ -156,20 +193,20 @@ splice_time.View <- function(x, win_size, step_size, ...) {
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(rv, splicing_df)
 get_spliced_view <- function(v, splicing_df) {
-  stopifnot("View" %in% class(v), class(splicing_df[['Tier']]) == "character")
+  stopifnot("View" %in% class(v), class(splicing_df[['Segment']]) == "character")
   df <- v$df
   fps <- v$recording$fps
 
   df_list <- list()
   for (r in seq_len(nrow(splicing_df))) {
-    tier <- splicing_df[r, "Tier"]
+    segment <- splicing_df[r, "Segment"]
     spliced_df <- df[df$Time >= splicing_df[r, "Start"] & df$Time <= splicing_df[r, "End"],, drop = FALSE]
-    # Tiers with the same name get appended to df_list[[tier]]
-    df_list[[tier]] <- dplyr::bind_rows(df_list[[tier]], spliced_df)
+    # Segments with the same name get appended to df_list[[segment]]
+    df_list[[segment]] <- dplyr::bind_rows(df_list[[segment]], spliced_df)
 
   }
-  output_df <- dplyr::bind_rows(df_list, .id = "Tier")
-  output_df <- dplyr::arrange(output_df, Frame, Tier)
+  output_df <- dplyr::bind_rows(df_list, .id = "Segment")
+  output_df <- dplyr::arrange(output_df, Frame, Segment)
 
   # if (na.pad) {
   #   remove_cols <- match(c('Tier', 'Frame', 'Time'), colnames(output_df), nomatch = 0)
@@ -210,9 +247,9 @@ get_spliced_view <- function(v, splicing_df) {
 #' sv <- get_spliced_view(pv, splicing_df)
 #' sv_list <- split(sv)
 split.SplicedView <- function(obj) {
-  df_list <- split(obj$df, obj$df[['Tier']])
+  df_list <- split(obj$df, obj$df[['Segment']])
   v_list <- lapply(df_list, function(x) {
-    df <- x[, colnames(x) != "Tier", drop = FALSE]
+    df <- x[, colnames(x) != "Segment", drop = FALSE]
     l <- list(df = df, vid = obj$vid, direct = obj$direct,
          inst = obj$inst, recording = obj$recording)
     class(l) <- class(obj)[-1]
@@ -238,7 +275,7 @@ split.SplicedView <- function(obj) {
 #' jv1 <- get_joined_view(fv1_list)
 #' l <- list(a=c(1, 2), b = c(2, 3))
 #' splicing_df <- splice_time(l)
-#' sv <- get_spliced_view(jv1, splicing_df = splicing_df, na.pad = FALSE)
+#' sv <- get_spliced_view(jv1, splicing_df = splicing_df)
 #' autoplot(sv)
 #' sv_new <- sample_time_spliced_views(sv, num_samples = 10, replace = FALSE)
 #' autoplot(sv_new)
@@ -258,7 +295,7 @@ sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.acti
   i <- 1
   for (sv in input_sv) {
     dfr <- sv$df
-    keys <- match(c('Tier', 'Frame', 'Time'), colnames(dfr), nomatch = 0)
+    keys <- match(c('Segment', 'Frame', 'Time'), colnames(dfr), nomatch = 0)
     data_columns <- colnames(dfr)[-keys]
 
     # invert the CDF to pick equally between intervals?
@@ -285,7 +322,7 @@ sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.acti
         )
 
       # Build new sampled data.frame
-      new_dfr <- cbind.data.frame(Tier = duration_dfr[interval_idx, 'Tier'], Frame = NA, Time = new_times, new_data)
+      new_dfr <- cbind.data.frame(Segment = duration_dfr[interval_idx, 'Segment'], Frame = NA, Time = new_times, new_data)
 
     } else {
       dfr <- na.action(sv$df)
@@ -306,22 +343,28 @@ sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.acti
 }
 
 
-#' Checks for valid splice
+#' Checks if splicing data.frames overlap
 #'
-#' Invalid splices contain overlapping Tiers.
-#'
-#' @param dfr
+#' @param ... Each argument can be a data frame or a list of data frames
 #'
 #' @return logical
 #' @export
 #'
 #' @examples
-#' l1 <- list(a=c(1, 2))
-#' is_valid_splice(splice_time(l1))
-#' l2 <- list(a=c(1, 15), a = c(10, 20), b = c(30, 40))
-#' is_valid_splice(splice_time(l2))
-#' l3 <- list(a=c(1, 2), a = c(10, 20), b = c(3, 5))
-#' is_valid_splice(splice_time(l2))
+#' l1 <- list(a=c(1, 10), a = c(20, 30), b = c(30, 40))
+#' dfr1 <- splice_time(l1)
+#' l2 <- list(a=c(10, 15), b = c(15, 25))
+#' dfr2 <- splice_time(l2)
+#' is_splice_overlapping(dfr1, dfr2)
+is_splice_overlapping <- function(...) {
+
+  splice_dfr <- dplyr::bind_rows(...)
+  splice_dfr <- dplyr::arrange(splice_dfr, Start)
+  overlap <- splice_dfr[['End']] > dplyr::lead(splice_dfr[['Start']], 1)
+
+  any(overlap, na.rm = TRUE)
+}
+
 is_valid_splice <- function(dfr) {
 
   duration_dfr <- dplyr::mutate(
@@ -334,22 +377,7 @@ is_valid_splice <- function(dfr) {
 
 }
 
-
-#' Checks if two splicing data.frames overlap
-#'
-#' @param dfr1 splicing data.frame
-#' @param dfr2 splicing data.frame
-#'
-#' @return logical
-#' @export
-#'
-#' @examples
-#' l1 <- list(a=c(1, 10), a = c(20, 30), b = c(30, 40))
-#' dfr1 <- splice_time(l1)
-#' l2 <- list(a=c(10, 15), b = c(15, 25))
-#' dfr2 <- splice_time(l2)
-#' is_splice_overlapping(dfr1, dfr2)
-is_splice_overlapping <- function(dfr1, dfr2) {
+is_splice_overlapping2 <- function(dfr1, dfr2) {
 
   splice_dfr <- dplyr::bind_rows(dfr1, dfr2)
   splice_dfr <- dplyr::arrange(splice_dfr, Start)

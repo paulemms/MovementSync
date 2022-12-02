@@ -43,82 +43,95 @@ plot_power_spectrum(w, segment_10_view)
 plot_average_power(w, segment_10_view)
 plot(w$Power.avg) # raw data from wavelet object using base R plot
 
-# Number of rows on each segment in a list of Tiers using base R
+# Number of rows on each segment in a list of Segments using base R
 sapply(view_smile_list, function(x) nrow(x$df))
 
-# Simple stats on each view data column - sapply gives named matrices
-View(sapply_summary_spliceview(sv_duration_smile, mean, na.rm=TRUE))
-View(sapply_summary_spliceview(sv_duration_body, sd, na.rm=TRUE))
+# Simple stats on each view data column in each segment - sapply gives named matrices
+mean_mat <- sapply_column_spliceview(sv_duration_smile, mean, na.rm=TRUE)
+View(mean_mat)
+sd_mat <- sapply_column_spliceview(sv_duration_body, sd, na.rm=TRUE)
+View(sd_mat)
 
-# More complex functions - apply fun to each Tier in a SplicedView
-view_smile_list <- split(sv_duration_smile)
-view_body_list <- split(sv_duration_body)
-wavelet_smile_list <- lapply(view_smile_list, analyze_wavelet, column = "Nose_x_Central_Sitar")
-wavelet_body_list <- lapply(view_body_list, analyze_wavelet, column = "Nose_x_Central_Sitar")
-plot_power_spectrum(wavelet_smile_list$`Mutual look and smile.10`, view_smile_list$`Mutual look and smile.10`)
+# More complex functions - apply fun to each Segment and fixed column in a SplicedView
+wavelet_smile_list <- apply_segment_spliceview(sv_duration_smile, analyze_wavelet,
+                                               column = "Nose_x_Central_Sitar")
+wavelet_body_list <- apply_segment_spliceview(sv_duration_body, analyze_wavelet,
+                                              column = "Nose_x_Central_Sitar")
 
-# Units on base R plot reflects internal data
-plot(wavelet_smile_list$`Mutual look and smile.10`$Power.avg)
+# Compare power spectrum on two segments from two different splices
+plot_power_spectrum(wavelet_smile_list$output$`Mutual look and smile.10`,
+                    wavelet_smile_list$input$`Mutual look and smile.10`)
+plot_power_spectrum(wavelet_body_list$output$`Mutual head and body movement.10`,
+                    wavelet_body_list$input$`Mutual head and body movement.10`)
 
-# Get the average power for each segment in a named list
-ave_power_smile <- sapply(wavelet_smile_list, function(x) x$Power.avg)
-ave_power_body <- sapply(wavelet_body_list, function(x) x$Power.avg)
-View(ave_power_smile)
-plot.ts(ave_power_smile[, 1:10], ann = FALSE)
+# Go straight to the average Power contained in a wavelet object on each segment
+ave_power_smile <- ave_power_spliceview(sv_duration_smile, column = "Nose_x_Central_Sitar")
+ave_power_body <- ave_power_spliceview(sv_duration_body, column = "Nose_x_Central_Sitar")
+plot.ts(ave_power_smile[, 1:10], ann = FALSE) # Specialised plots?
 plot.ts(ave_power_body[, 1:10], ann = FALSE)
 
+# Cross wave power object lists
+cross_power_smile_list <- apply_segment_spliceview(
+  sv_duration_smile, analyze_coherency, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"))
+cross_power_body_list <- apply_segment_spliceview(
+  sv_duration_body, analyze_coherency, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"))
+plot_cross_spectrum(cross_power_smile_list$output$`Mutual look and smile.1`,
+                    cross_power_smile_list$input$`Mutual look and smile.1`)
+plot_cross_spectrum(cross_power_body_list$output$`Mutual head and body movement.1`,
+                    cross_power_body_list$input$`Mutual head and body movement.1`)
+
+# Go straight to average cross power ...
+ave_cross_power_smile <- ave_cross_power_spliceview(
+  sv_duration_smile, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"))
+ave_cross_power_body <- ave_cross_power_spliceview(
+  sv_duration_body, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"))
+plot.ts(ave_cross_power_smile[, 1:10], ann = FALSE) # Specialised plots?
+plot.ts(ave_cross_power_body[, 1:10], ann = FALSE)
+
+# Maybe supply parameter to pull out information from each wavelet/cross wavelet object???
+# see ?analyze.wavelet
+ampl_list <- pull_segment_spliceview(sv_duration_body, FUN = analyze_wavelet,
+                        column = "Nose_x_Central_Sitar", element = 'Ampl')
+View(ampl_list$output$`Mutual head and body movement`)
+
 # Draw 1000 samples from random segments with replacement
-num_samples <- 1000
-period_sample <- sample(nrow(ave_power_smile), num_samples, replace = TRUE)
-segment_sample <- sample(ncol(ave_power_smile), 1000, replace = TRUE)
-sampled_avgpow_smile <- ave_power_smile[cbind(period_sample, segment_sample)]
-barplot(sampled_avgpow_smile)
-
-# Weight on segment length / total length of segments ? NO
-
-# or convert to vector (sampled in different way)
-total_sample <- sample(nrow(ave_power_smile) * ncol(ave_power_smile), num_samples, replace = TRUE)
-sampled_avgpow_smile <- as.vector(ave_power_smile)[total_sample]
-barplot(sampled_avgpow_smile)
+samp_ave_power_smile <- sample_ave_power_spliceview(
+  sv_duration_smile, num_samples = 1000, column = "Nose_x_Central_Sitar")
+samp_ave_power_body <- sample_ave_power_spliceview(
+  sv_duration_body, num_samples = 1000, column = "Nose_x_Central_Sitar")
+plot(samp_ave_power_smile)
+plot(samp_ave_power_body)
 
 # Tabla solos
 splicing_tabla_solo_df <- splice_time(d1, tier = 'Event', comments = 'tabla solo')
 splicing_tabla_solo_df
 
-# randomly create matching segments - add a random offset and use rejection sampling
+# Randomly create matching segments - add a random offset and use rejection sampling
+splicing_list <- sample_splice(splicing_tabla_solo_df, jv1, num_samples = 100)
 
-# find max possible offset based on recording length
-max_time <- max(jv1$df$Time, na.rm = TRUE)
+# Check distribution of start times
+start_times <- unlist(lapply(splicing_list, function(x) x$Start))
+plot(start_times)
+abline(h=splicing_tabla_solo_df$Start)
+abline(h=splicing_tabla_solo_df$End)
 
-# total span of segments
-total_span <- max(splicing_tabla_solo_df$Start, na.rm = TRUE) -
-  min(splicing_tabla_solo_df$Start, na.rm = TRUE)
-
-# random start times
-stopifnot(total_span <= max_time)
-num_samples <- 100
-start_times <- runif(num_samples, min = 0, max = max_time - total_span)
-
-# Generate a list of new sampling data.frames
-splicing_list <- lapply(start_times, function(x) {
-  splicing_tabla_solo_df$Start <- splicing_tabla_solo_df$Start + x
-  splicing_tabla_solo_df$End <- splicing_tabla_solo_df$End + x
-  splicing_tabla_solo_df
-})
-names(splicing_list) <- paste('Sample splice', seq_along(splicing_list))
-splicing_list[1:2]
-
-# Which ones overlap the original splicing?
-is_overlapped <- sapply(splicing_list,
-                        function(x) is_splice_overlapping(x, splicing_tabla_solo_df))
-
-# remove the overlapping ones
-splicing_list <- splicing_list[!is_overlapped]
-
-# Repeat until we get the desired number of samples - stick with what we have for now
+# Plot Start and End times
+df <- dplyr::bind_rows(splicing_list)
+ggplot(df, aes(y = Segment)) +
+  geom_linerange(aes(xmin = Start, xmax = End)) +
+  geom_rect(data = splicing_tabla_solo_df,
+            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5)
 
 # Add in the original for comparison
 splicing_list$Original <- splicing_tabla_solo_df
+
+# Add see the original segment covering bands
+df <- dplyr::bind_rows(splicing_list)
+ggplot(df, aes(y = Segment)) +
+  geom_linerange(aes(xmin = Start, xmax = End)) +
+  geom_rect(data = splicing_tabla_solo_df,
+            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5)
+
 
 # Apply each sample splice to JoinedView to get a list of SplicedViews
 sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv1, splicing_df = x))
@@ -141,7 +154,8 @@ ave_power_tabla <- sapply(wavelet_tabla_list, function(x) x$Power.avg)
 View(ave_power_tabla)
 plot.ts(ave_power_tabla[, 1:10], ann = FALSE)
 
-# Filtering of output segments - process list
+# Filtering of output segments - process list - for fixed time - maybe an option on the
+# splice for fixed windows from the provided segments?
 
 # Compare original with samples - how? max ave power?
 max_ave_power_original <- max(ave_power_tabla[, 'Original'])
@@ -149,10 +163,32 @@ max_ave_power_dist <- apply(ave_power_tabla, 2, max, na.rm = TRUE)
 plot(max_ave_power_dist)
 abline(h=max_ave_power_original)
 
-# avoid some sections? with a condition? OK
-# Add extra splicing data frames that contain regions of avoidance and reject them as above
+# Avoid some sections with a condition
+avoid_list <- list(avoid_segment1 = c(3000, 3100), avoid_segment2 = c(4000, 4100))
+avoid_splice_dfr <- splice_time(avoid_list)
 
-# same durations but not necessarily same gaps? number of gaps follows Poisson process?
+# Randomly create matching segments - add a random offset and use rejection sampling
+splicing2_list <- sample_splice(splicing_tabla_solo_df, jv1, num_samples = 100,
+                                rejection_list = list(avoid_splice_dfr))
+df <- dplyr::bind_rows(splicing2_list, .id = 'Sample')
+ggplot(df, aes(y = Segment)) +
+  geom_linerange(aes(xmin = Start, xmax = End)) +
+  geom_rect(data = splicing_tabla_solo_df,
+            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5) +
+  geom_rect(data = avoid_splice_dfr,
+            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
+
+# Distribution of new segments faceted by original segment
+ggplot(df) +
+  geom_linerange(aes(y = Sample, xmin = Start, xmax = End, colour = Segment)) +
+  theme(axis.ticks.y=element_blank(), axis.text.y=element_blank(), panel.background = element_blank()) +
+  facet_wrap(~Segment) +
+  geom_rect(data = splicing_tabla_solo_df,
+          aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5) +
+  geom_rect(data = avoid_splice_dfr[-1],
+            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
+
+# Same durations but not necessarily same gaps? number of gaps follows Poisson process?
 gap_dfr <- dplyr::mutate(splicing_duration1_df, Next_Start = dplyr::lead(Start))
 gap_dfr <- dplyr::mutate(gap_dfr, Duration = End - Start)
 gap_dfr <- dplyr::mutate(gap_dfr, Gap = Next_Start - Start)
@@ -208,20 +244,21 @@ instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa"
                  "Taiko_RW")
 
 # Difference in onsets for each instrument pair
-difference1_dfr <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
-ggpairs(difference1_dfr, columns = 2:4, aes(colour = Tala))
-difference2_dfr <- difference_onsets(o2, instruments = c('Inst', 'Tabla'))
-ggpairs(difference2_dfr, columns = 2:4, aes(colour = Tala))
-difference5_dfr <- difference_onsets(o5, instruments = instruments)
-ggpairs(difference5_dfr, columns = 2:5, aes(colour = Tala)) # only one Tala in plot
+po1 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
+ggpairs(po1, columns = 2:4, aes(colour = Tala))
+po2 <- difference_onsets(o2, instruments = c('Inst', 'Tabla'))
+ggpairs(po2, columns = 2:4, aes(colour = Tala))
+po5 <- difference_onsets(o5, instruments = instruments)
+ggpairs(po5, columns = 2:5, aes(colour = Tala)) # only one Tala in plot
 
 # Summary of difference in onsets - currently ignoring Tala ???? but ok for o5 because there is one
 summary_dfr <- summary_onsets(o5, instruments = instruments)
 View(summary_dfr)
-par(mar=c(5,10,2,1))
+old_params <- par(mar=c(5,10,2,1))
 barplot(Mean_Absolute_Difference  ~ Instrument_Pair, ylab = "", cex.names = 0.5,
         las = 2, horiz = TRUE, main = "Mean Absolute Onset Differences of Instrument Pairs",
         data = summary_dfr)
+par(old_params)
 ggplot(summary_dfr) +
   geom_col(aes(x = Mean_Absolute_Difference, y = Instrument_Pair))
 
@@ -246,7 +283,10 @@ barplot(Mean_Absolute_Difference  ~ Instrument_Pair, ylab = "", cex.names = 0.5,
 # mean sd, mean of absolute  from second object
 # subset onset and summary on sections in annotation
 
+# Windows around reference points of processed onset object
+splicing_dfr <- splice_time(po1, window_duration = 1)
+head(splicing_dfr)
+
 # TODO:
-# Windows around reference points and then set operations to
 # subset onset data with a condition based on duration annotation data
 # subsetting between objects and sampling

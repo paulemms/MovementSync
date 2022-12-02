@@ -7,6 +7,7 @@
 #' @param columns names of columns in input data
 #' @param maxpts maximum number of points to plot
 #' @param ... passed to [zoo::plot.zoo()]
+#' @param segments
 #'
 #' @return ggplot object
 #' @importFrom ggplot2 autoplot
@@ -108,9 +109,9 @@ autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
+autoplot.SplicedView <- function(obj, columns=NULL, segments=NULL, maxpts=1000) {
 
-  max_num_tiers <- 10
+  max_num_segments <- 10
   max_num_cols <- 9
   df <- obj$df
 
@@ -119,21 +120,21 @@ autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
     if (ncol(df) > max_num_cols)
       warning(paste("Only plotting first", max_num_cols - 3, "data columns"))
     colnames(df)[seq_len(min(ncol(df), max_num_cols))]
-  } else c("Tier", "Frame", "Time", columns)
+  } else c("Segment", "Frame", "Time", columns)
 
   stopifnot(all(columns %in% colnames(df)))
 
-  df_tiers <- unique(df$Tier)
-  num_tiers <- length(df_tiers)
-  if (is.null(tiers)) {
-    if (num_tiers > max_num_tiers) {
-      warning(paste("Only plotting the first", max_num_tiers, "splices"))
-      df <- df[df$Tier %in% df_tiers[seq_len(max_num_tiers)], , drop=FALSE]
-      num_tiers <- max_num_tiers
+  df_segments <- unique(df$Segment)
+  num_segments <- length(df_segments)
+  if (is.null(segments)) {
+    if (num_segments > max_num_segments) {
+      warning(paste("Only plotting the first", max_num_segments, "segments"))
+      df <- df[df$Segment %in% df_segments[seq_len(max_num_segments)], , drop=FALSE]
+      num_segments <- max_num_segments
     }
   } else {
-    if (!all(tiers %in% df_tiers)) stop('Tiers not found in SplitView')
-    df <- df[df$Tier %in% tiers, , drop=FALSE]
+    if (!all(segments %in% df_segments)) stop('Segments not found in SplitView')
+    df <- df[df$Segment %in% segments, , drop=FALSE]
   }
 
   sp <- if (nrow(df) > maxpts) {
@@ -143,17 +144,17 @@ autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
   df <- df[sp, columns, drop = FALSE]
 
   # Convert data to long form
-  columns_to_remove <- match(c("Tier", "Frame", "Time"), colnames(df), nomatch = 0)
+  columns_to_remove <- match(c("Segment", "Frame", "Time"), colnames(df), nomatch = 0)
   long_df <- tidyr::pivot_longer(df, cols = -columns_to_remove,
                                  names_to = "Series", values_to = "Value")
 
-  # Find Start and Duration of each Tier
-  start_df <- dplyr::group_by(long_df, Tier)
+  # Find Start and Duration of each Segment
+  start_df <- dplyr::group_by(long_df, Segment)
   start_df <- dplyr::summarize(start_df, Start = min(Time, na.rm=TRUE),
                                Duration = max(Time, na.rm=TRUE) - Start)
   start_df <- dplyr::arrange(start_df, Start)
 
-  long_df$Tier_f <- factor(long_df$Tier, levels = start_df$Tier)
+  long_df$Segment_f <- factor(long_df$Segment, levels = start_df$Segment)
 
   subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
@@ -171,7 +172,7 @@ autoplot.SplicedView <- function(obj, columns=NULL, tiers=NULL, maxpts=1000) {
     ggplot2::geom_point() + ggplot2::geom_line() +
     ggplot2::labs(title = class(obj)[1], subtitle = subtitle) +
     xlab + scale_x_time +
-    ggplot2::facet_wrap(~Tier_f, scales = "free_x")
+    ggplot2::facet_wrap(~Segment_f, scales = "free_x")
 }
 
 

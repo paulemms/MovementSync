@@ -27,8 +27,8 @@ subset.View <- function(obj, expr = NULL, data_point = NULL, column = NULL, by =
     is_row_included <- TRUE
   }
 
-  if ("Tier" %in% colnames(df)) {
-    leading_col_names <- c("Tier", "Frame" , "Time")
+  if ("Segment" %in% colnames(df)) {
+    leading_col_names <- c("Segment", "Frame" , "Time")
   } else {
     leading_col_names <- c("Frame" , "Time")
   }

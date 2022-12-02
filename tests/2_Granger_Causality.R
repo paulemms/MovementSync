@@ -26,10 +26,10 @@ splicing_df
 # Apply spliced_df to jv_sub
 sv <- get_spliced_view(jv_sub, splicing_df)
 
-# It will have a lot of sub-divisions so autoplot only shows first 10
+# It will have a lot of sub-divisions so autoplot only shows first 10 segments
 autoplot(sv)
 
-# Apply granger_test to each Tier in spliced_df using 0.1s lag, then 1s
+# Apply granger_test to each Segment in spliced_df using 0.1s lag, then 1s
 g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 0.1)
 g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
 g
@@ -37,14 +37,21 @@ g
 # p-value plot both forward and backwards
 autoplot(g, splicing_df = splicing_df)
 
-# p-value plot with annotation from duration data
+# p-value plot with influence colouring from annotation from duration data
 autoplot(g, splicing_df = splicing_df) +
   autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
             fill_col = "Tier")
 
+# p-value plot with colours highlighting comment group
 autoplot(g, splicing_df = splicing_df) +
   autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
             fill_col = "Comments")
+
+# p-value plot with influence colouring mapping to relevant facet
+d1_mapped <- map_to_granger_test(d1, g, "Influence T>S", "Influence S>T")
+autoplot(g, splicing_df = splicing_df) +
+  autolayer(d1_mapped, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
+            fill_col = "Tier")
 
 # Data for arrows showing causality direction
 plot_influence_diagram(g, splicing_df = splicing_df)
