@@ -29,8 +29,8 @@ splice_time <- function(x, ...) {
 #' o1 <- get_onsets_selected_data(r1)
 #' po1 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
 #' splicing_df <- splice_time(po1, window_duration = 1)
-#' head(splicing_df)
-splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, ...) {
+#' splicing_df
+splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, make.unique = TRUE, ...) {
   stopifnot(all(talas %in% unique(x$Tala)))
   if (!is.null(talas)) {
     df <- dplyr::filter(x, Tala %in% unique(x$Tala))
@@ -41,12 +41,13 @@ splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, ...) 
   # Generate Splicing table
   df$Start <- df$Ref_Beat_Time - window_duration / 2
   df$End <- df$Ref_Beat_Time + window_duration / 2
-  df$Segment <- paste(as.character(df$Tala), 'Reference_Beat', as.character(df$Segment), sep="_")
+  df$Segment <- paste('Reference_Beat', as.character(df$Segment), sep="_")
   df <- df[match(c("Segment", "Start", "End"), colnames(df), nomatch = 0)]
   df <- na.omit(df)
 
+  if (make.unique) df$Segment <- make.unique(df$Segment, ...)
   output_df <- dplyr::arrange(df, Start)
-  as.data.frame(output_df)
+  dplyr::as_tibble(output_df)
 }
 
 
@@ -64,7 +65,7 @@ splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, ...) 
 #' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 #' m <- get_metre_data(r)
 #' splicing_df <- splice_time(m, window_duration = 1)
-#' head(splicing_df)
+#' splicing_df
 splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
   if (is.null(rhythms)) rhythms <- names(x)
   stopifnot(all(rhythms %in% names(x)))
@@ -81,7 +82,7 @@ splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
   }
   output_df <- dplyr::bind_rows(df_list)
   output_df <- dplyr::arrange(output_df, Start)
-  as.data.frame(output_df)
+  dplyr::as_tibble(output_df)
 }
 
 
@@ -97,7 +98,7 @@ splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
 #' l <- list(a = c(0, 10), b = c(10, 20), c = c(20, 30))
 #' splice_time(l)
 splice_time.list <- function(x, ...) {
-  stopifnot(all(sapply(x, length) == 2), all(sapply(x, function(x) x[1] < x[2])))
+  stopifnot(length(x) > 0, all(sapply(x, length) == 2), all(sapply(x, function(x) x[1] < x[2])))
 
   df <- t(as.data.frame(x))
   rownames(df) <- NULL
@@ -106,7 +107,7 @@ splice_time.list <- function(x, ...) {
   df <- df[c("Segment", "Start", "End")]
 
   stopifnot(!is_splice_overlapping(df))
-  df
+  dplyr::as_tibble(df)
 }
 
 
@@ -142,7 +143,8 @@ splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
   df <- df[c("Comments", "In", "Out")]
   if (make.unique) df$Comments <- make.unique(df$Comments, ...)
   colnames(df) <- c("Segment", "Start", "End")
-  df
+
+  dplyr::as_tibble(df)
 }
 
 
@@ -158,8 +160,7 @@ splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' df <- splice_time(rv, win_size = 3, step_size = 0.5)
-#' head(df)
-#' tail(df)
+#' df
 splice_time.View <- function(x, win_size, step_size, ...) {
   stopifnot(win_size > 0, step_size > 0)
 
@@ -173,7 +174,7 @@ splice_time.View <- function(x, win_size, step_size, ...) {
     stop("Time series length too small for window")
   }
 
-  data.frame(Segment = paste0("w", seq_along(offset)), Start = offset, End = offset + win_size)
+  dplyr::tibble(Segment = paste0("w", seq_along(offset)), Start = offset, End = offset + win_size)
 }
 
 
@@ -199,8 +200,8 @@ get_spliced_view <- function(v, splicing_df) {
 
   df_list <- list()
   for (r in seq_len(nrow(splicing_df))) {
-    segment <- splicing_df[r, "Segment"]
-    spliced_df <- df[df$Time >= splicing_df[r, "Start"] & df$Time <= splicing_df[r, "End"],, drop = FALSE]
+    segment <- splicing_df$Segment[r]
+    spliced_df <- df[df$Time >= splicing_df$Start[r] & df$Time <= splicing_df$End[r],, drop = FALSE]
     # Segments with the same name get appended to df_list[[segment]]
     df_list[[segment]] <- dplyr::bind_rows(df_list[[segment]], spliced_df)
 
@@ -208,59 +209,9 @@ get_spliced_view <- function(v, splicing_df) {
   output_df <- dplyr::bind_rows(df_list, .id = "Segment")
   output_df <- dplyr::arrange(output_df, Frame, Segment)
 
-  # if (na.pad) {
-  #   remove_cols <- match(c('Tier', 'Frame', 'Time'), colnames(output_df), nomatch = 0)
-  #   l <- split(output_df, output_df[['Tier']])
-  #   for (tier in names(l)) {
-  #     df <- l[[tier]]
-  #     frame_num <- df[['Frame']]
-  #     z <- zoo::zoo(df[,-remove_cols,drop=FALSE], order.by = as.integer(frame_num))
-  #     new_index <- seq(min(frame_num, na.rm = TRUE), max(frame_num, na.rm = TRUE))
-  #     new_z <- merge(z, zoo::zoo(,new_index))
-  #     l[[tier]] <- cbind(Tier = tier, Frame = zoo::index(new_z), Time = zoo::index(new_z) / fps,
-  #                        as.data.frame(new_z))
-  #   }
-  #   output_df <- dplyr::bind_rows(l)
-  # }
-
   l <- list(df = output_df, splicing_df = splicing_df, vid = v$vid,
             direct = v$direct, inst = v$inst, recording = v$recording)
   class(l) <- c("SplicedView", class(v))
-
-  invisible(l)
-}
-
-
-#' Get spliced onset data from OnsetsDifference object
-#'
-#' @param po OnsetsDifference object
-#' @param splicing_df
-#'
-#' @return SplicedOnsetsDifference object
-#' @export
-#'
-#' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' po1 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
-#' l <- list(a = c(0, 1000), b = c(1000, 2000), c = c(2000, 3000))
-#' splicing_df <- splice_time(l)
-#' so <- get_spliced_onsets(po1, splicing_df)
-get_spliced_onsets <- function(po, splicing_df) {
-  stopifnot("OnsetsDifference" %in% class(po), class(splicing_df[['Segment']]) == "character")
-  df <- na.omit(po)
-
-  df_list <- list()
-  for (r in seq_len(nrow(splicing_df))) {
-    segment <- splicing_df[r, "Segment"]
-    spliced_df <- df[df$Ref_Beat_Time >= splicing_df[r, "Start"] &
-                       df$Ref_Beat_Time <= splicing_df[r, "End"],, drop = FALSE]
-    # Segments with the same name get appended to df_list[[segment]]
-    df_list[[segment]] <- dplyr::bind_rows(df_list[[segment]], spliced_df)
-    df_list[[segment]] <- dplyr::arrange(df_list[[segment]], Ref_Beat_Time, Segment)
-  }
-
-  l <- list(df_list = df_list, splicing_df = splicing_df)
-  class(l) <- c("SplicedOnsetsDifference")
 
   invisible(l)
 }
@@ -295,7 +246,7 @@ split.SplicedView <- function(obj) {
 }
 
 
-#' Sample from a list of Views
+#' Sample the time line from a list of Views
 #'
 #' @param ...
 #' @param num_samples
@@ -400,26 +351,6 @@ is_splice_overlapping <- function(...) {
   any(overlap, na.rm = TRUE)
 }
 
-# is_valid_splice <- function(dfr) {
-#
-#   duration_dfr <- dplyr::mutate(
-#     dfr[order(dfr$Start),,drop=FALSE],
-#     Next_Start = dplyr::lead(Start, 1),
-#     Valid = End <= Next_Start
-#   )
-#
-#   all(duration_dfr[['Valid']], na.rm = TRUE)
-#
-# }
-#
-# is_splice_overlapping2 <- function(dfr1, dfr2) {
-#
-#   splice_dfr <- dplyr::bind_rows(dfr1, dfr2)
-#   splice_dfr <- dplyr::arrange(splice_dfr, Start)
-#
-#   is_valid_splice(splice_dfr)
-# }
-
 
 #' Clip a splice so segments are of fixed duration
 #'
@@ -474,7 +405,62 @@ clip_splice <- function(splice_dfr, duration, location = 'middle') {
     new_splice_dfr$End <- splice_dfr$End
   } else stop()
 
-  new_splice_dfr
+  dplyr::as_tibble(new_splice_dfr)
+}
+
+
+#' Merge splices together using set operations
+#'
+#' @param ...
+#' @param operation
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' l1 <- list(a1 = c(100, 200), a2 = c(250, 300), a3 = c(400, 550), a4 = c(600, 650))
+#' split1_dfr <- splice_time(l1)
+#' split1_dfr
+#'
+#' l2 <- list(b1 = c(150, 275), b2 = c(610, 640))
+#' split2_dfr <- splice_time(l2)
+#' split2_dfr
+#'
+#' l3 <- list(c1 = c(275, 325), c2 = c(600, 675), c3 = c(700, 725))
+#' split3_dfr <- splice_time(l3)
+#' split3_dfr
+#'
+#' merge_splice(x = split1_dfr, y = split2_dfr, z = split3_dfr, operation = 'union')
+#' merge_splice(x = split1_dfr, y = split2_dfr, z = split3_dfr, operation = 'intersection')
+merge_splice <- function(..., operation) {
+  l <- list(...)
+
+  # Checks
+  stopifnot(length(l) > 1, operation %in% c('union', 'intersection'))
+  stopifnot(all(sapply(l, Negate(is_splice_overlapping))))
+
+  overlap <- switch(operation, 'union' = 1, 'intersection' = length(l))
+  segment_name <- switch(operation, 'union' = paste(names(l), collapse = " | "),
+                         'intersection' = paste(names(l), collapse = " & "))
+
+  dfr <- dplyr::bind_rows(l, .id = 'Splice')
+  dd <- rbind(data.frame(pos = dfr$Start, event = 1),
+              data.frame(pos = dfr$End, event = -1))
+
+  dd <- aggregate(event ~ pos, dd, sum)
+  dd <- dd[order(dd$pos), , drop=FALSE]
+  dd$open <- cumsum(dd$event)
+  r <- rle(dd$open >= overlap)
+  ex <- cumsum(r$lengths - 1 + rep(1, length(r$lengths)))
+  sx <- ex - r$lengths + 1
+
+  output_dfr <- cbind.data.frame(
+    Segment = make.unique(rep(segment_name, length(sx[r$values]))),
+    Start = dd$pos[sx[r$values]],
+    End = dd$pos[ex[r$values] + 1]
+  )
+
+  dplyr::as_tibble(output_dfr)
 }
 
 

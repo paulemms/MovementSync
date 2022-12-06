@@ -46,6 +46,7 @@ sample_list <- compare_avg_power2(
 # Summary stats
 max(sample_list$Smile$Average_Power, na.rm = TRUE)
 max(sample_list$Body$Average_Power, na.rm = TRUE)
+ks.test(sample_list$Smile$Average_Power, sample_list$Body$Average_Power)
 
 # Draw 1000 samples from the average cross power on random segments of a SplicedView
 # and compare with another
@@ -56,6 +57,7 @@ sample2_list <- compare_avg_cross_power2(
 # Summary stats
 max(sample2_list$Smile$Average_Cross_Power, na.rm = TRUE)
 max(sample2_list$Body$Average_Cross_Power, na.rm = TRUE)
+ks.test(sample2_list$Smile$Average_Cross_Power, sample2_list$Body$Average_Cross_Power)
 
 # Clip splice so segments of fixed lengths in each SplicedView
 splicing_clipped1_df <- clip_splice(splicing_duration1_df, duration = 1, location = 'middle')
@@ -69,8 +71,11 @@ sv_clipped_body <- get_spliced_view(jv1, splicing_df = splicing_clipped2_df)
 sample3_list <- compare_avg_power2(
   sv_clipped_smile, sv_clipped_body, 'Smile', 'Body', num_samples = 1000,
   column = "Nose_x_Central_Sitar")
+
+# Summary stats
 max(sample3_list$Smile$Average_Power, na.rm = TRUE)
 max(sample3_list$Body$Average_Power, na.rm = TRUE)
+ks.test(sample3_list$Smile$Average_Power, sample3_list$Body$Average_Power)
 
 # Digging down on avg_power_segments ...
 
@@ -92,9 +97,9 @@ sapply(view_smile_list, function(x) nrow(x$df))
 
 # Simple stats on each view data column in each segment - sapply gives named matrices
 mean_mat <- sapply_column_spliceview(sv_duration_smile, mean, na.rm=TRUE)
-View(mean_mat)
+head(mean_mat)
 sd_mat <- sapply_column_spliceview(sv_duration_body, sd, na.rm=TRUE)
-View(sd_mat)
+head(sd_mat)
 
 # More complex functions - apply fun to each Segment and fixed column in a SplicedView
 wavelet_smile_list <- apply_segment_spliceview(sv_duration_smile, analyze_wavelet,
@@ -139,7 +144,7 @@ plot.ts(ave_cross_power_body[, 1:10], ann = FALSE)
 power_list <- pull_segment_spliceview(sv_duration_body, FUN = analyze_wavelet,
                         column = "Nose_x_Central_Sitar", element = 'Power')
 # get the wavelet power in time-frequency domain on each segment (matrix - rows frequency, columns time)
-View(power_list$output$`Mutual head and body movement`)
+head(power_list$output$`Mutual head and body movement`)
 
 ##################################################################################
 #
@@ -158,10 +163,12 @@ splicing_tabla_solo_df <- clip_splice(splicing_tabla_solo_df, duration = 40)
 sample4_list <- compare_ave_power1(
   jv1, splicing_tabla_solo_df, 'Harmonium Solos', num_segment_samples = 100,
   num_splice_samples = 10, sampling_type = 'offset', column = 'Nose_x_Central_Sitar')
+
+# Summary stats/tests
+max(sample4_list$`Harmonium Solos`$Average_Power, na.rm = TRUE)
+max(sample4_list$`Sampled Splices`$Average_Power, na.rm = TRUE)
 ks.test(sample4_list$`Harmonium Solos`$Average_Power,
         sample4_list$`Sampled Splices`$Average_Power)
-
-# Maybe only needs to calculate power spectrum on the unique segments sampled...
 
 # Drilling down into calculation ...
 
@@ -190,15 +197,6 @@ plot_average_power(wavelet_tabla_list$Original, segment_list$Original)
 plot_power_spectrum(wavelet_tabla_list[[1]], segment_list[[1]])
 plot_average_power(wavelet_tabla_list[[1]], segment_list[[1]])
 
-# Filtering of output segments - process list - for fixed time - maybe an option on the
-# splice for fixed windows from the provided segments?
-
-# Compare original ave power with sampled average power on tabla solo.1 segments
-# max_ave_power_original <- max(ave_power_tabla[, 'Original'])
-# max_ave_power_dist <- apply(ave_power_tabla, 2, max, na.rm = TRUE)
-# plot(max_ave_power_dist)
-# abline(h=max_ave_power_original)
-
 # Apply a function across samples AND segments
 long_ave_power_df <- ave_power_over_samples(jv1, splicing_tabla_solo_df, num_samples = 10,
                                        column = 'Nose_x_Central_Sitar')
@@ -206,7 +204,7 @@ long_ave_power_df <- ave_power_over_samples(jv1, splicing_tabla_solo_df, num_sam
 ggplot(long_ave_power_df) +
   geom_line(aes(x = Period, y = Average_Power, colour = Sample)) +
   scale_x_continuous(trans='log2') +
-  facet_wrap(~Segment) # dedicated function to do
+  facet_wrap(~Segment) # dedicated function TODO
 
 # Avoid some sections with a condition
 avoid_list <- list(avoid_segment1 = c(10, 100), avoid_segment2 = c(2500, 2600))
@@ -215,56 +213,35 @@ avoid_splice_dfr <- splice_time(avoid_list)
 # Randomly create matching segments - add a random offset and use rejection sampling
 splicing2_list <- sample_offset_splice(splicing_tabla_solo_df, jv1, num_samples = 100,
                                 rejection_list = list(avoid_splice_dfr))
-df <- dplyr::bind_rows(splicing2_list, .id = 'Sample')
-avoid_splice_dfr$Segment <- NA
-ggplot(df, aes(y = Segment)) +
-  geom_linerange(aes(xmin = Start, xmax = End)) +
-  geom_rect(data = splicing_tabla_solo_df,
-            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5) +
-  geom_rect(data = avoid_splice_dfr,
-            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
 
 # Distribution of new segments faceted by original segment
-ggplot(df) +
-  geom_linerange(aes(y = Sample, xmin = Start, xmax = End, colour = Segment)) +
-  theme(axis.ticks.y=element_blank(), axis.text.y=element_blank(), panel.background = element_blank()) +
-  facet_wrap(~Segment) +
-  geom_rect(data = splicing_tabla_solo_df,
-          aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5) +
-  geom_rect(data = avoid_splice_dfr[-1],
-            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
+visualise_sample_splices(splicing2_list, jv1, avoid_splice_dfr = avoid_splice_dfr)
+
+# Sample segments faceted by original segment
+visualise_sample_splices(splicing2_list, jv1, avoid_splice_dfr = avoid_splice_dfr,
+                         unstack = TRUE)
 
 # Sample using a Poisson process to count gaps but maintain segment durations
 splicing3_list <- sample_gap_splice(splicing_tabla_solo_df, jv1, num_samples = 100,
                                     rejection_list = list(avoid_splice_dfr))
-df <- dplyr::bind_rows(splicing3_list, .id = 'Sample')
-ggplot(df, aes(y = Segment)) +
-  geom_linerange(aes(xmin = Start, xmax = End)) +
-  geom_rect(data = splicing_tabla_solo_df,
-            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5) +
-  geom_rect(data = avoid_splice_dfr,
-            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
 
-# Distribution of new segments faceted by original segment
-ggplot(df) +
-  geom_linerange(aes(y = Sample, xmin = Start, xmax = End, colour = Segment)) +
-  theme(axis.ticks.y=element_blank(), axis.text.y=element_blank(), panel.background = element_blank()) +
-  facet_wrap(~Segment) +
-  geom_rect(data = splicing_tabla_solo_df,
-            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5) +
-  geom_rect(data = avoid_splice_dfr[-1],
-            aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
+# Visualise samples
+visualise_sample_splices(splicing3_list, jv1, avoid_splice_dfr = avoid_splice_dfr)
+visualise_sample_splices(splicing3_list, jv1, avoid_splice_dfr = avoid_splice_dfr,
+                         unstack = TRUE)
 
-# Vary the durations of the segments and keep the gaps the same??? durations exponential dist - NO
-# apply power to samples vs original  - plot
+##################################################################################
+#
+# 3. Set of segments to compare against matching segments elsewhere in performance
+#
+##################################################################################
 
 # Splices based on Metre object
 m1 <- get_metre_data(r1)
 autoplot(m1)
-head(m1[[1]])
 
 splicing_metre_df <- splice_time(m1, window_duration = 10)
-head(splicing_metre_df)
+splicing_metre_df
 
 sv_metre <- get_spliced_view(jv1, splicing_df = splicing_metre_df)
 autoplot(sv_metre)
@@ -288,7 +265,7 @@ plot(o4, instrument = 'Onset')
 autoplot(o4, instrument = 'Onset')
 r5 <- get_recording("Gagaku_5_Juha", fps = 60)
 o5 <- get_onsets_selected_data(r5)
-plot(o5, instrument = 'Hichiriki', matra = 'SD_T') # ok
+plot(o5, instrument = 'Hichiriki', matra = 'SD_T')
 autoplot(o5, instrument = 'Hichiriki', matra = 'SD_T')
 
 instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa",
@@ -304,44 +281,54 @@ po5 <- difference_onsets(o5, instruments = instruments)
 ggpairs(po5, columns = 2:5, aes(colour = Tala)) # only one Tala in plot
 
 # Summary of difference in onsets (allows segmentation via splicing_dfr argument)
-summary_dfr <- summary_onsets(o5, instruments = instruments) # Add number of rows
-View(summary_dfr)
-ggplot(summary_dfr) + # plot_summary_onsets
-  geom_col(aes(x = Mean_Absolute_Difference, y = Instrument_Pair)) +
-  ggtitle("Mean Absolute Onset Differences of Instrument Pairs")
+summary_dfr <- summary_onsets(o5, r5, instruments = instruments, show_plot = TRUE, filter_pair = 'T')
+# View(summary_dfr)
+# ggplot(summary_dfr) + # plot_summary_onsets
+#   geom_col(aes(x = Mean_Absolute_Difference, y = Instrument_Pair)) +
+#   ggtitle("Mean Absolute Onset Differences of Instrument Pairs")
+# plot_summary_onsets(summary_dfr, r5)
 
 # Splice the processed onsets
 d5 <- get_duration_annotation_data(r5)
-splicing_dfr <- splice_time(d5, tier = 'Section')
-segmented_po <- difference_onsets(o5, instruments = instruments, splicing_dfr = splicing_dfr)
+splicing_section_dfr <- splice_time(d5, tier = 'Section')
+segmented_po <- difference_onsets(o5, instruments = instruments, splicing_dfr = splicing_section_dfr)
 View(segmented_po)
 ggpairs(segmented_po, columns = 3:6, aes(colour = Segment))
 ggpairs(segmented_po, columns = c(3, 7:9), aes(colour = Segment))
 
-# Do splicing via a separate function get_spliced_onsets like views
-#spliced_onsets <- get_spliced_onsets(po5, splicing_dfr)
+# Calculate summary statistics on the segments from splice
+summary_segmented_dfr <- summary_onsets(o5, r5, instruments = instruments, splicing_section_dfr,
+                                        show_plot = TRUE, filter_pair = 'K.*-S')
+summary_segmented_dfr
 
-# Calculate summary statistics on the segments
-summary_segmented_list <- summary_onsets(o5, instruments = instruments, splicing_dfr)
-summary_segmented_list$C.v2[1:3, ]
+# Windows around reference points of processed onset object using an expression filter
+po1_beat3 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'), expr = 'Matra == 3')
+po1_beat3_splicing_dfr <- splice_time(po1_beat3, window_duration = 0.1)
+is_splice_overlapping(po1_beat3_splicing_dfr)
+head(po1_beat3_splicing_dfr)
 
-# Visualise stats on segment A
-barplot(Mean_Absolute_Difference  ~ Instrument_Pair, ylab = "", cex.names = 0.5,
-        las = 2, horiz = TRUE, main = "Mean Absolute Onset Differences of Instrument Pairs",
-        data = summary_segmented_list$A.v2)
+# Summary for r1 of onset differences using splice from annotation data
+splicing_tabla_solo_df
+summary_onsets(o1, r1, instruments = c('Inst', 'Tabla'),
+               splicing_dfr = splicing_tabla_solo_df, show_plot = TRUE)
 
-# DONE
-# difference based Inst, + others and add differences in time as columns
-# mean sd, mean of absolute  from second object
-# subset onset and summary on sections in annotation
+# Summary for r5 of onset differences using splice from annotation data
+summary_onsets(o5, r5, instruments = instruments, splicing_section_dfr, filter_pair = "Taiko-",
+               show_plot = TRUE)
 
-# Windows around reference points of processed onset object
-splicing_dfr <- splice_time(po1, window_duration = 1) # filter using columns in onset data, expr for filter
-head(splicing_dfr)
+# Summary for r5 of difference in onsets on third beat
+summary_onsets(o5, r5, instruments = instruments, splicing_section_dfr,
+               expr = 'SD_T == 3', show_plot = TRUE)
 
-# TODO:
-# subset onset data with a condition based on duration annotation data
-# subsetting between objects and sampling
-# change_splice - take in splice return new one with criteria
-# two plots - originals vs samples or A vs B -
+# Subsetting between objects and sampling
+splicing_duration1_df # Mutual look and smile
+splicing_form_dfr <- splice_time(d1, tier = 'FORM')
+splicing_form_dfr
+merged_splice_dfr <- merge_splice(smile = splicing_duration1_df,
+                                  tala = splicing_form_dfr,
+                                  operation = 'intersection')
+merged_splice_dfr
+
+
 # p number from some statistical test for average power or stats on onsets
+# relative phase information - high-level function

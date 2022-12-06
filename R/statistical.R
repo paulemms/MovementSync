@@ -526,11 +526,18 @@ sample_gap_splice <- function(splicing_dfr, v, num_samples, rejection_list = lis
 #' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o1 <- get_onsets_selected_data(r1)
 #' head(difference_onsets(o1, instruments = c('Inst', 'Tabla')))
-difference_onsets <- function(onset_obj, instruments, splicing_dfr = NULL, segment_tala = FALSE) {
+#' head(difference_onsets(o1, instruments = c('Inst', 'Tabla'), expr = 'Matra == 3'))
+difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr = NULL) {
 
   dfr_list <- onset_obj[sapply(onset_obj, is.data.frame)]
   dfr <- dplyr::bind_rows(dfr_list, .id = 'Tala')
-  dfr <- dfr[,c('Tala', instruments),drop=FALSE]
+
+  if (!is.null(expr)) {
+    parsed_expr <- rlang::parse_expr(expr)
+    dfr <- dplyr::filter(dfr, !!parsed_expr)
+  }
+
+  dfr <- dfr[, c('Tala', instruments), drop=FALSE]
 
   # Calculate onset differences for each instrument pair
   instrument_combn <- combn(instruments, 2)
@@ -547,16 +554,16 @@ difference_onsets <- function(onset_obj, instruments, splicing_dfr = NULL, segme
   if (!is.null(splicing_dfr)) {
     segment_list <- list()
     for (r in seq_len(nrow(splicing_dfr))) {
-      a <- splicing_dfr[r, 'Start']
-      b <- splicing_dfr[r, 'End']
-      segment <-  splicing_dfr[r, 'Segment']
+      a <- splicing_dfr$Start[r]
+      b <- splicing_dfr$End[r]
+      segment <-  if (is.null(expr)) splicing_dfr$Segment[r] else paste(expr, splicing_dfr$Segment[r], sep = " & ")
       segment_list[[segment]] <- output_dfr[
         !is.na(output_dfr$Ref_Beat_Time) & output_dfr$Ref_Beat_Time >= a &
           output_dfr$Ref_Beat_Time <= b, ,drop=FALSE]
     }
     output_dfr <- dplyr::bind_rows(segment_list, .id = 'Segment')
   } else {
-    output_dfr$Segment <- if (segment_tala) output_dfr$Tala else 'All'
+    output_dfr$Segment <- if (!is.null(expr)) expr else 'All'
   }
 
   class(output_dfr) <- c('OnsetsDifference', 'data.frame')
@@ -569,6 +576,11 @@ difference_onsets <- function(onset_obj, instruments, splicing_dfr = NULL, segme
 #' @param onset_obj
 #' @param instruments
 #' @param splicing_dfr
+#' @param expr
+#' @param recording
+#' @param show_plot
+#' @param filter_pair
+#' @param na_omit
 #'
 #' @return
 #' @export
@@ -576,31 +588,55 @@ difference_onsets <- function(onset_obj, instruments, splicing_dfr = NULL, segme
 #' @examples
 #' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o1 <- get_onsets_selected_data(r1)
-#' head(summary_onsets(o1, instruments = c('Inst', 'Tabla')))
-summary_onsets <- function(onset_obj, instruments, splicing_dfr = NULL) {
+#' d1 <- get_duration_annotation_data(r1)
+#' splice_dfr <- splice_time(d1, tier = 'Event', comments = 'tabla solo')
+#' summary_onsets(o1, r1, instruments = c('Inst', 'Tabla'), splicing_dfr = splice_dfr, show_plot = TRUE)
+summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NULL, expr = NULL,
+                           show_plot = FALSE, filter_pair = NULL, na_omit = TRUE) {
 
-  dfr <- difference_onsets(onset_obj, instruments = instruments, splicing_dfr = splicing_dfr)
-  beat_time_pos <- match("Ref_Beat_Time", colnames(dfr), nomatch = 0)
-  segment_pos <- match("Segment", colnames(dfr), nomatch = 0)
-  tala_pos <- match("Tala", colnames(dfr), nomatch = 0)
-  split_list <- split(dfr[-c(segment_pos, beat_time_pos, tala_pos)], list(dfr$Segment, dfr$Tala))
+  dfr <- difference_onsets(onset_obj, instruments = instruments, splicing_dfr = splicing_dfr, expr = expr)
+  long_dfr <- tidyr::pivot_longer(dfr, cols = -c(Tala, Ref_Beat_Time, Segment),
+                                  names_to = 'Instrument_Pair', values_to = 'Value')
 
-  segment_list <- list()
-  for (segment in names(split_list)) {
-    dfr <- split_list[[segment]]
-    segment_list[[segment]] <- cbind.data.frame(
-      Instrument_Pair = colnames(dfr),
-      Mean_Difference = apply(dfr, 2, mean, na.rm=TRUE),
-      Mean_Absolute_Difference = apply(abs(dfr), 2, mean, na.rm=TRUE),
-      SD_Difference = apply(dfr, 2, sd, na.rm=TRUE),
-      SD_Absolute_Difference = apply(abs(dfr), 2, sd, na.rm=TRUE)
-    )
-    rownames(segment_list[[segment]]) <- NULL
+  if (!is.null(filter_pair)) {
+    long_dfr <- dplyr::filter(long_dfr, grepl(filter_pair, Instrument_Pair))
   }
 
-  if (length(segment_list) == 1) segment_list <- segment_list[[1]]
+  long_dfr$Segment <- factor(long_dfr$Segment, unique(long_dfr$Segment))
+  summary_dfr <- dplyr::select(long_dfr, -c(Tala, Ref_Beat_Time))
+  summary_dfr <- dplyr::group_by(summary_dfr, Instrument_Pair, Segment)
+  summary_dfr <- dplyr::summarise(
+    summary_dfr,
+    'N' = sum(!is.na(Value)),
+    'Mean Difference' = mean(Value, na.rm = TRUE),
+    'Mean Absolute Difference' = mean(abs(Value), na.rm = TRUE),
+    'SD Difference' = sd(Value, na.rm = TRUE),
+    'SD Absolute Difference' = sd(abs(Value), na.rm = TRUE)
+  )
 
-  segment_list
+  if (na_omit) {
+    summary_dfr <- dplyr::filter(summary_dfr, N > 0)
+  }
+
+
+  if (show_plot) {
+
+    long_dfr <- tidyr::pivot_longer(summary_dfr, cols = -c('Segment', 'Instrument_Pair'),
+                                    names_to = 'Statistic', values_to = 'Value')
+    long_dfr$Statistic_f <- factor(long_dfr$Statistic, unique(long_dfr$Statistic))
+
+    g <- ggplot2::ggplot(long_dfr) +
+      ggplot2::geom_col(ggplot2::aes(x = Value, y = Instrument_Pair, fill = Statistic)) +
+      ggplot2::theme(legend.position = "none") +
+      ggplot2::facet_grid(Segment ~ Statistic_f,
+                          labeller = ggplot2::labeller(Statistic_f = label_wrap_gen(12),
+                                                       Segment = label_wrap_gen(12)), scales = 'free_x') +
+      ggplot2::ggtitle("Summary of Onset Statistics for Instrument Pairs",
+                       subtitle = recording$stem)
+    print(g)
+  }
+
+  summary_dfr
 }
 
 
@@ -614,20 +650,44 @@ summary_onsets <- function(onset_obj, instruments, splicing_dfr = NULL) {
 #' @export
 #'
 #' @examples
-visualise_sample_splices <- function(splicing_list, jv, overlay = TRUE) {
+visualise_sample_splices <- function(splicing_list, jv, overlay = TRUE,
+                                     avoid_splice_dfr = data.frame(), unstack = FALSE) {
   stopifnot(is.list(splicing_list), 'View' %in% class(jv))
 
   subtitle <- c(jv$recording$stem, jv$vid, jv$direct, jv$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-  df <- dplyr::bind_rows(splicing_list)
-  ggplot(df, aes(y = Segment)) +
-    ggplot2::labs(title = "Visualisation of Random Splices", subtitle = subtitle) +
-    geom_linerange(aes(xmin = Start, xmax = End)) +
-    geom_rect(data = splicing_tabla_solo_df,
-              aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5) +
+  df <- dplyr::bind_rows(splicing_list, .id = 'Sample')
+
+  if (unstack) {
+    g <- ggplot2::ggplot(df) +
+      ggplot2::geom_linerange(ggplot2::aes(y = Sample, xmin = Start, xmax = End, colour = Segment)) +
+      ggplot2::theme(axis.ticks.y=ggplot2::element_blank(), axis.text.y=ggplot2::element_blank(),
+            panel.background = ggplot2::element_blank()) +
+      ggplot2::facet_wrap(~Segment) +
+      ggplot2::geom_rect(data = splicing_tabla_solo_df,
+                ggplot2::aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5)
+
+  } else {
+    g <- ggplot2::ggplot(df, ggplot2::aes(y = Segment)) +
+    ggplot2::geom_linerange(aes(xmin = Start, xmax = End)) +
+      ggplot2::geom_rect(data = splicing_tabla_solo_df,
+                         ggplot2::aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5)
+  }
+
+  # Add scale and title
+  g <- g + ggplot2::labs(title = "Visualisation of Random Splices", subtitle = subtitle) +
     ggplot2::xlab("Time / min:sec") +
     ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
 
+  if (nrow(avoid_splice_dfr) > 0) {
+    avoid_splice_dfr$Segment <- NA
+    g <- g + geom_rect(data = avoid_splice_dfr,
+                       aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
+  }
 
+  g
 }
+
+
+

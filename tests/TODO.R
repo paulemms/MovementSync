@@ -1,13 +1,18 @@
 # QUERIES
-# Do we want summary statistics for onsets to be broken down by Tala?
 
 # DONE
 # Updated default onsetselected graphs, added autoplots
 # Generated a reference beat time point from the mean
 # Tabular summary functions: added simple summary function to analyze.wavelet - maybe output table as CSV?
+# Rename Tier column as Segment in splicing tables
+# difference based Inst, + others and add differences in time as columns
+# mean sd, mean of absolute  from second object
+# subset onset and summary on sections in annotation
+# Added number of non NA rows in onset summaries
+# Added clip_splice function to take in splice return a new windowed splice
+# two plots - originals vs samples or A vs B -
 
 # TODO
-# Rename Tier column as Segment in splicing tables
 # Splicing for proportion of interval on metre objects
 # Generate splicing table from annotation data such that segments of equal length
 # Add default data set

@@ -7,6 +7,8 @@
 #' @param var2
 #' @param lag in seconds (rounded to nearest frame)
 #' @param granger_fn
+#' @param var3
+#' @param cond_granger_fn
 #'
 #' @return
 #' @export
@@ -23,13 +25,19 @@
 #' splicing_df <- splice_time(jv_sub, win_size = 5, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla")
+#' granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", "Nose_y_Central_Tabla")
 
-granger_test <- function(obj, var1, var2, lag = 1, granger_fn = ms_grangertest2) {
+granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_grangertest2,
+                         cond_granger_fn = ms_condgrangertest) {
   stopifnot("SplicedView" %in% class(obj))
 
   df <- obj$df
   order <- round(lag * obj$recording$fps)
-  df <- dplyr::select(df, Frame, Segment, !!var1, !!var2)
+  if (var3 == "") {
+    df <- dplyr::select(df, Frame, Segment, !!var1, !!var2)
+  } else {
+    df <- dplyr::select(df, Frame, Segment, !!var1, !!var2, !!var3)
+  }
   df <- dplyr::group_by(df, Segment)
 
   # Error tests
@@ -43,20 +51,25 @@ granger_test <- function(obj, var1, var2, lag = 1, granger_fn = ms_grangertest2)
     stop("There must be more than one data point in all time slices")
   }
 
-  l1 <- dplyr::group_map(df, ~ granger_fn(.[[var1]], .[[var2]], order = order))
-  l2 <- dplyr::group_map(df, ~ granger_fn(.[[var2]], .[[var1]], order = order))
+  if (var3 == "") {
+    l1 <- dplyr::group_map(df, ~ granger_fn(.[[var1]], .[[var2]], order = order))
+    l2 <- dplyr::group_map(df, ~ granger_fn(.[[var2]], .[[var1]], order = order))
+  } else {
+    l1 <- dplyr::group_map(df, ~ cond_granger_fn(.[[var1]], .[[var2]], .[[var3]], order = order))
+    l2 <- dplyr::group_map(df, ~ cond_granger_fn(.[[var2]], .[[var1]], .[[var3]], order = order))
+  }
 
   df1 <- as.data.frame(t(sapply(l1, function(x) as.numeric(x[2,]))))
   df2 <- as.data.frame(t(sapply(l2, function(x) as.numeric(x[2,]))))
   colnames(df1) <- c("Res.Df", "Df", "F", "P_Value")
   colnames(df2) <- c("Res.Df", "Df", "F", "P_Value")
-  df1_add <- data.frame(Segment = unique(df$Segment), Var1 = var1, Var2 = var2)
-  df2_add <- data.frame(Segment = unique(df$Segment), Var1 = var2, Var2 = var1)
+  df1_add <- data.frame(Segment = unique(df$Segment), Var1 = var1, Var2 = var2, Var3 = var3)
+  df2_add <- data.frame(Segment = unique(df$Segment), Var1 = var2, Var2 = var1, Var3 = var3)
   output_df <- dplyr::bind_rows(dplyr::bind_cols(df1, df1_add),
                                 dplyr::bind_cols(df2, df2_add))
 
 
-  l <- list(df = output_df, var1 = var1, var2 = var2,
+  l <- list(df = output_df, var1 = var1, var2 = var2, var3 = var3,
             recording = obj$recording, order = order)
   class(l) <- "GrangerTime"
 
