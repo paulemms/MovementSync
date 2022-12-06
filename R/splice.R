@@ -400,23 +400,81 @@ is_splice_overlapping <- function(...) {
   any(overlap, na.rm = TRUE)
 }
 
-is_valid_splice <- function(dfr) {
+# is_valid_splice <- function(dfr) {
+#
+#   duration_dfr <- dplyr::mutate(
+#     dfr[order(dfr$Start),,drop=FALSE],
+#     Next_Start = dplyr::lead(Start, 1),
+#     Valid = End <= Next_Start
+#   )
+#
+#   all(duration_dfr[['Valid']], na.rm = TRUE)
+#
+# }
+#
+# is_splice_overlapping2 <- function(dfr1, dfr2) {
+#
+#   splice_dfr <- dplyr::bind_rows(dfr1, dfr2)
+#   splice_dfr <- dplyr::arrange(splice_dfr, Start)
+#
+#   is_valid_splice(splice_dfr)
+# }
 
-  duration_dfr <- dplyr::mutate(
-    dfr[order(dfr$Start),,drop=FALSE],
-    Next_Start = dplyr::lead(Start, 1),
-    Valid = End <= Next_Start
-  )
 
-  all(duration_dfr[['Valid']], na.rm = TRUE)
+#' Clip a splice so segments are of fixed duration
+#'
+#' @param splice_dfr
+#' @param duration
+#' @param location
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' l <- list(a = c(10, 20), b = c(30, 40),c = c(50, 55))
+#' splice_dfr <- splice_time(l)
+#' clip_splice(splice_dfr, duration = 1)
+#' clip_splice(splice_dfr, duration = 6)
+#' clip_splice(splice_dfr, duration = 1, location = 'beginning')
+#' clip_splice(splice_dfr, duration = 10, location = 'beginning')
+#' clip_splice(splice_dfr, duration = 1, location = 'end')
+#' clip_splice(splice_dfr, duration = 10, location = 'end')
+clip_splice <- function(splice_dfr, duration, location = 'middle') {
+  stopifnot(is.data.frame(splice_dfr), duration > 0, location %in% c('beginning', 'middle', 'end'))
+  new_splice_dfr <- splice_dfr
 
+  if (location == 'middle') {
+    mid_time <- (splice_dfr$Start + splice_dfr$End) / 2
+    start_time <- mid_time - duration / 2
+    end_time <- mid_time + duration / 2
+    is_before_start <- start_time < splice_dfr$Start
+    is_after_end <- end_time > splice_dfr$End
+    if (any(is_before_start | is_after_end)) {
+      warning('Segments too short to clip to duration - using start or end point of segment')
+    }
+    new_splice_dfr$Start <- ifelse(is_before_start, splice_dfr$Start, start_time)
+    new_splice_dfr$End <- ifelse(is_after_end, splice_dfr$End, end_time)
+
+  } else if (location == 'beginning') {
+    end_time <- splice_dfr$Start + duration
+    is_after_end <- end_time > splice_dfr$End
+    if (any(is_after_end)) {
+      warning('Segments too short to clip to duration - using end point of segment')
+    }
+    new_splice_dfr$Start <- splice_dfr$Start
+    new_splice_dfr$End <- ifelse(is_after_end, splice_dfr$End, end_time)
+
+  } else if (location == 'end') {
+    start_time <- splice_dfr$End - duration
+    is_before_start <- start_time < splice_dfr$Start
+    if (any(is_before_start)) {
+      warning('Segments too short to clip to duration - using start point of segment')
+    }
+    new_splice_dfr$Start <- ifelse(is_before_start, splice_dfr$Start, start_time)
+    new_splice_dfr$End <- splice_dfr$End
+  } else stop()
+
+  new_splice_dfr
 }
 
-is_splice_overlapping2 <- function(dfr1, dfr2) {
-
-  splice_dfr <- dplyr::bind_rows(dfr1, dfr2)
-  splice_dfr <- dplyr::arrange(splice_dfr, Start)
-
-  is_valid_splice(splice_dfr)
-}
 

@@ -62,15 +62,108 @@ apply_segment_spliceview <- function(sv, FUN, ...) {
 }
 
 
+#' Compare average power distribution using a splicing table
+#'
+#' @param jv
+#' @param splicing_df
+#' @param column
+#' @param splice_name
+#' @param num_segment_samples
+#' @param num_splice_samples
+#' @param rejection_list
+#' @param show_plot
+#' @param sampling_type
+#'
 #' @export
 #'
 #' @examples
-ave_power_over_samples <- function(jv, splicing_df, num_samples, column,
-                              include_original = TRUE) {
+compare_ave_power1 <- function(jv, splicing_df, splice_name, num_segment_samples,
+                              num_splice_samples,
+                              column, sampling_type = 'offset', rejection_list = list(),
+                              show_plot = TRUE) {
+  stopifnot(class(jv)[1] == "JoinedView",
+            sampling_type %in% c('offset', 'gap'),
+            is.list(rejection_list))
 
-  stopifnot(class(jv)[1] == "JoinedView")
+  if (sampling_type == 'offset') {
+    splicing_list <- sample_offset_splice(splicing_df, jv, num_samples = num_splice_samples,
+                                          rejection_list = rejection_list)
+  } else if (sampling_type == 'gap') {
+    splicing_list <- sample_gap_splice(splicing_df, jv, num_samples = num_splice_samples,
+                                       rejection_list = rejection_list)
+  }
 
-  splicing_list <- sample_splice(splicing_df, jv, num_samples = num_samples)
+  # Original splice
+  sv_orig <- get_spliced_view(jv, splicing_df = splicing_df)
+  av_power_orig <- ave_power_spliceview(sv_orig, column = column)
+  segment_samples <- sample(2:ncol(av_power_orig), num_segment_samples, replace = TRUE)
+  period_samples <- sample(nrow(av_power_orig), num_segment_samples, replace = TRUE)
+  original_dfr <- cbind.data.frame(
+    Period = av_power_orig[period_samples, 'Period'],
+    Average_Power = av_power_orig[cbind(period_samples, segment_samples)]
+  )
+
+  # Random splices
+  sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv, splicing_df = x))
+  df_list <- lapply(sv_list, ave_power_spliceview, column = column)
+  ave_power_df <- dplyr::bind_rows(df_list, .id = 'Sample')
+  ave_power_data <- ave_power_df[-c(1:2)]
+  segment_samples <- sample(ncol(ave_power_df) - 2, num_segment_samples, replace = TRUE)
+  period_samples <- sample(nrow(ave_power_df), num_segment_samples, replace = TRUE)
+  random_splice_dfr <- cbind.data.frame(
+    Period = ave_power_df[period_samples, 'Period'],
+    Average_Power = ave_power_data[cbind(period_samples, segment_samples)]
+  )
+
+  l <- list(original_dfr, random_splice_dfr)
+  names(l) <- c(splice_name, 'Sampled Splices')
+
+  if (show_plot) {
+    long_dfr <- dplyr::bind_rows(l, .id = 'Sampled_From')
+
+    subtitle <- c(jv$recording$stem, jv$vid, jv$direct, jv$inst)
+    subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+    g <- ggplot2::ggplot(long_dfr, ggplot2::aes(x = Period, colour = Sampled_From)) +
+      ggplot2::xlab("Period / sec") +
+      ggplot2::labs(title = "Comparison of Average Power on Sampled Segments",
+                    subtitle = paste(subtitle, ':', column)) +
+      scale_x_continuous(trans='log2') +
+      ggplot2::geom_line(aes(y = Average_Power)) +
+      ggplot2::facet_wrap(~Sampled_From)
+    print(g)
+  }
+
+  l
+}
+
+
+#' Calculate average power over samples and segments using a splicing table
+#'
+#' @param jv
+#' @param splicing_df
+#' @param num_samples
+#' @param column
+#' @param sampling_type
+#' @param include_original
+#'
+#' @export
+#'
+#' @examples
+ave_power_over_samples <- function(jv, splicing_df, num_samples, column, sampling_type = 'offset',
+                                   rejection_list = list(), include_original = TRUE) {
+
+  stopifnot(class(jv)[1] == "JoinedView",
+            sampling_type %in% c('offset', 'gap'),
+            is.list(rejection_list))
+
+  if (sampling_type == 'offset') {
+    splicing_list <- sample_offset_splice(splicing_df, jv, num_samples = num_samples,
+                                          rejection_list = rejection_list)
+  } else if (sampling_type == 'gap') {
+    splicing_list <- sample_gap_splice(splicing_df, jv, num_samples = num_samples,
+                                          rejection_list = rejection_list)
+  }
   if (include_original) splicing_list$Original <- splicing_df
 
   sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv, splicing_df = x))
@@ -131,18 +224,137 @@ ave_cross_power_spliceview <- function(sv, ...) {
 #' @export
 #'
 #' @examples
+sample_ave_cross_power_spliceview <- function(sv, num_samples, replace = TRUE, ...) {
+  cross_wavelet_list <- apply_segment_spliceview(sv, FUN = analyze_coherency, ...)
+  output_mat <- sapply(cross_wavelet_list$output, function(x) x$Power.xy.avg)
+
+  # Each element in cross_wavelet_list$output has the same frequency scale so take first
+  axis_2_mat  <- sapply(cross_wavelet_list$output, function(x) x$axis.2)
+  period_value <- 2^(axis_2_mat[,1]) / sv$recording$fps
+
+  period_sample <- sample(nrow(output_mat), num_samples, replace = replace)
+  segment_sample <- sample(ncol(output_mat), num_samples, replace = replace)
+  sampled_cross_power <- cbind.data.frame(
+    Period = period_value[period_sample],
+    Average_Cross_Power = output_mat[cbind(period_sample, segment_sample)]
+  )
+
+  sampled_cross_power
+}
+
+
+#' @export
+#'
+#' @examples
 sample_ave_power_spliceview <- function(sv, num_samples, replace = TRUE, ...) {
   wavelet_list <- apply_segment_spliceview(sv, FUN = analyze_wavelet, ...)
   output_mat <- sapply(wavelet_list$output, function(x) x$Power.avg)
 
+  # Each element in wavelet_list$output has the same frequency scale so take first
+  axis_2_mat  <- sapply(wavelet_list$output, function(x) x$axis.2)
+  period_value <- 2^(axis_2_mat[,1]) / sv$recording$fps
+
   period_sample <- sample(nrow(output_mat), num_samples, replace = replace)
   segment_sample <- sample(ncol(output_mat), num_samples, replace = replace)
-  sampled_power <- cbind(
-    Period = period_sample,
-    Power = output_mat[cbind(period_sample, segment_sample)]
+  sampled_power <- cbind.data.frame(
+    Period = period_value[period_sample],
+    Average_Power = output_mat[cbind(period_sample, segment_sample)]
   )
 
   sampled_power
+}
+
+
+#' Compare the average power distribution of two SplicedViews using sampling on
+#' each segment
+#'
+#' @param sv1
+#' @param sv2
+#' @param name1
+#' @param name2
+#' @param num_samples
+#' @param column
+#' @param show_plot
+#'
+#' @export
+#'
+#' @examples
+compare_avg_power2 <- function(sv1, sv2, name1, name2, num_samples,
+                                       column, show_plot = TRUE) {
+  stopifnot(class(sv1)[1] == 'SplicedView', class(sv2)[1] == 'SplicedView',
+            sv1$recording$stem == sv2$recording$stem, length(column) == 1)
+
+  sampled1_dfr <- sample_ave_power_spliceview(sv1, num_samples = num_samples, column = column)
+  sampled2_dfr <- sample_ave_power_spliceview(sv2, num_samples = num_samples, column = column)
+
+  l <- list(sampled1_dfr, sampled2_dfr)
+  names(l) <- c(name1, name2)
+
+  if (show_plot) {
+
+    long_dfr <- dplyr::bind_rows(l, .id = 'Sampled_From')
+
+    subtitle <- c(sv1$recording$stem, sv1$vid, sv1$direct, sv1$inst)
+    subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+    g <- ggplot2::ggplot(long_dfr, ggplot2::aes(x = Period, colour = Sampled_From)) +
+      ggplot2::xlab("Period / sec") +
+      ggplot2::labs(title = "Comparison of Average Power on Sampled Segments",
+                    subtitle = paste(subtitle, ':', column)) +
+      scale_x_continuous(trans='log2') +
+      ggplot2::geom_line(aes(y = Average_Power)) +
+      ggplot2::facet_wrap(~Sampled_From)
+    print(g)
+  }
+
+  invisible(l)
+}
+
+
+#' Compare the average cross power distribution of two SplicedViews using
+#' sampling on each segment
+#'
+#' @param sv1
+#' @param sv2
+#' @param name1
+#' @param name2
+#' @param num_samples
+#' @param columns
+#' @param show_plot
+#'
+#' @export
+#'
+#' @examples
+compare_avg_cross_power2 <- function(sv1, sv2, name1, name2, num_samples,
+                                       columns, show_plot = TRUE) {
+  stopifnot(class(sv1)[1] == 'SplicedView', class(sv2)[1] == 'SplicedView',
+            sv1$recording$stem == sv2$recording$stem, length(columns) == 2)
+
+  sampled1_dfr <- sample_ave_cross_power_spliceview(sv1, num_samples = num_samples,
+                                                    columns = columns)
+  sampled2_dfr <- sample_ave_cross_power_spliceview(sv2, num_samples = num_samples,
+                                                    columns = columns)
+  l <- list(sampled1_dfr, sampled2_dfr)
+  names(l) <- c(name1, name2)
+
+  if (show_plot) {
+
+    long_dfr <- dplyr::bind_rows(l, .id = 'Sampled_From')
+
+    subtitle <- c(sv1$recording$stem, sv1$vid, sv1$direct, sv1$inst)
+    subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+    g <- ggplot2::ggplot(long_dfr, ggplot2::aes(x = Period, colour = Sampled_From)) +
+      ggplot2::xlab("Period / sec") +
+      ggplot2::labs(title = "Comparison of Average Cross Power on Sampled Segments",
+                    subtitle = paste(subtitle, ':', columns, collapse = " ")) +
+      scale_x_continuous(trans='log2') +
+      ggplot2::geom_line(aes(y = Average_Cross_Power)) +
+      ggplot2::facet_wrap(~Sampled_From)
+    print(g)
+  }
+
+  invisible(l)
 }
 
 
@@ -164,8 +376,8 @@ sample_ave_power_spliceview <- function(sv, num_samples, replace = TRUE, ...) {
 #' d1 <- get_duration_annotation_data(r1)
 #' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 #' splicing_df <- splice_time(d1, tier ='INTERACTION', comments = 'Mutual look and smile')
-#' x <- sample_splice(splicing_df, rv1, num_samples = 1000)
-sample_splice <- function(splicing_dfr, v, num_samples, rejection_list = list()) {
+#' x <- sample_offset_splice(splicing_df, rv1, num_samples = 1000)
+sample_offset_splice <- function(splicing_dfr, v, num_samples, rejection_list = list()) {
   stopifnot(is.data.frame(splicing_dfr), "View" %in% class(v),
             num_samples > 0, is.list(rejection_list))
 
@@ -207,7 +419,7 @@ sample_splice <- function(splicing_dfr, v, num_samples, rejection_list = list())
     # Remove the overlapping ones
     splicing_list <- c(splicing_list, new_splicing_list[!is_overlapped])
     current_num_samples <- length(splicing_list)
-    message(current_num_samples)
+    message("Accepted samples: ", current_num_samples)
   }
 
   splicing_list <- splicing_list[seq_len(num_samples)]
@@ -258,13 +470,15 @@ sample_gap_splice <- function(splicing_dfr, v, num_samples, rejection_list = lis
   current_num_samples <- 0
 
   # Number of gaps follows Poisson process
-  gap_dfr <- dplyr::mutate(splicing_dfr, Next_Start = dplyr::lead(Start))
-  gap_dfr <- dplyr::mutate(gap_dfr, Duration = End - Start)
-  gap_dfr <- dplyr::mutate(gap_dfr, Gap = Next_Start - Start)
-  gap_dfr <- dplyr::mutate(gap_dfr, Prev_Gap = dplyr::lag(Gap, default = Start[1]))
+  # gap_dfr <- dplyr::mutate(splicing_dfr, Next_Start = dplyr::lead(Start))
+  # gap_dfr <- dplyr::mutate(gap_dfr, Duration = End - Start)
+  # gap_dfr <- dplyr::mutate(gap_dfr, Gap = Next_Start - Start)
+  # gap_dfr <- dplyr::mutate(gap_dfr, Prev_Gap = dplyr::lag(Gap, default = Start[1]))
   duration <- splicing_dfr$End - splicing_dfr$Start
   lagged_duration <- dplyr::lag(duration, default = 0)
-  ave_gap_splice <- mean(gap_dfr$Prev_Gap, na.rm = TRUE) # seconds
+  gaps <- dplyr::lead(splicing_dfr$Start, default = max_time) - splicing_dfr$Start
+  gaps <- c(splicing_dfr$Start[1], gaps)
+  ave_gap_splice <- mean(gaps, na.rm = TRUE) # seconds
 
   # Repeat until we get the desired number of samples
   while(current_num_samples < num_samples) {
@@ -290,7 +504,7 @@ sample_gap_splice <- function(splicing_dfr, v, num_samples, rejection_list = lis
     # Remove the overlapping ones
     splicing_list <- c(splicing_list, new_splicing_list[!is_rejected])
     current_num_samples <- length(splicing_list)
-    message(current_num_samples)
+    message("Accepted samples: ", current_num_samples)
   }
 
   splicing_list <- splicing_list[seq_len(num_samples)]
@@ -312,7 +526,7 @@ sample_gap_splice <- function(splicing_dfr, v, num_samples, rejection_list = lis
 #' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o1 <- get_onsets_selected_data(r1)
 #' head(difference_onsets(o1, instruments = c('Inst', 'Tabla')))
-difference_onsets <- function(onset_obj, instruments, splicing_dfr = NULL) {
+difference_onsets <- function(onset_obj, instruments, splicing_dfr = NULL, segment_tala = FALSE) {
 
   dfr_list <- onset_obj[sapply(onset_obj, is.data.frame)]
   dfr <- dplyr::bind_rows(dfr_list, .id = 'Tala')
@@ -342,7 +556,7 @@ difference_onsets <- function(onset_obj, instruments, splicing_dfr = NULL) {
     }
     output_dfr <- dplyr::bind_rows(segment_list, .id = 'Segment')
   } else {
-    output_dfr$Segment <- 'All'
+    output_dfr$Segment <- if (segment_tala) output_dfr$Tala else 'All'
   }
 
   class(output_dfr) <- c('OnsetsDifference', 'data.frame')
@@ -387,4 +601,33 @@ summary_onsets <- function(onset_obj, instruments, splicing_dfr = NULL) {
   if (length(segment_list) == 1) segment_list <- segment_list[[1]]
 
   segment_list
+}
+
+
+#' Visualise random splices
+#'
+#' @param splicing_list
+#' @param jv
+#' @param overlay
+#'
+#' @return
+#' @export
+#'
+#' @examples
+visualise_sample_splices <- function(splicing_list, jv, overlay = TRUE) {
+  stopifnot(is.list(splicing_list), 'View' %in% class(jv))
+
+  subtitle <- c(jv$recording$stem, jv$vid, jv$direct, jv$inst)
+  subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+  df <- dplyr::bind_rows(splicing_list)
+  ggplot(df, aes(y = Segment)) +
+    ggplot2::labs(title = "Visualisation of Random Splices", subtitle = subtitle) +
+    geom_linerange(aes(xmin = Start, xmax = End)) +
+    geom_rect(data = splicing_tabla_solo_df,
+              aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5) +
+    ggplot2::xlab("Time / min:sec") +
+    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+
+
 }
