@@ -47,7 +47,7 @@ splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, make.
 
   if (make.unique) df$Segment <- make.unique(df$Segment, ...)
   output_df <- dplyr::arrange(df, Start)
-  dplyr::as_tibble(output_df)
+  output_df
 }
 
 
@@ -82,7 +82,7 @@ splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
   }
   output_df <- dplyr::bind_rows(df_list)
   output_df <- dplyr::arrange(output_df, Start)
-  dplyr::as_tibble(output_df)
+  output_df
 }
 
 
@@ -107,7 +107,7 @@ splice_time.list <- function(x, ...) {
   df <- df[c("Segment", "Start", "End")]
 
   stopifnot(!is_splice_overlapping(df))
-  dplyr::as_tibble(df)
+  df
 }
 
 
@@ -133,18 +133,29 @@ splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
 
   if (is.null(expr)) {
     expr_list <- list()
-    expr_list[[1]] <- if (!is.null(tier)) paste0('Tier %in% ', '"', tier, '"') else NA
-    expr_list[[2]] <- if (!is.null(comments)) paste0('Comments %in% ', '"', comments, '"') else NA
+    if (!is.null(tier)) {
+      tier <- paste0('c(', paste0(shQuote(tier), collapse = ","), ')')
+      expr_list[[1]] <- paste0('Tier %in% ', tier)
+    } else {
+      expr_list[[1]] <- NA
+    }
+    if (!is.null(comments)) {
+      comments <- paste0('c(', paste0(shQuote(comments), collapse = ","), ')')
+      expr_list[[2]] <- paste0('Comments %in% ', comments)
+    } else {
+      expr_list[[2]] <- NA
+    }
     expr_list <- expr_list[!is.na(expr_list)]
     expr <- if (length(expr_list) > 1) paste0(expr_list, collapse = " & ") else expr_list[[1]]
   }
+
   expr <- rlang::parse_expr(expr)
   df <- dplyr::filter(as.data.frame(x), !!expr)
   df <- df[c("Comments", "In", "Out")]
   if (make.unique) df$Comments <- make.unique(df$Comments, ...)
   colnames(df) <- c("Segment", "Start", "End")
 
-  dplyr::as_tibble(df)
+  df
 }
 
 
@@ -160,7 +171,7 @@ splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' df <- splice_time(rv, win_size = 3, step_size = 0.5)
-#' df
+#' head(df)
 splice_time.View <- function(x, win_size, step_size, ...) {
   stopifnot(win_size > 0, step_size > 0)
 
@@ -174,7 +185,7 @@ splice_time.View <- function(x, win_size, step_size, ...) {
     stop("Time series length too small for window")
   }
 
-  dplyr::tibble(Segment = paste0("w", seq_along(offset)), Start = offset, End = offset + win_size)
+  data.frame(Segment = paste0("w", seq_along(offset)), Start = offset, End = offset + win_size)
 }
 
 
@@ -405,7 +416,7 @@ clip_splice <- function(splice_dfr, duration, location = 'middle') {
     new_splice_dfr$End <- splice_dfr$End
   } else stop()
 
-  dplyr::as_tibble(new_splice_dfr)
+  new_splice_dfr
 }
 
 
@@ -460,7 +471,7 @@ merge_splice <- function(..., operation) {
     End = dd$pos[ex[r$values] + 1]
   )
 
-  dplyr::as_tibble(output_dfr)
+  output_dfr
 }
 
 

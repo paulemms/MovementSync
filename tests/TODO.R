@@ -13,6 +13,9 @@
 # two plots - originals vs samples or A vs B -
 
 # TODO
+# displacement if there are three columns - add _z cordinate then calculate d
+# adhoc feature data - check for displacement elsewhere? - email on that - turn into filteredView
+
 # Splicing for proportion of interval on metre objects
 # Generate splicing table from annotation data such that segments of equal length
 # Add default data set

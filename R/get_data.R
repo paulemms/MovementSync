@@ -1,3 +1,16 @@
+#' Get sample meta-data recording object
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' r <- get_sample_recording()
+get_sample_recording <- function(stem) {
+  get_recording("NIR_ABh_Puriya", fps = 25, folder_in = "Original",
+                path = system.file("sampledata", package = "movementsync"))
+}
+
+
 #' Get a meta-data recording object
 #'
 #' @param stem
@@ -143,7 +156,6 @@ get_duration_annotation_data <- function(recording) {
 #' @param vid video camera
 #' @param direct direction
 #' @param inst instrument
-#' @param lead_diff Value to start diff calc
 #' @param save_output save the output?
 #' @param folder_out output folder relative to recording home
 #'
@@ -151,9 +163,9 @@ get_duration_annotation_data <- function(recording) {
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' v <- get_raw_view(r, "Central", "", "Sitar")
-get_raw_view <- function(recording, vid, direct, inst, lead_diff = 0,
+get_raw_view <- function(recording, vid, direct, inst,
                          folder_out = "Raw", save_output = FALSE) {
   fn_cpts <- c(recording$stem, vid, direct, 'NS', inst)
   fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
@@ -167,18 +179,25 @@ get_raw_view <- function(recording, vid, direct, inst, lead_diff = 0,
   data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-1]
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
+  z_colnames <- paste0(data_points, '_z')
 
   # Add a time column
   df <- cbind(df[1], Time = df[[1]] / recording$fps, df[-1])
 
+  lead_diff_fn <- function(x) if (is.na(x)) NA else 0
+
   # Add a displacement column
-  dx <- as.data.frame(lapply(df[x_colnames], function(x) c(lead_diff, diff(x))))
-  dy <- as.data.frame(lapply(df[y_colnames], function(x) c(lead_diff, diff(x))))
-  disp <- sqrt(dx^2 + dy^2)
+  dx <- as.data.frame(lapply(df[x_colnames], function(x) c(lead_diff_fn(x[1]), diff(x))))
+  dy <- as.data.frame(lapply(df[y_colnames], function(x) c(lead_diff_fn(x[1]), diff(x))))
+  dz <- as.data.frame(sapply(z_colnames, function(x) {
+    if (x %in% colnames(df)) c(lead_diff_fn(x[1]), diff(df[[x]])) else rep(0, nrow(df))
+  }))
+
+  disp <- sqrt(dx^2 + dy^2 + dz^2)
   colnames(disp) <- paste0(data_points, "_d")
   df <- cbind(df, disp)
-  selected_cols <- c(first_col, "Time", rbind(x_colnames, y_colnames, colnames(disp)))
-  df <- df[selected_cols]
+  selected_cols <- c(first_col, "Time", rbind(x_colnames, y_colnames, z_colnames, colnames(disp)))
+  df <- df[match(selected_cols, colnames(df), nomatch = 0)]
 
   if (save_output) {
     out_folder <- file.path(recording$data_home, folder_out)
@@ -255,7 +274,7 @@ get_raw_optflow_view <- function(recording, vid, direct, inst,
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' v_list <- get_raw_views(r)
 get_raw_views <- function(recording) {
 
@@ -297,16 +316,15 @@ get_raw_views <- function(recording) {
 #' @param rv RawView object
 #' @param save_output
 #' @param folder_out
-#' @param lead_diff
 #'
 #' @return ProcessedView object
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
+get_processed_view <- function(rv, folder_out = "Normalized",
                                save_output = FALSE) {
   stopifnot("RawView" %in% class(rv))
 
@@ -315,8 +333,7 @@ get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
   data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-(1:2)]
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
-  # selected_cols <- c(first_cols, x_colnames, y_colnames)
-  # df <- df[selected_cols]
+  z_colnames <- paste0(data_points, "_z")
 
   # If there is a Head data_point we need to remove linear drift
   if ("Head" %in% data_points) {
@@ -327,16 +344,25 @@ get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
     message("Removed linear trend in Head data point")
   }
 
-  # Split dataframe into x- and y- columns and determine which dimension has the larger extent
+  # Split dataframe into x- and y- columns and z- cplumns and determine
+  # which dimension has the larger extent
   dfx <- df[x_colnames]
   dfy <- df[y_colnames]
+  dfz <- df[colnames(df) %in% z_colnames]
 
   max_x <- max(dfx, na.rm = TRUE)
   min_x <- min(dfx, na.rm = TRUE)
   max_y <- max(dfy, na.rm = TRUE)
   min_y <- min(dfy, na.rm = TRUE)
+  if (ncol(dfz) > 0) {
+    max_z <- max(dfz, na.rm = TRUE)
+    min_z <- min(dfz, na.rm = TRUE)
+  } else {
+    max_z <- -Inf
+    min_z <- Inf
+  }
 
-  size <- max((max_x - min_x), (max_y - min_y))
+  size <- max((max_x - min_x), (max_y - min_y), (max_z - min_z))
 
   # Normalise position data of all columns to the larger dimension (=0:1) and move midpoint to 0.5
   # Y-dimension inverted to make (0,0) bottom left of plots
@@ -346,24 +372,36 @@ get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
   dfy_norm <- 1 - (dfy - min_y)/size
   dfy_norm <- dfy_norm + 0.5 - (max(dfy_norm, na.rm=TRUE) + min(dfy_norm, na.rm=TRUE))/2
 
+  if (ncol(dfz) > 0) {
+    dfz_norm <- (dfz - min_z)/size
+    dfz_norm <- dfz_norm + 0.5 - (max(dfz_norm, na.rm=TRUE) + min(dfz_norm, na.rm=TRUE))/2
+  } else {
+    dfz_norm <- dfz
+  }
+
   # Recombine dataframe
   X <- df[first_cols]
-  df_norm <- cbind(X, dfx_norm, dfy_norm)
-  cn <- c(colnames(X), rbind(colnames(dfx_norm), colnames(dfy_norm)))
-  df_norm <- df_norm[cn]
+  df_norm <- cbind(X, dfx_norm, dfy_norm, dfz_norm)
+  cn <- c(colnames(X), x_colnames, y_colnames, z_colnames)
+  df_norm <- df_norm[match(cn, colnames(df_norm), nomatch = 0)]
 
   # Interpolate missing data
   df_norm <- replace(zoo::na.spline(df_norm), is.na(zoo::na.approx(df_norm, na.rm=FALSE)), NA)
   df_norm <- as.data.frame(df_norm)
 
+  lead_diff_fn <- function(x) if (is.na(x)) NA else 0
+
   # Recompute a displacement column
-  dx <- as.data.frame(lapply(df_norm[x_colnames], function(x) c(lead_diff, diff(x))))
-  dy <- as.data.frame(lapply(df_norm[y_colnames], function(x) c(lead_diff, diff(x))))
-  disp <- sqrt(dx^2 + dy^2)
+  dx <- as.data.frame(lapply(df_norm[x_colnames], function(x) c(lead_diff_fn(x[1]), diff(x))))
+  dy <- as.data.frame(lapply(df_norm[y_colnames], function(x) c(lead_diff_fn(x[1]), diff(x))))
+  dz <- as.data.frame(sapply(z_colnames, function(x) {
+    if (x %in% colnames(df_norm)) c(lead_diff_fn(x[1]), diff(df_norm[[x]])) else rep(0, nrow(df_norm))
+  }))
+  disp <- sqrt(dx^2 + dy^2 + dz^2)
   colnames(disp) <- paste0(data_points, "_d")
   df_norm <- cbind(df_norm, disp)
-  selected_cols <- c(first_cols, rbind(x_colnames, y_colnames, colnames(disp)))
-  df_norm <- df_norm[selected_cols]
+  selected_cols <- c(first_cols, rbind(x_colnames, y_colnames, z_colnames, colnames(disp)))
+  df_norm <- df_norm[match(selected_cols, colnames(df_norm), nomatch = 0)]
 
   if (save_output) {
     out_folder <- file.path(rv$recording$data_home, folder_out)
@@ -393,7 +431,7 @@ get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
 #' @return
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
 #'
@@ -403,24 +441,28 @@ get_processed_view <- function(rv, folder_out = "Normalized", lead_diff = 0,
 #'
 #' set.seed(1) # to reproduce with S3 filter object
 #' fv3 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), signal::sgolay(4, 19))
-apply_filter_sgolay <- function(view, data_points, n, p, folder_out = "Filtered", save_output = FALSE) {
+apply_filter_sgolay <- function(view, data_points, n, p, folder_out = "Filtered",
+                                save_output = FALSE) {
   apply_filter(view, data_points, signal::sgolay(p, n), folder_out, save_output)
 }
 
 #' @export
-apply_filter <- function(view, data_points, sig_filter, folder_out = "Filtered", save_output = FALSE) {
+apply_filter <- function(view, data_points, sig_filter, folder_out = "Filtered",
+                         save_output = FALSE) {
   stopifnot("ProcessedView" %in% class(view))
 
   df_norm <- view$df
   first_cols <- colnames(df_norm[1:2])
   x_colnames <- paste0(data_points, "_x")
   y_colnames <- paste0(data_points, "_y")
+  z_colnames <- paste0(data_points, "_z")
   d_colnames <- paste0(data_points, "_d")
-  df_selected <- df_norm[c(first_cols, rbind(x_colnames, y_colnames, d_colnames))]
+  selected_cols <- c(first_cols, rbind(x_colnames, y_colnames, z_colnames, d_colnames))
+  df_selected <- df_norm[match(selected_cols, colnames(df_norm), nomatch = 0)]
 
     # Apply filter
   df_filt <- df_selected
-  for (cn in c(x_colnames, y_colnames, d_colnames)) {
+  for (cn in colnames(df_filt)[-c(1:2)]) {
     df_filt[[cn]] <- signal::filter(sig_filter, df_selected[[cn]])
   }
 

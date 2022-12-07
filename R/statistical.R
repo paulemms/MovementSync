@@ -86,10 +86,10 @@ compare_ave_power1 <- function(jv, splicing_df, splice_name, num_segment_samples
             is.list(rejection_list))
 
   if (sampling_type == 'offset') {
-    splicing_list <- sample_offset_splice(splicing_df, jv, num_samples = num_splice_samples,
+    splicing_list <- sample_offset_splice(splicing_df, jv, num_splices = num_splice_samples,
                                           rejection_list = rejection_list)
   } else if (sampling_type == 'gap') {
-    splicing_list <- sample_gap_splice(splicing_df, jv, num_samples = num_splice_samples,
+    splicing_list <- sample_gap_splice(splicing_df, jv, num_splices = num_splice_samples,
                                        rejection_list = rejection_list)
   }
 
@@ -138,32 +138,40 @@ compare_ave_power1 <- function(jv, splicing_df, splice_name, num_segment_samples
 }
 
 
-#' Calculate average power over samples and segments using a splicing table
+#' Calculate mean average power over splices using a splicing table
+#'
+#' Randomly generates splices from a splicing table and calculates average
+#' power for each segment and splice. Calculates the mean average power
+#' over the random splices for each segment and period. Compares with the
+#' average power for the original splice.
 #'
 #' @param jv
 #' @param splicing_df
-#' @param num_samples
 #' @param column
 #' @param sampling_type
 #' @param include_original
+#' @param rejection_list
+#' @param show_plot
+#' @param num_splices
 #'
 #' @export
 #'
 #' @examples
-ave_power_over_samples <- function(jv, splicing_df, num_samples, column, sampling_type = 'offset',
-                                   rejection_list = list(), include_original = TRUE) {
+ave_power_over_splices <- function(jv, splicing_df, num_splices, column, sampling_type = 'offset',
+                                   rejection_list = list(), include_original = TRUE,
+                                   show_plot = TRUE) {
 
   stopifnot(class(jv)[1] == "JoinedView",
             sampling_type %in% c('offset', 'gap'),
             is.list(rejection_list))
 
   if (sampling_type == 'offset') {
-    splicing_list <- sample_offset_splice(splicing_df, jv, num_samples = num_samples,
+    splicing_list <- sample_offset_splice(splicing_df, jv, num_splices = num_splices,
                                           rejection_list = rejection_list)
   } else if (sampling_type == 'gap') {
-    splicing_list <- sample_gap_splice(splicing_df, jv, num_samples = num_samples,
+    splicing_list <- sample_gap_splice(splicing_df, jv, num_splices = num_splices,
                                           rejection_list = rejection_list)
-  }
+  } else stop()
   if (include_original) splicing_list$Original <- splicing_df
 
   sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv, splicing_df = x))
@@ -176,15 +184,32 @@ ave_power_over_samples <- function(jv, splicing_df, num_samples, column, samplin
     dplyr::summarise(dplyr::across(!Sample, mean, na.rm = TRUE))
 
   original_ave_power <- ave_power_df %>%
-    dplyr::filter(Sample == 'Original') %>%
-    dplyr::group_by(Period) %>%
-    dplyr::summarise(dplyr::across(!Sample, mean, na.rm = TRUE))
-  ave_power_df <- dplyr::bind_rows(Sample_Mean = sample_ave_power,
-                                   Original = original_ave_power, .id = 'Sample')
+    dplyr::filter(Sample == 'Original')
+
+  ave_power_df <- dplyr::bind_rows(
+    'Random Splices' = sample_ave_power,
+    'Original Splice' = original_ave_power,
+  .id = 'Sample')
 
   long_ave_power_df <- tidyr::pivot_longer(ave_power_df, cols = !c(Sample, Period),
                                            names_to = 'Segment', values_to = 'Average_Power')
-  long_ave_power_df
+
+  if (show_plot) {
+
+    subtitle <- paste(jv$recording$stem, column, sep = ' - ')
+
+    g <- ggplot2::ggplot(long_ave_power_df) +
+      geom_line(ggplot2::aes(x = Period, y = Average_Power, colour = Sample)) +
+      ggplot2::labs(title = "Mean Average Power Over Random Splices", subtitle = subtitle) +
+      ggplot2::xlab("Period / sec") +
+      ggplot2::ylab("Mean Average Power") +
+      ggplot2::scale_x_continuous(trans='log2') +
+      ggplot2::facet_wrap(~Segment)
+    print(g)
+
+  }
+
+  as.data.frame(long_ave_power_df)
 }
 
 
@@ -201,14 +226,25 @@ pull_segment_spliceview <- function(sv, FUN, element, ...) {
 #' @export
 #'
 #' @examples
-ave_power_spliceview <- function(sv, ...) {
+ave_power_spliceview <- function(sv, show_plot = FALSE, ...) {
   wavelet_list <- apply_segment_spliceview(sv, FUN = analyze_wavelet, ...)
   output_mat <- sapply(wavelet_list$output, function(x) x$Power.avg)
 
   obj <- wavelet_list$output[[1]]
-  period.tick.label <- 2^(obj$axis.2) / sv$recording$fps
+  period.tick.value <- 2^(obj$axis.2) / sv$recording$fps
 
-  cbind.data.frame(Period = period.tick.label, output_mat)
+  output_dfr <- cbind.data.frame(Period = period.tick.value, output_mat)
+
+  if (show_plot) {
+    dfr <- tidyr::pivot_longer(output_dfr, cols = -Period,
+                               names_to = 'Segment', values_to= 'Value')
+    g <- ggplot2::ggplot(dfr) +
+      ggplot2::geom_line(aes(x = Period, y = Value)) +
+      ggplot2::facet_wrap(~Segment)
+    print(g)
+  }
+
+  output_dfr
 }
 
 #' @export
@@ -363,10 +399,11 @@ compare_avg_cross_power2 <- function(sv1, sv2, name1, name2, num_samples,
 #' Works by adding a random offset to each start time in the splice. Uses rejection
 #' sampling to avoid overlaps with the input segments and a additional segments
 #' from a list of splices.
+#'
 #' @param splicing_dfr
 #' @param v
-#' @param num_samples
 #' @param rejection_list
+#' @param num_splices
 #'
 #' @return list of splicing data.frames
 #' @export
@@ -376,10 +413,10 @@ compare_avg_cross_power2 <- function(sv1, sv2, name1, name2, num_samples,
 #' d1 <- get_duration_annotation_data(r1)
 #' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 #' splicing_df <- splice_time(d1, tier ='INTERACTION', comments = 'Mutual look and smile')
-#' x <- sample_offset_splice(splicing_df, rv1, num_samples = 1000)
-sample_offset_splice <- function(splicing_dfr, v, num_samples, rejection_list = list()) {
+#' x <- sample_offset_splice(splicing_df, rv1, num_splices = 100)
+sample_offset_splice <- function(splicing_dfr, v, num_splices, rejection_list = list()) {
   stopifnot(is.data.frame(splicing_dfr), "View" %in% class(v),
-            num_samples > 0, is.list(rejection_list))
+            num_splices > 0, is.list(rejection_list))
 
   # Discard random splices that appear in the rejection list - includes the original splice
   rejection_splices <- c(list(splicing_dfr), rejection_list)
@@ -393,13 +430,13 @@ sample_offset_splice <- function(splicing_dfr, v, num_samples, rejection_list = 
   stopifnot(min_splice >= 0, max_splice <= max_time)
 
   splicing_list <- list()
-  current_num_samples <- 0
+  current_num_splices <- 0
 
-  # Repeat until we get the desired number of samples
-  while(current_num_samples < num_samples) {
+  # Repeat until we get the desired number of splices
+  while(current_num_splices < num_splices) {
 
     # Random start times
-    start_times <- runif(num_samples, min = -min_splice, max = max_time - max_splice)
+    start_times <- runif(num_splices, min = -min_splice, max = max_time - max_splice)
 
     # Generate a list of new sampling data.frames
     new_splicing_list <- lapply(start_times, function(x) {
@@ -418,11 +455,11 @@ sample_offset_splice <- function(splicing_dfr, v, num_samples, rejection_list = 
 
     # Remove the overlapping ones
     splicing_list <- c(splicing_list, new_splicing_list[!is_overlapped])
-    current_num_samples <- length(splicing_list)
-    message("Accepted samples: ", current_num_samples)
+    current_num_splices <- length(splicing_list)
+    message("Accepted splices: ", current_num_splices)
   }
 
-  splicing_list <- splicing_list[seq_len(num_samples)]
+  splicing_list <- splicing_list[seq_len(num_splices)]
   names(splicing_list) <- paste('Sample splice', seq_along(splicing_list))
   splicing_list
 }
@@ -436,10 +473,11 @@ sample_offset_splice <- function(splicing_dfr, v, num_samples, rejection_list = 
 #'
 #' Uses rejection sampling to avoid overlaps with the input segments and a
 #' additional segments from a list of splices.
+#'
 #' @param splicing_dfr
 #' @param v
-#' @param num_samples
 #' @param rejection_list
+#' @param num_splices
 #'
 #' @return list of splicing data.frames
 #' @export
@@ -449,11 +487,11 @@ sample_offset_splice <- function(splicing_dfr, v, num_samples, rejection_list = 
 #' d1 <- get_duration_annotation_data(r1)
 #' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 #' splicing_df <- splice_time(d1, tier ='INTERACTION', comments = 'Mutual look and smile')
-#' x <- sample_gap_splice(splicing_df, rv1, num_samples = 1000)
-sample_gap_splice <- function(splicing_dfr, v, num_samples, rejection_list = list()) {
+#' x <- sample_gap_splice(splicing_df, rv1, num_splices = 1000)
+sample_gap_splice <- function(splicing_dfr, v, num_splices, rejection_list = list()) {
 
   stopifnot(is.data.frame(splicing_dfr), "View" %in% class(v),
-            num_samples > 0, is.list(rejection_list))
+            num_splices > 0, is.list(rejection_list))
 
   # Discard random splices that appear in the rejection list - includes the original splice
   rejection_splices <- c(list(splicing_dfr), rejection_list)
@@ -467,24 +505,20 @@ sample_gap_splice <- function(splicing_dfr, v, num_samples, rejection_list = lis
   stopifnot(total_span <= max_time)
 
   splicing_list <- list()
-  current_num_samples <- 0
+  current_num_splices <- 0
 
   # Number of gaps follows Poisson process
-  # gap_dfr <- dplyr::mutate(splicing_dfr, Next_Start = dplyr::lead(Start))
-  # gap_dfr <- dplyr::mutate(gap_dfr, Duration = End - Start)
-  # gap_dfr <- dplyr::mutate(gap_dfr, Gap = Next_Start - Start)
-  # gap_dfr <- dplyr::mutate(gap_dfr, Prev_Gap = dplyr::lag(Gap, default = Start[1]))
   duration <- splicing_dfr$End - splicing_dfr$Start
   lagged_duration <- dplyr::lag(duration, default = 0)
   gaps <- dplyr::lead(splicing_dfr$Start, default = max_time) - splicing_dfr$Start
   gaps <- c(splicing_dfr$Start[1], gaps)
   ave_gap_splice <- mean(gaps, na.rm = TRUE) # seconds
 
-  # Repeat until we get the desired number of samples
-  while(current_num_samples < num_samples) {
+  # Repeat until we get the desired number of splices
+  while(current_num_splices < num_splices) {
 
     # Generate a list of new sampling data.frames
-    new_splicing_list <- lapply(seq_len(num_samples), function(x) {
+    new_splicing_list <- lapply(seq_len(num_splices), function(x) {
       # gap is interarrival time and exponentially distributed
       new_gaps <- rexp(nrow(splicing_dfr), rate = 1 / ave_gap_splice)
       new_splicing_dfr <- splicing_dfr
@@ -503,11 +537,11 @@ sample_gap_splice <- function(splicing_dfr, v, num_samples, rejection_list = lis
 
     # Remove the overlapping ones
     splicing_list <- c(splicing_list, new_splicing_list[!is_rejected])
-    current_num_samples <- length(splicing_list)
-    message("Accepted samples: ", current_num_samples)
+    current_num_splices <- length(splicing_list)
+    message("Accepted splices: ", current_num_splices)
   }
 
-  splicing_list <- splicing_list[seq_len(num_samples)]
+  splicing_list <- splicing_list[seq_len(num_splices)]
   names(splicing_list) <- paste('Sample splice', seq_along(splicing_list))
   splicing_list
 }
@@ -670,7 +704,7 @@ visualise_sample_splices <- function(splicing_list, jv, overlay = TRUE,
 
   } else {
     g <- ggplot2::ggplot(df, ggplot2::aes(y = Segment)) +
-    ggplot2::geom_linerange(aes(xmin = Start, xmax = End)) +
+    ggplot2::geom_linerange(aes(xmin = Start, xmax = End), linewidth = 3, alpha = 0.1) +
       ggplot2::geom_rect(data = splicing_tabla_solo_df,
                          ggplot2::aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5)
   }
@@ -681,7 +715,7 @@ visualise_sample_splices <- function(splicing_list, jv, overlay = TRUE,
     ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
 
   if (nrow(avoid_splice_dfr) > 0) {
-    avoid_splice_dfr$Segment <- NA
+    if (unstack) avoid_splice_dfr <- avoid_splice_dfr[-1] else avoid_splice_dfr$Segment <- NA
     g <- g + geom_rect(data = avoid_splice_dfr,
                        aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
   }
