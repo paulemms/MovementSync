@@ -1,12 +1,14 @@
 #' Get sample meta-data recording object
 #'
+#' @param stem
+#'
 #' @return
 #' @export
 #'
 #' @examples
 #' r <- get_sample_recording()
-get_sample_recording <- function(stem) {
-  get_recording("NIR_ABh_Puriya", fps = 25, folder_in = "Original",
+get_sample_recording <- function(stem = "NIR_ABh_Puriya") {
+  get_recording(stem, fps = 25, folder_in = "Original",
                 path = system.file("sampledata", package = "movementsync"))
 }
 
@@ -146,7 +148,7 @@ get_duration_annotation_data <- function(recording) {
 }
 
 
-#' Get view from NS video data
+#' Get view from Pose video data
 #'
 #' Creates time reference and displacement from raw csv data
 #'
@@ -167,7 +169,7 @@ get_duration_annotation_data <- function(recording) {
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 get_raw_view <- function(recording, vid, direct, inst,
                          folder_out = "Raw", save_output = FALSE) {
-  fn_cpts <- c(recording$stem, vid, direct, 'NS', inst)
+  fn_cpts <- c(recording$stem, vid, direct, 'Pose', inst)
   fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
   data_file_name <- file.path(recording$data_path, fn)
   message("Loading ", data_file_name)
@@ -184,13 +186,11 @@ get_raw_view <- function(recording, vid, direct, inst,
   # Add a time column
   df <- cbind(df[1], Time = df[[1]] / recording$fps, df[-1])
 
-  lead_diff_fn <- function(x) if (is.na(x)) NA else 0
-
-  # Add a displacement column
-  dx <- as.data.frame(lapply(df[x_colnames], function(x) c(lead_diff_fn(x[1]), diff(x))))
-  dy <- as.data.frame(lapply(df[y_colnames], function(x) c(lead_diff_fn(x[1]), diff(x))))
+  # Add a displacement column (make first lagged value same as second)
+  dx <- as.data.frame(lapply(df[x_colnames], function(x) c(x[2] - x[1], diff(x))))
+  dy <- as.data.frame(lapply(df[y_colnames], function(x) c(x[2] - x[1], diff(x))))
   dz <- as.data.frame(sapply(z_colnames, function(x) {
-    if (x %in% colnames(df)) c(lead_diff_fn(x[1]), diff(df[[x]])) else rep(0, nrow(df))
+    if (x %in% colnames(df)) c(df[[x]][2] - df[[x]][1], diff(df[[x]])) else rep(0, nrow(df))
   }))
 
   disp <- sqrt(dx^2 + dy^2 + dz^2)
@@ -216,8 +216,7 @@ get_raw_view <- function(recording, vid, direct, inst,
 
 #' Creates time reference and displacement from raw csv optflow data
 #'
-#' Used to loads OptFlow data when no video camera specified in filename.
-#'
+#' Used to loads OptFlow data.
 #' @param recording object
 #' @param vid camera
 #' @param direct direction
@@ -229,11 +228,12 @@ get_raw_view <- function(recording, vid, direct, inst,
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 #' rov <- get_raw_optflow_view(r, "" ,"", "Guitar")
 #' pov <- get_processed_view(rov)
 #' fv1 <- apply_filter_sgolay(pov, c("Head"), n=19, p=4)
-#'
+#' }
 get_raw_optflow_view <- function(recording, vid, direct, inst,
                          folder_out = "Raw", save_output = TRUE) {
   fn_cpts <- c(recording$stem, 'OptFlow', vid, direct, inst)
@@ -246,8 +246,8 @@ get_raw_optflow_view <- function(recording, vid, direct, inst,
   colnames(df) <- c("Frame", "Time", "Head_x", "Head_y")
 
   # Add a displacement column
-  dx <- c(NA, diff(df[["Head_x"]]))
-  dy <- c(NA, diff(df[["Head_y"]]))
+  dx <- c(df[["Head_x"]][2] - df[["Head_x"]][1], diff(df[["Head_x"]]))
+  dy <- c(df[["Head_y"]][2] - df[["Head_y"]][1], diff(df[["Head_y"]]))
   disp <- sqrt(dx^2 + dy^2)
   df <- cbind(df, 'Head_d' = disp)
 
@@ -266,7 +266,7 @@ get_raw_optflow_view <- function(recording, vid, direct, inst,
 }
 
 
-#' Get views from a recording
+#' Get Pose views from a recording
 #'
 #' @param recording
 #'
@@ -280,15 +280,15 @@ get_raw_views <- function(recording) {
 
   # Identify view files
   is_view_file <- grepl(
-    paste0("^", recording$stem, ".*_NS.*\\.csv"),
+    paste0("^", recording$stem, ".*_Pose.*\\.csv"),
     recording$data_files)
   view_files <- file.path(recording$data_path, recording$data_files[is_view_file])
 
   output_views <- list()
   for (fil in view_files) {
     tail_str <- substr(basename(fil), nchar(recording$stem) + 2, nchar(basename(fil)) - 4)
-    tail_lead <- sub("^(.*)_NS_.*", "\\1", tail_str)
-    inst <- sub("^.*_NS_(.*)", "\\1", tail_str)
+    tail_lead <- sub("^(.*)_Pose_.*", "\\1", tail_str)
+    inst <- sub("^.*_Pose_(.*)", "\\1", tail_str)
 
     tail_cpts <- strsplit(tail_lead, "_")[[1]]
     if (length(tail_cpts) == 2) {
@@ -309,7 +309,7 @@ get_raw_views <- function(recording) {
 }
 
 
-#' Get processed view from NS video data
+#' Get processed view from Pose video data
 #'
 #' Normalises and interpolates missing data in the view.
 #'
@@ -389,13 +389,11 @@ get_processed_view <- function(rv, folder_out = "Normalized",
   df_norm <- replace(zoo::na.spline(df_norm), is.na(zoo::na.approx(df_norm, na.rm=FALSE)), NA)
   df_norm <- as.data.frame(df_norm)
 
-  lead_diff_fn <- function(x) if (is.na(x)) NA else 0
-
-  # Recompute a displacement column
-  dx <- as.data.frame(lapply(df_norm[x_colnames], function(x) c(lead_diff_fn(x[1]), diff(x))))
-  dy <- as.data.frame(lapply(df_norm[y_colnames], function(x) c(lead_diff_fn(x[1]), diff(x))))
+  # Recompute a displacement column (make first lagged value same as second)
+  dx <- as.data.frame(lapply(df_norm[x_colnames], function(x) c(x[2] - x[1], diff(x))))
+  dy <- as.data.frame(lapply(df_norm[y_colnames], function(x) c(x[2] - x[1], diff(x))))
   dz <- as.data.frame(sapply(z_colnames, function(x) {
-    if (x %in% colnames(df_norm)) c(lead_diff_fn(x[1]), diff(df_norm[[x]])) else rep(0, nrow(df_norm))
+    if (x %in% colnames(df_norm)) c(df_norm[[x]][2] - df_norm[[x]][1], diff(df_norm[[x]])) else rep(0, nrow(df_norm))
   }))
   disp <- sqrt(dx^2 + dy^2 + dz^2)
   colnames(disp) <- paste0(data_points, "_d")
@@ -491,7 +489,7 @@ apply_filter <- function(view, data_points, sig_filter, folder_out = "Filtered",
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' get_data_points(rv)
 get_data_points <- function(obj) {
@@ -511,20 +509,13 @@ get_data_points <- function(obj) {
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv_list <- get_raw_views(r)
 #' jv <- get_joined_view(rv_list)
 #' plot(jv, columns = c("LEar_x_Central_Sitar", "LEar_x_Central_Tabla"), yax.flip=T)
 get_joined_view <- function(l, folder_out = "Joined", save_output = FALSE) {
   stopifnot(is.list(l), length(l) > 1)
   stopifnot(all(sapply(l, function(x) "View" %in% class(x))))
-
-  # join_pair <- function(x, y) {
-  #   df <- dplyr::inner_join(l[[x]]$df, l[[y]]$df, by = c("Frame", "Time"),
-  #   suffix = paste0("_", c(x, y)), copy = TRUE)
-  #   df
-  # }
-  # joined_df <- Reduce(join_pair, names(l))
 
   # Rename the columns to reflect the view
   nl <- names(l)
@@ -563,7 +554,7 @@ get_joined_view <- function(l, folder_out = "Joined", save_output = FALSE) {
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' fv_list <- get_filtered_views(r, "Nose", n = 41, p = 3)
 #' plot(fv_list$Central_Tabla)
 get_filtered_views <- function(r, data_points, n, p) {
@@ -574,4 +565,62 @@ get_filtered_views <- function(r, data_points, n, p) {
   fv_list <- lapply(pv_list, apply_filter_sgolay, data_points = data_points, n = n, p = p)
 
   invisible(fv_list)
+}
+
+
+#' Get Feature Data
+#'
+#' Output from new analysis process that generates data at the same sample
+#' rate as the video data.
+#' @param recording object
+#' @param vid camera
+#' @param direct direction
+#' @param inst instrument
+#' @param save_output save the output?
+#' @param folder_out output folder relative to recording home
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' fd <- get_feature_data(r, "Central" ,"", "Sitar")
+#' fv_list <- get_filtered_views(r, 'LEar', n = 41, p =3)
+#' fv_list$Feature <- fd
+#' jv <- get_joined_view(fv_list)
+#' get_data_points(jv)
+#' autoplot(jv)
+#' }
+get_feature_data <- function(recording, vid, direct, inst,
+                                 folder_out = "Raw", save_output = TRUE) {
+  fn_cpts <- c(recording$stem, vid, direct, 'Feature', inst)
+  fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
+  data_file_name <- file.path(recording$data_path, fn)
+  message("Loading ", data_file_name)
+  stopifnot(file.exists(data_file_name))
+
+  df <- read.csv(data_file_name, colClasses = "numeric")
+  first_col <- "Frame"
+  colnames(df)[1] <- first_col
+
+  # Add a time column
+  df <- cbind(df[1], Time = df[[1]] / recording$fps, df[-1])
+
+  # Interpolate missing data
+  df_int <- replace(zoo::na.spline(df), is.na(zoo::na.approx(df, na.rm=FALSE)), NA)
+  df_int <- as.data.frame(df_int)
+
+  if (save_output) {
+    out_folder <- file.path(recording$data_home, folder_out)
+    if (!dir.exists(out_folder)) dir.create(out_folder)
+    out_file_name <- file.path(out_folder, paste0(recording$stem, "_", inst, '_FEATURE.csv'))
+    write.csv(df_int, out_file_name, row.names=FALSE)
+  }
+
+  l <- list(df = df_int, vid = vid, direct = direct,
+            inst = inst, recording = recording)
+  class(l) <- c("FilteredView", "ProcessedView", "RawView", "View")
+
+  invisible(l)
 }

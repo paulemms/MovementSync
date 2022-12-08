@@ -6,12 +6,11 @@
 #' @export
 #'
 #' @examples
-#' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r1 <- get_sample_recording()
 #' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
-#' dp <- c("LElbow", "RElbow")
 #' pv1 <- get_processed_view(rv1)
-#' fv1 <- apply_filter_sgolay(pv1, data_points = dp, n = 41, p = 3)
-#' sub_fv1 <- subset(fv1, Time >= 0 & Time <= 100, by = 100)
+#' fv1 <- apply_filter_sgolay(pv1, data_points = c("LElbow", "RElbow"), n = 41, p = 3)
+#' sub_fv1 <- subset(fv1, Time >= 0 & Time <= 100, by = 10)
 #' plot_history_xy(sub_fv1)
 plot_history_xy <- function(obj, maxpts=10000) {
   df <- obj$df
@@ -53,13 +52,12 @@ plot_history_xy <- function(obj, maxpts=10000) {
 #' @export
 #'
 #' @examples
-#' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r1 <- get_sample_recording()
 #' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 #' pv1 <- get_processed_view(rv1)
 #' dp <- c("LWrist", "RWrist", "LElbow", "RElbow", "LEye", "REye", "Neck", "MidHip")
 #' fv1 <- apply_filter_sgolay(pv1, data_point = dp, n = 41, p = 4)
-#' sub_fv1 <- subset(fv1, Time >= 10 & Time <= 200, dp)
-#' distribution_dp(sub_fv1)
+#' distribution_dp(fv1)
 distribution_dp <- function(obj, maxpts = 50000, alpha = 0.1, ...) {
   df <- obj$df
   stopifnot(nrow(df) < maxpts)
@@ -74,11 +72,6 @@ distribution_dp <- function(obj, maxpts = 50000, alpha = 0.1, ...) {
     names(df_list[[data_point[i]]]) <- c("Time", "x", "y")
   }
   df1 <- dplyr::bind_rows(df_list, .id = "DataPoint")
-  # long1_df <- tidyr::pivot_longer(df[c("Frame", "Time", x_dp)], cols = x_dp,
-  #                                names_to = "DataPoint", values_to = "x")
-  # long2_df <- tidyr::pivot_longer(df[c("Frame", "Time", y_dp)], cols = y_dp,
-  #                                names_to = "DataPoint", values_to = "y")
-  # long_df <- dplyr::inner_join(long1_df, long2_df, by = c("Frame", "DataPoint"))
 
   subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
@@ -101,7 +94,7 @@ distribution_dp <- function(obj, maxpts = 50000, alpha = 0.1, ...) {
 #' @export
 #'
 #' @examples
-#' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r1 <- get_sample_recording()
 #' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 #' pv1 <- get_processed_view(rv1)
 #' dp <- c("LWrist", "RWrist", "LElbow", "RElbow", "LEye", "REye", "Neck", "MidHip")
@@ -150,7 +143,7 @@ velocity_dp <- function(obj, add_mean = "y", vscale = 5, maxpts = 10000, alpha =
 #' @export
 #'
 #' @examples
-#' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r1 <- get_sample_recording()
 #' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 #' pv1 <- get_processed_view(rv1)
 #' dp <- c("LWrist", "RWrist", "LElbow", "RElbow", "LEye", "REye", "MidHip")

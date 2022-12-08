@@ -9,7 +9,7 @@
 #' @return
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' d <- get_duration_annotation_data(r)
 #' plot(d)
 #' @exportS3Method
@@ -27,7 +27,7 @@ plot.Duration <- function(obj, ...) {
 #' @return
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' o <- get_onsets_selected_data(r)
 #' plot(o)
 #' @exportS3Method
@@ -55,7 +55,7 @@ plot.OnsetsSelected <- function(obj, instrument = 'Inst', matra = 'Matra', ...) 
 #' @return
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' m <- get_metre_data(r)
 #' plot(m)
 #' @exportS3Method
@@ -80,14 +80,20 @@ plot.Metre <- function(obj, ...) {
 #' @return
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' plot(v, columns = "LEar_x")
 #' @exportS3Method
 plot.View <- function(obj, columns=NULL, maxpts = 1000, ...) {
 
+  max_num_cols <- 9
+
   # Restrict points and columns to plot
-  columns <- if (is.null(columns)) seq_len(min(ncol(obj$df), 11))[-1] else c("Time", columns)
+  columns <- if (is.null(columns)) {
+    if (ncol(obj$df) > max_num_cols + 2)
+      warning(paste("Only plotting first", max_num_cols, "data columns"))
+    seq_len(min(ncol(obj$df), max_num_cols + 2))[-1]
+  } else c("Time", columns)
   sp <- if (nrow(obj$df) > maxpts) sample(nrow(obj$df), maxpts) else seq_len(nrow(obj$df))
 
   df <- obj$df[sp, columns, drop = FALSE]

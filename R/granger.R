@@ -15,13 +15,12 @@
 #'
 #' @examples
 #'
-#' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r1 <- get_sample_recording()
 #' rv_list <- get_raw_views(r1)
 #' pv_list <- lapply(rv_list, get_processed_view)
 #' get_data_points(pv_list$Central_Sitar)
 #' fv_list <- lapply(pv_list, apply_filter_sgolay, data_points = "Nose", n = 41, p = 3)
-#' jv <- get_joined_view(fv_list)
-#' jv_sub <- subset(jv, Time <= 1*60)
+#' jv_sub <- get_joined_view(fv_list)
 #' splicing_df <- splice_time(jv_sub, win_size = 5, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla")
@@ -88,9 +87,9 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
 #'
 #' @examples
 #' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r1 <- get_sample_recording()
 #' fv_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p = 3)
-#' jv <- get_joined_view(fv_list)
-#' jv_sub <- subset(jv, Time <= 1*60)
+#' jv_sub <- get_joined_view(fv_list)
 #' splicing_df <- splice_time(jv_sub, win_size = 3, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 3/25) # small order
@@ -133,21 +132,22 @@ autoplot.GrangerTime <- function(obj, splicing_df = splicing_df, lev_sig = 0.05)
 #' @export
 #'
 #' @examples
-#' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r1 <- get_sample_recording()
 #' fv_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p = 3)
-#' jv <- get_joined_view(fv_list)
-#' jv_sub <- subset(jv, Time <= 1*60)
+#' jv_sub <- get_joined_view(fv_list)
 #' splicing_df <- splice_time(jv_sub, win_size = 3, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 3/25)
 #'
 #' plot_influence_diagram(g, splicing_df)
 #'
+#' d1 <- get_duration_annotation_data(r1)
 #' plot_influence_diagram(g, splicing_df) +
-#' autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 60',
+#' autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60',
 #'           fill_col = "Tier")
 
 plot_influence_diagram <- function(obj, splicing_df = splicing_df, lev_sig = 0.05) {
+  stopifnot(class(obj) == 'GrangerTime')
 
   df <- obj$df
 
@@ -183,10 +183,9 @@ plot_influence_diagram <- function(obj, splicing_df = splicing_df, lev_sig = 0.0
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' fv_list <- get_filtered_views(r, data_points = "Nose", n = 41, p = 3)
-#' jv <- get_joined_view(fv_list)
-#' jv_sub <- subset(jv, Time <= 1*60)
+#' jv_sub <- get_joined_view(fv_list)
 #' splicing_df <- splice_time(jv_sub, win_size = 5, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1/25)
@@ -217,10 +216,9 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' fv_list <- get_filtered_views(r, "Nose", n = 41, p = 3)
-#' jv <- get_joined_view(fv_list)
-#' jv_sub <- subset(jv, Time <= 5*60)
+#' jv_sub <- get_joined_view(fv_list)
 #' l <- list(a = c(0, 300), b = c(300, 600), c = c(600, 900))
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
@@ -259,6 +257,7 @@ get_granger_interactions <- function(sv, columns, sig_level = 0.05, lag = 1,
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' fv_list <- get_filtered_views(r, "Nose", n = 41, p = 3)
 #' jv <- get_joined_view(fv_list)
@@ -268,6 +267,7 @@ get_granger_interactions <- function(sv, columns, sig_level = 0.05, lag = 1,
 #' sv <- get_spliced_view(jv, splicing_df)
 #' gi <- get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"), lag = 1/25)
 #' plot(gi)
+#' }
 plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1),
                                     oma = c(1, 1, 1, 1), ...) {
 

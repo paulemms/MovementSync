@@ -102,6 +102,7 @@ autoplot.PeriodicityView <- function(obj, time_range = c(0, 10), colour = "blue"
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
@@ -121,6 +122,7 @@ autoplot.PeriodicityView <- function(obj, time_range = c(0, 10), colour = "blue"
 #' specgram_plot(sub_fv)
 #'
 #' specgram_plot(sub_fv, window = 200) + ggplot2::scale_fill_gradient(low = "white", high = "black")
+#' }
 specgram_plot <- function(obj, ...) {
   stopifnot("View" %in% class(obj))
 
@@ -151,7 +153,7 @@ specgram_plot <- function(obj, ...) {
     ggplot2::ylab("Frequency") +
     ggplot2::scale_x_time(expand = c(0,0), labels = function(l) strftime(l, '%M:%S')) +
     ggplot2::scale_y_continuous(expand = c(0,0)) +
-    ggplot2::facet_grid(rows = vars(DataPoint))
+    ggplot2::facet_grid(rows = ggplot2::vars(DataPoint))
 }
 
 

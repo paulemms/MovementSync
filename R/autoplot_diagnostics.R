@@ -14,7 +14,7 @@
 #' @name autoplot
 #' @export
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' d <- get_duration_annotation_data(r)
 #' autoplot(d)
 #' o <- get_onsets_selected_data(r)
@@ -23,10 +23,10 @@
 #' autoplot(m)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' autoplot(v, columns = c("LEar_x", "LEar_y"))
-#' l <- list(a = c(0, 300), b = c(300, 600), c = c(600, 900))
+#' l <- list(a = c(0, 10), b = c(20, 30), c = c(30, 60))
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(v, splicing_df)
-#' autoplot(sv, columns = c("LEar_x", "LEar_y"), maxpts = 1000)
+#' autoplot(sv, columns = c("LEar_x", "LEar_y", "Nose_x", "Nose_y"), maxpts = 1000)
 NULL
 
 
@@ -88,8 +88,14 @@ autoplot.Metre <- function(obj) {
 #' @rdname autoplot
 autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 
+  max_num_cols <- 9
+
   # Restrict points and columns to plot
-  columns <- if (is.null(columns)) seq_len(min(ncol(obj$df), 11))[-1] else c("Time", columns)
+  columns <- if (is.null(columns)) {
+    if (ncol(obj$df) > max_num_cols + 2)
+      warning(paste("Only plotting first", max_num_cols, "data columns"))
+    seq_len(min(ncol(obj$df), max_num_cols + 2))[-1]
+  } else c("Time", columns)
   sp <- if (nrow(obj$df) > maxpts) sample(nrow(obj$df), maxpts) else seq_len(nrow(obj$df))
 
   df <- obj$df[sp, columns, drop = FALSE]
@@ -117,9 +123,9 @@ autoplot.SplicedView <- function(obj, columns=NULL, segments=NULL, maxpts=1000) 
 
   # Restrict points, columns, splices to plot
   columns <- if (is.null(columns)) {
-    if (ncol(df) > max_num_cols)
-      warning(paste("Only plotting first", max_num_cols - 3, "data columns"))
-    colnames(df)[seq_len(min(ncol(df), max_num_cols))]
+    if (ncol(df) > max_num_cols + 3)
+      warning(paste("Only plotting first", max_num_cols, "data columns"))
+    colnames(df)[seq_len(min(ncol(df), max_num_cols + 3))]
   } else c("Segment", "Frame", "Time", columns)
 
   stopifnot(all(columns %in% colnames(df)))
@@ -187,6 +193,7 @@ autoplot.SplicedView <- function(obj, columns=NULL, segments=NULL, maxpts=1000) 
 #' @name autolayer
 #' @export
 #' @examples
+#' \dontrun{
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o <- get_onsets_selected_data(r)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
@@ -205,6 +212,7 @@ autoplot.SplicedView <- function(obj, columns=NULL, segments=NULL, maxpts=1000) 
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d)
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, geom = "vline", nudge_x = -60, size = 3, colour = "blue")
+#' }
 NULL
 
 
@@ -293,6 +301,7 @@ autolayer.Duration <- function(obj, expr = 'Tier == "FORM"', fill_column = "Comm
 #' @param expr
 #'
 #' @examples
+#' \dontrun{
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' m <- get_metre_data(r)
 #' d <- get_duration_annotation_data(r)
@@ -303,6 +312,7 @@ autolayer.Duration <- function(obj, expr = 'Tier == "FORM"', fill_column = "Comm
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) +
 #' xlim_duration(d, 'Tier == "Form" & substr(Comments, 1, 1) == "J"') +
 #' autolayer(d, 'Tier == "Form" & substr(Comments, 1, 1) == "J"')
+#' }
 #' @export
 xlim_duration <- function(obj, expr = 'Tier == "Form"') {
   expr <- rlang::parse_expr(expr)
