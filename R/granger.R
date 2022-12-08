@@ -29,8 +29,10 @@
 granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_grangertest2,
                          cond_granger_fn = ms_condgrangertest) {
   stopifnot("SplicedView" %in% class(obj))
-
   df <- obj$df
+  stopifnot(var1 %in% colnames(df), var2 %in% colnames(df),
+            (var3 == "") || (var3 %in% colnames(df)) )
+
   order <- round(lag * obj$recording$fps)
   if (var3 == "") {
     df <- dplyr::select(df, Frame, Segment, !!var1, !!var2)
@@ -209,8 +211,8 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #' @param columns
 #' @param sig_level
 #' @param lag in seconds (rounded to nearest frame)
+#' @param cond_column
 #' @param granger_fn
-#' @param ...
 #'
 #' @return
 #' @export
@@ -223,7 +225,7 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"), lag = 1/25)
-get_granger_interactions <- function(sv, columns, sig_level = 0.05, lag = 1,
+get_granger_interactions <- function(sv, columns, cond_column = "", sig_level = 0.05, lag = 1,
                                      granger_fn = ms_grangertest2) {
   stopifnot(all(c("SplicedView", "JoinedView") %in% class(sv)))
 
@@ -236,7 +238,8 @@ get_granger_interactions <- function(sv, columns, sig_level = 0.05, lag = 1,
     var2 <- a[2, j]
     g_test <- paste0(var1, " <--> ", var2)
     message("Calculating Granger Test: ", g_test)
-    gc_list[[g_test]] <- granger_test(sv, var1, var2, lag = lag, granger_fn = granger_fn)
+    gc_list[[g_test]] <- granger_test(sv, var1, var2, cond_column, lag = lag,
+                                      granger_fn = granger_fn)
   }
   l <- list(gc_list = gc_list, sig_level = sig_level, lag = lag)
   class(l) <- "GrangerInteraction"

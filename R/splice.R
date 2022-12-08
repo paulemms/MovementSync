@@ -25,11 +25,11 @@ splice_time <- function(x, ...) {
 #' @exportS3Method
 #'
 #' @examples
-#' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
-#' o1 <- get_onsets_selected_data(r1)
+#' r <- get_sample_recording()
+#' o1 <- get_onsets_selected_data(r)
 #' po1 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
 #' splicing_df <- splice_time(po1, window_duration = 1)
-#' splicing_df
+#' head(splicing_df)
 splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, make.unique = TRUE, ...) {
   stopifnot(all(talas %in% unique(x$Tala)))
   if (!is.null(talas)) {
@@ -62,10 +62,10 @@ splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, make.
 #' @exportS3Method
 #'
 #' @examples
-#' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+#' r <- get_sample_recording()
 #' m <- get_metre_data(r)
 #' splicing_df <- splice_time(m, window_duration = 1)
-#' splicing_df
+#' head(splicing_df)
 splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
   if (is.null(rhythms)) rhythms <- names(x)
   stopifnot(all(rhythms %in% names(x)))
@@ -124,7 +124,7 @@ splice_time.list <- function(x, ...) {
 #' @exportS3Method
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' d <- get_duration_annotation_data(r)
 #' splice_time(d, tier = 'Event', comments = 'tabla solo')
 splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
@@ -168,7 +168,7 @@ splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
 #' @exportS3Method
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' df <- splice_time(rv, win_size = 3, step_size = 0.5)
 #' head(df)
@@ -199,7 +199,7 @@ splice_time.View <- function(x, win_size, step_size, ...) {
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' l <- list(a = c(0, 10), b = c(10, 20), c = c(20, 30))
 #' splicing_df <- splice_time(l)
@@ -236,10 +236,10 @@ get_spliced_view <- function(v, splicing_df) {
 #' @exportS3Method
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' l <- list(a = c(0, 300), b = c(300, 600), c = c(600, 900))
+#' l <- list(a = c(0, 10), b = c(10, 20), c = c(20, 30))
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(pv, splicing_df)
 #' sv_list <- split(sv)
@@ -267,7 +267,7 @@ split.SplicedView <- function(obj) {
 #' @export
 #'
 #' @examples
-#' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r1 <- get_sample_recording()
 #' fv1_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p = 3)
 #' jv1 <- get_joined_view(fv1_list)
 #' l <- list(a=c(1, 2), b = c(2, 3))

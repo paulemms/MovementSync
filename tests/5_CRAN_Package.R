@@ -1,7 +1,7 @@
 # Test CRAN packaging
 
 rm(list=ls())
-devtools::load_all()
+library(movementsync)
 
 # Load sample data from package: Test data contains z-cordinates in view data
 r1 <- get_sample_recording("Test")

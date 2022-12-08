@@ -1,6 +1,7 @@
 # Test we can do Granger Tests
+
 rm(list=ls())
-devtools::load_all(".")
+library(movementsync)
 
 # Get recording meta data
 r1 <- get_recording("NIR_ABh_Puriya", fps = 25)

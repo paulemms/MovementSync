@@ -20,11 +20,10 @@
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' pv1 <- subset(pv, Time >= 0*60 & Time <= 2*60)
-#' w <- analyze_wavelet(pv1, "Nose_y")
+#' w <- analyze_wavelet(pv, "Nose_y")
 analyze_wavelet <- function(obj, column, loess.span = 0, dj = 1/20,
                             lowerPeriod = 1 / obj$recording$fps, upperPeriod = 5,
                             make.pval = TRUE, method = "white.noise", params = NULL,
@@ -73,11 +72,10 @@ analyze_wavelet <- function(obj, column, loess.span = 0, dj = 1/20,
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' pv1 <- subset(pv, Time >= 0*60 & Time <= 2*60)
-#' co <- analyze_coherency(pv1, c("Nose_x", "Nose_y"))
+#' co <- analyze_coherency(pv, c("Nose_x", "Nose_y"))
 analyze_coherency <- function(obj, columns, loess.span = 0,
   dj = 1/50, lowerPeriod = 1 / obj$recording$fps, upperPeriod = 5, window.type.t = 1,
   window.type.s = 1, window.size.t = 5,
@@ -119,10 +117,10 @@ analyze_coherency <- function(obj, columns, loess.span = 0,
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' pv1 <- subset(pv, Time >= 0*60 & Time <= 5*60)
+#' pv1 <- subset(pv, Time >= 30)
 #' w <- analyze_wavelet(pv1, "Nose_y")
 #' plot_power_spectrum(w, pv1)
 #' w <- analyze_wavelet(pv1, "Nose_y", lowerPeriod = 0.01, upperPeriod = 10)
@@ -132,15 +130,7 @@ plot_power_spectrum <- function(obj, view, ...) {
 
   df <- view$df
   fps <- view$recording$fps
-
-  num_tlabels <- 10
-  mf <- max(df$Frame, na.rm = TRUE)
-  labels_at <- seq(0, mf, by = mf / num_tlabels)
-  labels_sec <- labels_at / fps
-  labels_to <- paste0(
-    formatC(labels_sec %/% 60, width=2, flag = 0), ":",
-    formatC(floor(labels_sec %% 60), width = 2, flag = 0))
-  spec_time_axis <- list(at = labels_at + 1, labels = labels_to)
+  spec_time_axis <- make_time_axis(df, fps)
 
   axis.2 <- obj$axis.2
   period.tick <- unique(trunc(axis.2))
@@ -156,7 +146,7 @@ plot_power_spectrum <- function(obj, view, ...) {
     spec.period.axis = spec_period_axis,
     legend.params = list(lab = "Wavelet Power Levels", mar = 4.7),
     periodlab = "Period / sec",
-    timelab = "Time / min:sec",
+    timelab = spec_time_axis$time_lab,
     main = paste("Power Spectrum for", view$recording$stem, "-", obj$subtitle),
     ...
   )
@@ -174,10 +164,10 @@ plot_power_spectrum <- function(obj, view, ...) {
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' pv1 <- subset(pv, Time >= 0*60 & Time <= 2*60)
+#' pv1 <- subset(pv, Time >= 10)
 #' co <- analyze_coherency(pv1, c("Nose_x", "Nose_y"))
 #' plot_cross_spectrum(co, pv1)
 #' plot_coherence(co, pv1)
@@ -187,16 +177,7 @@ plot_cross_spectrum <- function(obj, view,  ...) {
   arg_list <- list(...)
   df <- view$df
   fps <- view$recording$fps
-
-  num_tlabels <- 10
-  mf <- max(df$Frame, na.rm = TRUE)
-  labels_at <- seq(0, mf, by = mf / num_tlabels)
-  labels_sec <- labels_at / view$recording$fps
-  labels_to <- paste0(
-    formatC(labels_sec %/% 60, width=2, flag = 0),
-    ":",
-    formatC(floor(labels_sec %% 60), width = 2, flag = 0))
-  spec_time_axis <- list(at = labels_at + 1, labels = labels_to)
+  spec_time_axis <- make_time_axis(df, fps)
 
   axis.2 <- obj$axis.2
   period.tick <- unique(trunc(axis.2))
@@ -219,7 +200,7 @@ plot_cross_spectrum <- function(obj, view,  ...) {
     legend.params = list(lab = legend_label, mar = 4.7),
     periodlab = "Period",
     main = main_title,
-    timelab = "Time / min:sec",
+    timelab = spec_time_axis$time_lab,
     ...
   )
 }
@@ -240,11 +221,11 @@ plot_coherence <- function(obj, view, ...) {
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' pv1 <- subset(pv, Time >= 0*60 & Time <= 5*60)
-#' w <- analyze_wavelet(pv1, "Nose_y")
+#' pv1 <- subset(pv, Time >= 10)
+#' w <- analyze_wavelet(pv1, "Nose_x")
 #' plot_average_power(w, pv1)
 #' w <- analyze_wavelet(pv1, "Nose_y")
 #' plot_average_power(w, pv1)
@@ -282,12 +263,11 @@ plot_average_power <- function(obj, view, ...) {
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' pv1 <- subset(pv, Time >= 0*60 & Time <= 5*60)
-#' co <- analyze_coherency(pv1, columns = c("Nose_x", "Nose_y"))
-#' plot_average_coherency(co, pv1)
+#' co <- analyze_coherency(pv, columns = c("Nose_x", "Nose_y"))
+#' plot_average_coherency(co, pv)
 plot_average_coherency <- function(obj, view, ...) {
   stopifnot("analyze.coherency" %in% class(obj), "View" %in% class(view))
 
@@ -326,35 +306,25 @@ plot_average_coherency <- function(obj, view, ...) {
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' pv1 <- subset(pv, Time >= 0*60 & Time <= 5*60)
-#' co <- analyze_coherency(pv1, columns = c("Nose_x", "Nose_y"))
-#' plot_cross_spectrum(co, pv1)
-#' plot_sel_phases(co, pv1, sel.period = 0.64)
-#' plot_sel_phases(co, pv1, sel.period = NULL, sel.lower = 0.6, sel.upper = 0.8)
+#' co <- analyze_coherency(pv, columns = c("Nose_x", "Nose_y"))
+#' plot_cross_spectrum(co, pv)
+#' plot_sel_phases(co, pv, sel.period = 0.64)
+#' plot_sel_phases(co, pv, sel.period = NULL, sel.lower = 0.6, sel.upper = 0.8)
 plot_sel_phases <- function(obj, view, sel.period, sel.upper = NULL,
                             sel.lower = NULL, ...) {
   stopifnot("analyze.coherency" %in% class(obj), "View" %in% class(view))
 
   df <- view$df
   fps <- view$recording$fps
-
-  num_tlabels <- 10
-  mf <- max(df$Frame, na.rm = TRUE)
-  labels_at <- seq(0, mf, by = mf / num_tlabels)
-  labels_sec <- labels_at / view$recording$fps
-  labels_to <- paste0(
-    formatC(labels_sec %/% 60, width=2, flag = 0),
-    ":",
-    formatC(floor(labels_sec %% 60), width = 2, flag = 0))
-  spec_time_axis <- list(at = labels_at + 1, labels = labels_to)
+  spec_time_axis <- make_time_axis(df, fps)
 
   sub_title <- if (is.null(sel.period))
     paste("Selected Period Interval:", sel.lower, "to", sel.upper) else ""
 
-  WaveletComp::wc.sel.phases(
+  sel_phases <- WaveletComp::wc.sel.phases(
     obj,
     sel.period = sel.period * fps,
     sel.upper = sel.upper * fps,
@@ -362,11 +332,13 @@ plot_sel_phases <- function(obj, view, sel.period, sel.upper = NULL,
     spec.time.axis = spec_time_axis,
     main = paste("Phase comparison for", view$recording$stem, "-", obj$subtitle),
     phaselab = "Phase",
-    timelab = "Time / min:sec",
+    timelab = spec_time_axis$time_lab,
     sub = sub_title,
     ...
   )
+  sel_phases$subtitle <- paste(view$recording$stem, "-", obj$subtitle)
 
+  sel_phases
 }
 
 
@@ -380,10 +352,10 @@ plot_sel_phases <- function(obj, view, sel.period, sel.upper = NULL,
 #' @export
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' pv1 <- subset(pv, Time >= 0*60 & Time <= 2*60)
+#' pv1 <- subset(pv, Time >= 10 & Time <= 20)
 #' co <- analyze_coherency(pv1, c("Nose_x", "Nose_y"))
 #' plot_phase_difference(co, pv1)
 plot_phase_difference <- function(obj, view,  ...) {
@@ -392,16 +364,7 @@ plot_phase_difference <- function(obj, view,  ...) {
   arg_list <- list(...)
   df <- view$df
   fps <- view$recording$fps
-
-  num_tlabels <- 10
-  mf <- max(df$Frame, na.rm = TRUE)
-  labels_at <- seq(0, mf, by = mf / num_tlabels)
-  labels_sec <- labels_at / view$recording$fps
-  labels_to <- paste0(
-    formatC(labels_sec %/% 60, width=2, flag = 0),
-    ":",
-    formatC(floor(labels_sec %% 60), width = 2, flag = 0))
-  spec_time_axis <- list(at = labels_at + 1, labels = labels_to)
+  spec_time_axis <- make_time_axis(df, fps)
 
   axis.2 <- obj$axis.2
   period.tick <- unique(trunc(axis.2))
@@ -420,7 +383,27 @@ plot_phase_difference <- function(obj, view,  ...) {
     legend.params = list(lab = legend_label, mar = 4.7),
     periodlab = "Period",
     main = main_title,
-    timelab = "Time / min:sec",
+    timelab = spec_time_axis$time_lab,
     ...
   )
 }
+
+
+# helper to generate a time axis in min/sec for wavelet plots
+make_time_axis <- function(df, fps, num_tlabels = 10) {
+  min_time <- min(df$Time, na.rm = TRUE)
+  max_time <- max(df$Time, na.rm = TRUE)
+
+  mf <- max(df$Frame, na.rm = TRUE)
+  labels_at <- seq(0, mf, by = mf / num_tlabels)
+  labels_sec <- labels_at / fps + min_time
+
+  labels_to <- paste0(
+    formatC(labels_sec %/% 60, width=2, flag = 0),
+    ":",
+    formatC(floor(labels_sec %% 60), width = 2, flag = 0))
+  time_lab <- "Time / min:sec"
+
+  list(at = labels_at + 1, labels = labels_to, time_lab = time_lab)
+}
+

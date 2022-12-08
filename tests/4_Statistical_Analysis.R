@@ -1,9 +1,10 @@
 # Test the statistical analysis functions
+
+rm(list=ls())
+library(movementsync)
 library(ggplot2)
 library(GGally)
 library(zoo)
-rm(list=ls())
-devtools::load_all()
 
 r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 fv1_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p = 3)
@@ -345,7 +346,7 @@ ave_power_tabla_solo <- ave_power_spliceview(sv_tabla_solo, column = "Nose_x_Cen
 
 # relative phase information - high-level function - paper
 # average phase angle from phase difference - statistical package - on each segment
-# raw data per segment + plot
+
 
 
 

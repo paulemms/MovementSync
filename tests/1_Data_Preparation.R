@@ -1,7 +1,7 @@
 # Test we can load all the data and provide diagnostic plots
 
 rm(list = ls())
-devtools::load_all()
+library(movementsync)
 
 ################################################################################
 ### Recording 1

@@ -12,7 +12,7 @@
 #' @exportS3Method
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' vv <- subset(v, Time < 10, data_point = "Nose")
 #' plot(vv)
