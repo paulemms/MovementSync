@@ -230,7 +230,7 @@ get_granger_interactions <- function(sv, columns, cond_column = "", sig_level = 
   stopifnot(all(c("SplicedView", "JoinedView") %in% class(sv)))
 
   # Calculate granger tests for all combinations of columns
-  a <- combn(columns, 2)
+  a <- utils::combn(columns, 2)
 
   gc_list <- list()
   for (j in seq_len(ncol(a))) {

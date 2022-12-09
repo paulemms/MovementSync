@@ -1,8 +1,12 @@
 # QUERIES
+# Applying filters can cause interior NAs for some data points e.g. Ear NIR_ABh_Puriya
 
 # DONE
+# Moved walk-through scripts to inst directory
 # Changed in naming on data files - NS to Pose - uploaded new data to Google drive
+# If data 3D use _z cordinate then calculate d for both processed and filtered data
 # Updated default onsetselected graphs, added autoplots
+# Adhoc feature data can be loaded and joined
 # Generated a reference beat time point from the mean
 # Tabular summary functions: added simple summary function to analyze.wavelet - maybe output table as CSV?
 # Rename Tier column as Segment in splicing tables
@@ -15,13 +19,11 @@
 # Added default data set to package
 # Added a clip_slice function to generate splicing table from annotation data such that segments of equal length
 # Added set operations on Splicing tables
-# Lags in seconds in Granger code are rounded to nearerst frame
+# Lags in seconds in Granger code are rounded to nearest frame
 # Other signal filters can be applied to processed data now
 
 
 # TODO
-# displacement if there are three columns - add _z cordinate then calculate d
-# adhoc feature data - check for displacement elsewhere? - email on that - turn into filteredView
 # Infer wavelet the relative phase of two ts
 
 # Splicing for proportion of interval on metre objects

@@ -2,11 +2,12 @@
 #'
 #' Simple time and column subsetting of views.
 #'
-#' @param obj
 #' @param data_point
 #' @param by
 #' @param expr
 #' @param column
+#' @param x
+#' @param ...
 #'
 #' @return
 #' @exportS3Method
@@ -16,10 +17,10 @@
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' vv <- subset(v, Time < 10, data_point = "Nose")
 #' plot(vv)
-subset.View <- function(obj, expr = NULL, data_point = NULL, column = NULL, by = NULL) {
-  stopifnot("View" %in% class(obj))
+subset.View <- function(x, expr = NULL, data_point = NULL, column = NULL, by = NULL, ...) {
+  stopifnot("View" %in% class(x))
 
-  df <- obj$df
+  df <- x$df
   e <- substitute(expr)
   if (!is.null(e)) {
     is_row_included <- eval(e, df)
@@ -34,7 +35,7 @@ subset.View <- function(obj, expr = NULL, data_point = NULL, column = NULL, by =
   }
 
   if (is.null(column)) {
-    if (is.null(data_point)) data_point <- get_data_points(obj)
+    if (is.null(data_point)) data_point <- get_data_points(x)
     col_names <- setdiff(colnames(df), leading_col_names)
     col_names <- col_names[sub("(.*?)_.*", "\\1", col_names) %in% data_point]
   } else {
@@ -44,7 +45,7 @@ subset.View <- function(obj, expr = NULL, data_point = NULL, column = NULL, by =
   sdf <- df[is_row_included, c(leading_col_names, col_names), drop = FALSE]
   if (!is.null(by)) sdf <- sdf[seq(1, nrow(sdf), by = by),,drop = FALSE]
 
-  obj$df <- sdf
-  obj
+  x$df <- sdf
+  x
 }
 

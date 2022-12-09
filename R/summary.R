@@ -1,6 +1,7 @@
 #' Summarise Recording object
 #'
-#' @param obj
+#' @param object
+#' @param ...
 #'
 #' @return
 #' @exportS3Method
@@ -8,14 +9,15 @@
 #' @examples
 #' r <- get_sample_recording()
 #' summary(r)
-summary.Recording <- function(obj) {
-  obj
+summary.Recording <- function(object, ...) {
+  object
 }
 
 
 #' Summarise Duration object
 #'
-#' @param obj
+#' @param object
+#' @param ...
 #'
 #' @return
 #' @exportS3Method
@@ -24,14 +26,15 @@ summary.Recording <- function(obj) {
 #' r <- get_sample_recording()
 #' d <- get_duration_annotation_data(r)
 #' head(summary(d))
-summary.Duration <- function(obj) {
-  obj
+summary.Duration <- function(object, ...) {
+  object
 }
 
 
 #' Summarise OnsetsSelected object
 #'
-#' @param obj
+#' @param object
+#' @param ...
 #'
 #' @return
 #' @exportS3Method
@@ -40,14 +43,15 @@ summary.Duration <- function(obj) {
 #' r <- get_sample_recording()
 #' o <- get_onsets_selected_data(r)
 #' summary(o)
-summary.OnsetsSelected <- function(obj) {
-  lapply(obj, function(x) if (is.data.frame(x)) summary(x))
+summary.OnsetsSelected <- function(object, ...) {
+  lapply(object, function(x) if (is.data.frame(x)) summary(x))
 }
 
 
 #' Summarise Metre object
 #'
-#' @param obj
+#' @param object
+#' @param ...
 #'
 #' @return
 #' @exportS3Method
@@ -56,14 +60,15 @@ summary.OnsetsSelected <- function(obj) {
 #' r <- get_sample_recording()
 #' m <- get_metre_data(r)
 #' summary(m)
-summary.Metre <- function(obj) {
-  lapply(obj, function(x) if (is.data.frame(x)) summary(x))
+summary.Metre <- function(object, ...) {
+  lapply(object, function(x) if (is.data.frame(x)) summary(x))
 }
 
 
 #' Summarise a View object
 #'
-#' @param obj
+#' @param object
+#' @param ...
 #'
 #' @return
 #' @exportS3Method
@@ -76,14 +81,16 @@ summary.Metre <- function(obj) {
 #' summary(rv)
 #' summary(pv)
 #' summary(fv)
-summary.View <- function(obj) {
-  summary(obj$df)
+summary.View <- function(object, ...) {
+  summary(object$df)
 }
 
 
 #' Summarise an analyze.wavelet object
 #'
-#' @param obj
+#' @param object
+#' @param v
+#' @param ...
 #'
 #' @return
 #' @exportS3Method
@@ -94,17 +101,18 @@ summary.View <- function(obj) {
 #' pv <- get_processed_view(rv)
 #' w <- analyze_wavelet(pv, "Nose_x")
 #' summary(w, pv)
-summary.analyze.wavelet <- function(obj, v) {
-  d <- data.frame(Period = obj$Period / v$recording$fps,
-             Average_Power = obj$Power.avg)
+summary.analyze.wavelet <- function(object, v, ...) {
+  d <- data.frame(Period = object$Period / v$recording$fps,
+             Average_Power = object$Power.avg)
   summary(d)
 }
 
 
 #' Summarises a sel.phases object
 #'
-#' @param obj
 #' @param na.rm
+#' @param object
+#' @param ...
 #'
 #' @return
 #' @exportS3Method
@@ -116,9 +124,9 @@ summary.analyze.wavelet <- function(obj, v) {
 #' co <- analyze_coherency(pv, columns = c("Nose_x", "Nose_y"))
 #' sp <- plot_sel_phases(co, pv, sel.period = NULL, sel.lower = 0.5, sel.upper = 0.7)
 #' summary(sp)
-summary.sel.phases <- function(obj, na.rm = TRUE) {
+summary.sel.phases <- function(object, na.rm = TRUE, ...) {
 
-  angle_circular <- circular::circular(obj$Angle)
+  angle_circular <- circular::circular(object$Angle)
 
   list(Mean_Phase_Angle = circular::mean.circular(angle_circular, na.rm = na.rm),
        SD_Phase_Angle = circular::sd.circular(angle_circular, na.rm = na.rm),

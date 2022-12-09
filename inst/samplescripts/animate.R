@@ -1,5 +1,5 @@
 rm(list = ls())
-devtools::load_all()
+library(movementsync)
 library(gganimate)
 library(gifski)
 library(dplyr)

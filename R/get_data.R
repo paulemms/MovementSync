@@ -58,7 +58,7 @@ get_onsets_selected_data <- function(recording) {
 
   output_onsets_selected <- list()
   for (fil in onsets_selected_files) {
-    df <- read.csv(fil)
+    df <- utils::read.csv(fil)
     # specify colClasses?
     if ("Matra" %in% colnames(df)) {
       df[["Matra"]] <- suppressWarnings(as.integer(df[["Matra"]]))
@@ -97,7 +97,7 @@ get_metre_data <- function(recording) {
 
   output_metre <- list()
   for (fil in metre_files) {
-    output_metre[[basename(fil)]] <- read.csv(fil)
+    output_metre[[basename(fil)]] <- utils::read.csv(fil)
   }
   names(output_metre) <- sub(".*_Metre(_|)(.*)\\.csv", "\\2", names(output_metre))
 
@@ -132,7 +132,7 @@ get_duration_annotation_data <- function(recording) {
 
   output_list <- list()
   for (fil in duration_files) {
-    df <- read.csv(fil, header = FALSE)
+    df <- utils::read.csv(fil, header = FALSE)
     df <- df[, colSums(is.na(df)) != nrow(df), drop=FALSE] # remove any all NA columns
     is_numeric_col <- sapply(df, function(x) class(x) == "numeric")
     is_character_col <- sapply(df, function(x) class(x) == "character")
@@ -175,7 +175,7 @@ get_raw_view <- function(recording, vid, direct, inst,
   message("Loading ", data_file_name)
   stopifnot(file.exists(data_file_name))
 
-  df <- read.csv(data_file_name, colClasses = "numeric")
+  df <- utils::read.csv(data_file_name, colClasses = "numeric")
   first_col <- "Frame"
   colnames(df)[1] <- first_col
   data_points <- unique(sapply(strsplit(colnames(df), "_"), function(x) x[1]))[-1]
@@ -203,7 +203,7 @@ get_raw_view <- function(recording, vid, direct, inst,
     out_folder <- file.path(recording$data_home, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder, paste0(recording$stem, "_", vid , "_", inst, '_RAW.csv'))
-    write.csv(df, out_file_name, row.names=FALSE)
+    utils::write.csv(df, out_file_name, row.names=FALSE)
   }
 
   l <- list(df = df, vid = vid, direct = direct,
@@ -242,7 +242,7 @@ get_raw_optflow_view <- function(recording, vid, direct, inst,
   message("Loading ", data_file_name)
   stopifnot(file.exists(data_file_name))
 
-  df <- read.csv(data_file_name, colClasses = "numeric")
+  df <- utils::read.csv(data_file_name, colClasses = "numeric")
   colnames(df) <- c("Frame", "Time", "Head_x", "Head_y")
 
   # Add a displacement column
@@ -255,7 +255,7 @@ get_raw_optflow_view <- function(recording, vid, direct, inst,
     out_folder <- file.path(recording$data_home, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder, paste0(recording$stem, "_", inst, '_RAW.csv'))
-    write.csv(df, out_file_name, row.names=FALSE)
+    utils::write.csv(df, out_file_name, row.names=FALSE)
   }
 
   l <- list(df = df, vid = "", direct = direct,
@@ -405,7 +405,7 @@ get_processed_view <- function(rv, folder_out = "Normalized",
     out_folder <- file.path(rv$recording$data_home, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder, paste0(rv$recording$stem, "_", rv$vid , "_", rv$inst, '_NORM.csv'))
-    write.csv(df_norm, out_file_name, row.names=FALSE)
+    utils::write.csv(df_norm, out_file_name, row.names=FALSE)
   }
   l <- list(df = df_norm, vid = rv$vid, direct = rv$direct,
             inst = rv$inst, recording = rv$recording)
@@ -441,11 +441,12 @@ get_processed_view <- function(rv, folder_out = "Normalized",
 #' fv3 <- apply_filter(pv, c("Nose", "RWrist", "LWrist"), signal::sgolay(4, 19))
 apply_filter_sgolay <- function(view, data_points, n, p, folder_out = "Filtered",
                                 save_output = FALSE) {
-  apply_filter(view, data_points, signal::sgolay(p, n), folder_out, save_output)
+  apply_filter(view, data_points, signal::sgolay(p, n), param_str = paste(n, p, sep = "_"),
+               folder_out, save_output)
 }
 
 #' @export
-apply_filter <- function(view, data_points, sig_filter, folder_out = "Filtered",
+apply_filter <- function(view, data_points, sig_filter, param_str = "", folder_out = "Filtered",
                          save_output = FALSE) {
   stopifnot("ProcessedView" %in% class(view))
 
@@ -469,9 +470,9 @@ apply_filter <- function(view, data_points, sig_filter, folder_out = "Filtered",
     out_folder <- file.path(view$recording$data_home, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder,
-      paste0(view$recording$stem, "_", view$vid, "_", view$inst, '_SEL_', window_size, '_', poly_order,'.csv')
+      paste0(view$recording$stem, "_", view$vid, "_", view$inst, '_SEL_', param_str,'.csv')
     )
-    write.csv(df_filt, out_file_name, row.names=FALSE)
+    utils::write.csv(df_filt, out_file_name, row.names=FALSE)
   }
   l <- list(df = df_filt, vid = view$vid, direct = view$direct,
             inst = view$inst, recording = view$recording)
@@ -512,7 +513,7 @@ get_data_points <- function(obj) {
 #' r <- get_sample_recording()
 #' rv_list <- get_raw_views(r)
 #' jv <- get_joined_view(rv_list)
-#' plot(jv, columns = c("LEar_x_Central_Sitar", "LEar_x_Central_Tabla"), yax.flip=T)
+#' plot(jv, columns = c("LEar_x_Central_Sitar", "LEar_x_Central_Tabla"), yax.flip=TRUE)
 get_joined_view <- function(l, folder_out = "Joined", save_output = FALSE) {
   stopifnot(is.list(l), length(l) > 1)
   stopifnot(all(sapply(l, function(x) "View" %in% class(x))))
@@ -533,7 +534,7 @@ get_joined_view <- function(l, folder_out = "Joined", save_output = FALSE) {
     out_folder <- file.path(l[[1]]$recording$data_home, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder, paste0(l[[1]]$recording$stem, "_", l[[1]]$vid , "_", l[[1]]$inst, '_JOINED.csv'))
-    write.csv(joined_df, out_file_name, row.names=FALSE)
+    utils::write.csv(joined_df, out_file_name, row.names=FALSE)
   }
   output_list <- list(df = joined_df, vid = "", direct = "", inst = "",
                       recording = l[[1]]$recording)
@@ -565,6 +566,28 @@ get_filtered_views <- function(r, data_points, n, p) {
   fv_list <- lapply(pv_list, apply_filter_sgolay, data_points = data_points, n = n, p = p)
 
   invisible(fv_list)
+}
+
+
+#' Get processed views
+#'
+#' @param r
+#' @param data_points
+#'
+#' @return List of ProcessedView objects
+#' @export
+#'
+#' @examples
+#' r <- get_sample_recording()
+#' pv_list <- get_processed_views(r)
+#' plot(pv_list$Central_Tabla)
+get_processed_views <- function(r, data_points) {
+  stopifnot("Recording" == class(r))
+
+  rv_list <- get_raw_views(r)
+  pv_list <- lapply(rv_list, get_processed_view)
+
+  invisible(pv_list)
 }
 
 
@@ -600,7 +623,7 @@ get_feature_data <- function(recording, vid, direct, inst,
   message("Loading ", data_file_name)
   stopifnot(file.exists(data_file_name))
 
-  df <- read.csv(data_file_name, colClasses = "numeric")
+  df <- utils::read.csv(data_file_name, colClasses = "numeric")
   first_col <- "Frame"
   colnames(df)[1] <- first_col
 
@@ -615,7 +638,7 @@ get_feature_data <- function(recording, vid, direct, inst,
     out_folder <- file.path(recording$data_home, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder, paste0(recording$stem, "_", inst, '_FEATURE.csv'))
-    write.csv(df_int, out_file_name, row.names=FALSE)
+    utils::write.csv(df_int, out_file_name, row.names=FALSE)
   }
 
   l <- list(df = df_int, vid = vid, direct = direct,

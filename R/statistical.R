@@ -574,7 +574,7 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
   dfr <- dfr[, c('Tala', instruments), drop=FALSE]
 
   # Calculate onset differences for each instrument pair
-  instrument_combn <- combn(instruments, 2)
+  instrument_combn <- utils::combn(instruments, 2)
   output_dfr <- data.frame(Tala = dfr['Tala'],
                            Ref_Beat_Time = rowMeans(dfr[instruments], na.rm = TRUE))
   for (j in seq_len(ncol(instrument_combn))) {
@@ -624,7 +624,8 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
 #' o1 <- get_onsets_selected_data(r1)
 #' d1 <- get_duration_annotation_data(r1)
 #' splice_dfr <- splice_time(d1, tier = 'Event', comments = 'tabla solo')
-#' summary_onsets(o1, r1, instruments = c('Inst', 'Tabla'), splicing_dfr = splice_dfr, show_plot = TRUE)
+#' summary_onsets(o1, r1, instruments = c('Inst', 'Tabla'),
+#'   splicing_dfr = splice_dfr, show_plot = TRUE)
 summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NULL, expr = NULL,
                            show_plot = FALSE, filter_pair = NULL, na_omit = TRUE) {
 

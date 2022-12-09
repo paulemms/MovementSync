@@ -209,9 +209,12 @@ autoplot.SplicedView <- function(obj, columns=NULL, segments=NULL, maxpts=1000) 
 #' autoplot(m) + autolayer(d, fill_col = "Tier")
 #'
 #' v <- get_raw_view(r, "Central", "", "Sitar")
-#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d)
-#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
-#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d, geom = "vline", nudge_x = -60, size = 3, colour = "blue")
+#' autoplot(v, columns = c("LEar_x", "LEar_y")) +
+#'   autolayer(d)
+#' autoplot(v, columns = c("LEar_x", "LEar_y")) +
+#'   autolayer(d, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
+#' autoplot(v, columns = c("LEar_x", "LEar_y")) +
+#'   autolayer(d, geom = "vline", nudge_x = -60, size = 3, colour = "blue")
 #' }
 NULL
 
