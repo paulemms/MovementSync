@@ -32,7 +32,8 @@ devtools::install_github("paulemms/movementsync")
 ## Usage
 ```{r, message=FALSE, warning=FALSE, echo=TRUE, eval=FALSE}
 library(movementsync)
-packageVersion("movementsync")                                                        ```
+packageVersion("movementsync")
+```
                                                                                         
-There are R scripts in the [samplescripts](inst/samplescripts) directory that walk-through the package functionality.
+There are R scripts in the [inst/samplescripts](inst/samplescripts) directory that walk-through the package functionality.
 
