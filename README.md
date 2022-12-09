@@ -11,7 +11,7 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 
 ## Installation
 
-You can install the current version of `MovementSync` from Github by
+You can install the current version of `movementsync` from Github by
 entering the following commands into R:
 
 ``` r
@@ -25,4 +25,5 @@ devtools::install_github("paulemms/movementsync")
 library(movementsync)
 packageVersion("movementsync")                                                        ```
                                                                                         
+There are R scripts in the [samplescripts](inst/samplescripts) directory that walk-through the package functionality.
 ```
