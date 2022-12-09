@@ -1,3 +1,6 @@
+# Functions to summarise data objects
+
+
 #' Summarise Recording object
 #'
 #' @param object

@@ -1,3 +1,5 @@
+# Functions to build a motion_gram style plot
+
 #' Plot a set of data points over time
 #'
 #' @param v view object

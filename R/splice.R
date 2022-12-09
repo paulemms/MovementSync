@@ -1,4 +1,4 @@
-# Functions to return a set of time intervals for analysis
+# Functions to return a splice: a set of time intervals for analysis
 
 #' S3 generic function to splice a timeline
 #'

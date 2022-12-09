@@ -1,3 +1,5 @@
+# Functions to assess and plot periodicity of movement data
+
 #' Estimate the periodicity of data points in a view
 #'
 #' @param view ProcessedView or FilteredView object

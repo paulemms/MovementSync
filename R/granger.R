@@ -1,4 +1,4 @@
-# functions to assess Granger causality
+# Functions to assess Granger causality
 
 #' Granger causality tests applied to a SplicedView
 #'

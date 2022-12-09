@@ -1,3 +1,5 @@
+# Functions to load data
+
 #' Get sample meta-data recording object
 #'
 #' @param stem
