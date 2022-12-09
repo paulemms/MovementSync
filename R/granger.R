@@ -371,7 +371,7 @@ ms_grangertest1 <- function(x, y, order = 1, na.action = na.omit, ...) {
   lagY <- as.matrix(all[,(1:order + 2 + order)])
 
   ## fit full model
-  fm <- lm(y ~ lagY + lagX)
+  fm <- stats::lm(y ~ lagY + lagX)
 
   ## compare models with waldtest
   rval <- lmtest::waldtest(fm, 2, ...)
@@ -434,7 +434,7 @@ ms_grangertest2 <- function(x, y, order = 1, na.action = na.omit, ...) {
   lagX <- as.matrix(lag_temp[,(numcolY + 2):ncol(lag_temp),drop=FALSE]) # skip x
 
   ## fit full model
-  fm <- lm(y ~ lagY + lagX)
+  fm <- stats::lm(y ~ lagY + lagX)
 
   ## compare models with waldtest
   rval <- lmtest::waldtest(fm, 2, ...)
@@ -501,7 +501,7 @@ ms_condgrangertest <- function(x, y, z, order = 1, na.action = na.omit, ...) {
   z <- as.vector(lag_temp[,ncol(lag_temp)])
 
   ## fit full model
-  fm <- lm(y ~ lagY + lagX + z)
+  fm <- stats::lm(y ~ lagY + lagX + z)
 
   ## compare models with waldtest
   rval <- lmtest::waldtest(fm, 2, ...)

@@ -17,7 +17,7 @@ test_that("Union of splices is correct", {
   expect_equal(output_splice$End, c(325, 550, 675, 725))
 })
 
-test_that("Union of splices is correct", {
+test_that("Intersection of splices is correct", {
   output_splice <- merge_splice(x = split2_dfr, y = split4_dfr, operation = 'intersection')
   expect_equal(nrow(output_splice), 0)
   output_splice <- merge_splice(x = split1_dfr, y = split2_dfr, z = split3_dfr,

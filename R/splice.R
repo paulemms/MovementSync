@@ -47,6 +47,9 @@ splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, make.
 
   if (make.unique) df$Segment <- make.unique(df$Segment, ...)
   output_df <- dplyr::arrange(df, Start)
+
+  class(output_df) <- c('Splice', 'data.frame')
+
   output_df
 }
 
@@ -82,6 +85,8 @@ splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
   }
   output_df <- dplyr::bind_rows(df_list)
   output_df <- dplyr::arrange(output_df, Start)
+  class(output_df) <- c('Splice', 'data.frame')
+
   output_df
 }
 
@@ -107,6 +112,8 @@ splice_time.list <- function(x, ...) {
   df <- df[c("Segment", "Start", "End")]
 
   stopifnot(!is_splice_overlapping(df))
+  class(df) <- c('Splice', 'data.frame')
+
   df
 }
 
@@ -155,6 +162,8 @@ splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
   if (make.unique) df$Comments <- make.unique(df$Comments, ...)
   colnames(df) <- c("Segment", "Start", "End")
 
+  class(df) <- c('Splice', 'data.frame')
+
   df
 }
 
@@ -185,7 +194,10 @@ splice_time.View <- function(x, win_size, step_size, ...) {
     stop("Time series length too small for window")
   }
 
-  data.frame(Segment = paste0("w", seq_along(offset)), Start = offset, End = offset + win_size)
+  df <- data.frame(Segment = paste0("w", seq_along(offset)), Start = offset, End = offset + win_size)
+  class(df) <- c('Splice', 'data.frame')
+
+  df
 }
 
 
@@ -306,7 +318,7 @@ sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.acti
       )
       cumduration_times <- duration_dfr[, 'Cumulative_Duration']
       # Sample from [0, total length of intervals]
-      new_cumdurations <- runif(num_samples, 0, cumduration_times[length(cumduration_times)])
+      new_cumdurations <- stats::runif(num_samples, 0, cumduration_times[length(cumduration_times)])
       # Find the interval each new time belongs to
       interval_idx <- findInterval(new_cumdurations, c(0, cumduration_times))
       # Generate a list of linear approximation functions for each data column
@@ -416,6 +428,8 @@ clip_splice <- function(splice_dfr, duration, location = 'middle') {
     new_splice_dfr$End <- splice_dfr$End
   } else stop()
 
+  class(new_splice_dfr) <- c('Splice', 'data.frame')
+
   new_splice_dfr
 }
 
@@ -471,7 +485,10 @@ merge_splice <- function(..., operation) {
     End = dd$pos[ex[r$values] + 1]
   )
 
+  class(output_dfr) <- c('Splice', 'data.frame')
+
   output_dfr
+
 }
 
 

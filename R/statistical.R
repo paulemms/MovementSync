@@ -436,7 +436,7 @@ sample_offset_splice <- function(splicing_dfr, v, num_splices, rejection_list = 
   while(current_num_splices < num_splices) {
 
     # Random start times
-    start_times <- runif(num_splices, min = -min_splice, max = max_time - max_splice)
+    start_times <- stats::runif(num_splices, min = -min_splice, max = max_time - max_splice)
 
     # Generate a list of new sampling data.frames
     new_splicing_list <- lapply(start_times, function(x) {
@@ -520,7 +520,7 @@ sample_gap_splice <- function(splicing_dfr, v, num_splices, rejection_list = lis
     # Generate a list of new sampling data.frames
     new_splicing_list <- lapply(seq_len(num_splices), function(x) {
       # gap is interarrival time and exponentially distributed
-      new_gaps <- rexp(nrow(splicing_dfr), rate = 1 / ave_gap_splice)
+      new_gaps <- stats::rexp(nrow(splicing_dfr), rate = 1 / ave_gap_splice)
       new_splicing_dfr <- splicing_dfr
       new_splicing_dfr$Start <- cumsum(new_gaps + lagged_duration)
       new_splicing_dfr$End <- new_splicing_dfr$Start + duration
@@ -645,8 +645,8 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
     'N' = sum(!is.na(Value)),
     'Mean Difference' = mean(Value, na.rm = TRUE),
     'Mean Absolute Difference' = mean(abs(Value), na.rm = TRUE),
-    'SD Difference' = sd(Value, na.rm = TRUE),
-    'SD Absolute Difference' = sd(abs(Value), na.rm = TRUE)
+    'SD Difference' = stats::sd(Value, na.rm = TRUE),
+    'SD Absolute Difference' = stats::sd(abs(Value), na.rm = TRUE)
   )
 
   if (na_omit) {

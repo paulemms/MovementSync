@@ -7,9 +7,9 @@
 #' @param columns names of columns in input data
 #' @param maxpts maximum number of points to plot
 #' @param ... passed to [zoo::plot.zoo()]
-#' @param segments
+#' @param segments only include these segments in a SplicedView plot
 #'
-#' @return ggplot object
+#' @return a ggplot object
 #' @importFrom ggplot2 autoplot
 #' @name autoplot
 #' @export
@@ -32,8 +32,8 @@ NULL
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.Duration <- function(obj) {
-  ggplot2::ggplot(obj) +
+autoplot.Duration <- function(object, ...) {
+  ggplot2::ggplot(object) +
     ggplot2::geom_col(ggplot2::aes(x = Tier, y = Duration, fill = In),
                       position = "stack") +
     ggplot2::labs(title = "Duration Object") +
@@ -263,6 +263,7 @@ autolayer.Metre <- function(obj, xmin = -Inf, xmax = Inf, colour = "hotpink", al
   ggplot2::geom_vline(xintercept = x, colour = colour, alpha = alpha, ...)
 }
 
+
 #' @param expr logical expression for filtering
 #' @param fill_column data column used for fill
 #' @param geom
@@ -283,7 +284,7 @@ autolayer.Duration <- function(obj, expr = 'Tier == "FORM"', fill_column = "Comm
   if (geom == "rect") {
     ggplot2::geom_rect(
       data = rects,
-      ggplot2::aes(xmin = In, xmax = Out, ymin = -Inf, ymax = Inf, fill = .data[[fill_column]]),
+      ggplot2::aes(xmin = .data$In, xmax = .data$Out, ymin = -Inf, ymax = Inf, fill = .data[[fill_column]]),
       alpha = 0.4)
   } else if (geom == "vline") {
     colour <-  if ("colour" %in% names(l)) l[["colour"]] else "black"
@@ -293,6 +294,36 @@ autolayer.Duration <- function(obj, expr = 'Tier == "FORM"', fill_column = "Comm
         ggplot2::aes(x = .data[[vline_column]], y = Inf, angle = 90, hjust = "inward", label = paste(vline_column, .data[[fill_column]])),
         ...)
       )
+  } else stop("Unsupported geom")
+}
+
+
+#' @param geom
+#' @param vline_column
+#' @param ...
+#' @exportS3Method
+#' @rdname autolayer
+autolayer.Splice <- function(obj, geom = "rect", vline_column = "Start", ...) {
+
+  rects <- obj
+  # order the Segment column for legend
+  rects['Segment'] <- factor(rects[['Segment']], levels = unique(rects[['Segment']]))
+
+  l <- list(...)
+
+  if (geom == "rect") {
+    ggplot2::geom_rect(
+      data = rects,
+      ggplot2::aes(xmin = Start, xmax = End, ymin = -Inf, ymax = Inf, fill = .data[['Segment']]),
+      alpha = 0.4)
+  } else if (geom == "vline") {
+    colour <-  if ("colour" %in% names(l)) l[["colour"]] else "black"
+    c(ggplot2::geom_vline(data = rects, linetype = 3, colour = colour, ggplot2::aes(xintercept = .data[[vline_column]])),
+      ggplot2::geom_text(
+        data = rects,
+        ggplot2::aes(x = .data[[vline_column]], y = -Inf, angle = 90, hjust = "inward", label = paste(vline_column, .data[['Segment']])),
+        ...)
+    )
   } else stop("Unsupported geom")
 }
 

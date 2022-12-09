@@ -31,7 +31,7 @@ periodicity <- function(view, data_points = NULL, ...) {
 
   # periodigram using fft with smoothing
   spec <-
-    spectrum(
+    stats::spectrum(
       df[, -(1:2), drop=FALSE],
       plot = FALSE,
       na.action = na.omit,

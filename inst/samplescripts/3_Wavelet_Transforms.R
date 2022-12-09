@@ -46,6 +46,9 @@ plot_average_coherency(co, fv2)
 # Cross wavelet coherence
 plot_coherence(co, fv2)
 
+# Global image of phase differences
+plot_phase_difference(co, fv2)
+
 # Phase differences at period 0.64s. range [0.5, 0.7]
 sp1 <- plot_sel_phases(co, fv2, sel.period = 0.64)
 sp2 <- plot_sel_phases(co, fv2, sel.period = NULL, sel.lower = 0.5, sel.upper = 0.7)
@@ -53,7 +56,16 @@ sp2 <- plot_sel_phases(co, fv2, sel.period = NULL, sel.lower = 0.5, sel.upper = 
 # Summaries of relative phase
 summary(sp1)
 summary(sp2)
-plot_roll_resultant_length(sp2, window_duration = 10, by = 5)
+plot_roll_resultant_length(sp2, window_duration = 20, by = 5)
 
-# Global image of phase differences
-plot_phase_difference(co, fv2)
+# Add annotation layer
+l <- list(a = c(60, 120), b = c(180, 240))
+splicing_dfr <- splice_time(l)
+plot_roll_resultant_length(sp2, window_duration = 20, by = 5) +
+  autolayer(splicing_dfr)
+plot_roll_resultant_length(sp2, window_duration = 20, by = 5) +
+  autolayer(splicing_dfr, geom = 'vline', nudge_x = -3, size = 3) +
+  autolayer(splicing_dfr, geom = 'vline', nudge_x = -3, size = 3, vline_column = 'End')
+
+
+

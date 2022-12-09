@@ -2,6 +2,10 @@
 # Applying filters can cause interior NAs for some data points e.g. Ear NIR_ABh_Puriya
 
 # DONE
+# Infer wavelet the relative phase of two ts - autolayer overlays on window plot, add reference lines to
+# function call, phase angle degrees in summary
+
+
 # Moved walk-through scripts to inst directory
 # Changed in naming on data files - NS to Pose - uploaded new data to Google drive
 # If data 3D use _z cordinate then calculate d for both processed and filtered data
@@ -24,12 +28,14 @@
 
 
 # TODO
-# Infer wavelet the relative phase of two ts
+# Package checks (include documentation)
+# Look at some possible conditional granger implementations - modify lmtest?
+# If interior NAs in filter issue warning and interpolate
 
+# Check splice data.frames really are Splice objects in functions
 # Splicing for proportion of interval on metre objects
 # Option for arrows both ways on influencing plots
 # Longer time spans for network diagram, - Filter on harmonium in network diagrams
-# Look at some possible conditional granger implementations - modify lmtest?
 # Limit colour to panels for GrangerTime - currently in script - improve function?
 # wrist (faster) and nose focus as points -lag over a second, 2 or 3 seconds nose
 # motiongram - displacement gives velocity

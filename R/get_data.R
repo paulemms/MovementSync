@@ -337,8 +337,8 @@ get_processed_view <- function(rv, folder_out = "Normalized",
 
   # If there is a Head data_point we need to remove linear drift
   if ("Head" %in% data_points) {
-    fit_head_x <- lm(Head_x ~ Time, data = df, na.action = na.exclude)
-    fit_head_y <- lm(Head_y ~ Time, data = df, na.action = na.exclude)
+    fit_head_x <- stats::lm(Head_x ~ Time, data = df, na.action = na.exclude)
+    fit_head_y <- stats::lm(Head_y ~ Time, data = df, na.action = na.exclude)
     df[['Head_x']] <- as.numeric(residuals(fit_head_x))
     df[['Head_y']] <- as.numeric(residuals(fit_head_y))
     message("Removed linear trend in Head data point")

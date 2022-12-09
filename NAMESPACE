@@ -3,6 +3,7 @@
 S3method(autolayer,Duration)
 S3method(autolayer,Metre)
 S3method(autolayer,OnsetsSelected)
+S3method(autolayer,Splice)
 S3method(autoplot,Duration)
 S3method(autoplot,GrangerTime)
 S3method(autoplot,Metre)

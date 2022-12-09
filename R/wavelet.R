@@ -407,3 +407,55 @@ make_time_axis <- function(df, fps, num_tlabels = 10) {
   list(at = labels_at + 1, labels = labels_to, time_lab = time_lab)
 }
 
+
+#' Plot windowed resultant length
+#'
+#' @param window_duration
+#' @param smooth
+#' @param na.rm
+#' @param obj
+#' @param by calculate resultant length at every `by`-th time point rather than every point.
+#' @param ref_lines
+#' @param align
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' r <- get_sample_recording()
+#' rv <- get_raw_view(r, "Central", "", "Sitar")
+#' pv <- get_processed_view(rv)
+#' co <- analyze_coherency(pv, columns = c("Nose_x", "Nose_y"))
+#' sp <- plot_sel_phases(co, pv, sel.period = 0.64)
+#' plot_roll_resultant_length(sp, ref_lines = c(H = 0.9998))
+plot_roll_resultant_length <- function(obj, window_duration = 1, smooth = FALSE,
+                                       by = 1, ref_lines = c(W = 0.7, M = 0.85, H = 0.95),
+                                       align = 'right', na.rm = TRUE) {
+
+  angle <- if (smooth) obj$sAngle else obj$Angle
+  tm <- obj$axis.1
+  max_tm <- max(tm, na.rm = TRUE)
+  min_tm <- min(tm, na.rm = TRUE)
+
+  # Convert to zoo and rollapply rho.circular
+  window_length <- round(window_duration / (max_tm - min(tm))  * (length(tm) - 1))
+  z <- zoo::zoo(angle, order.by = tm - 1)
+  rollz <- zoo::rollapply(z, width = window_length,
+                          FUN = function(x) circular::rho.circular(circular::circular(x), na.rm = na.rm),
+                          by = by, align = align)
+
+  ref_line_df <- data.frame(Sync = paste(names(ref_lines), ' '), Value = ref_lines)
+
+  g <- autoplot(rollz) +
+    ggplot2::labs(title = "Relative Phase Analysis", subtitle = obj$subtitle) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = Value, colour = Sync, linetype = Sync),
+                        linewidth = 1, alpha = 0.9, data = ref_line_df, show.legend = FALSE) +
+    ggplot2::geom_text(ggplot2::aes(Inf, Value, label = Sync, hjust = 'inward'),
+                       vjust = -0.5, data = ref_line_df) +
+    ggplot2::scale_colour_brewer(palette = 'Reds', direction = -1) +
+    ggplot2::xlab("Time / min:sec") + ggplot2::ylab("Rolling Mean Resultant Length")  +
+    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
+    ggplot2::theme_bw()
+
+  g
+}
