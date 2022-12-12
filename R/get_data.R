@@ -596,7 +596,8 @@ get_processed_views <- function(r, data_points) {
 #' Get Feature Data
 #'
 #' Output from new analysis process that generates data at the same sample
-#' rate as the video data.
+#' rate as the video data. The user is responsible for ensuring that this
+#' data is continuous before using this function.
 #' @param recording object
 #' @param vid camera
 #' @param direct direction
@@ -632,18 +633,14 @@ get_feature_data <- function(recording, vid, direct, inst,
   # Add a time column
   df <- cbind(df[1], Time = df[[1]] / recording$fps, df[-1])
 
-  # Interpolate missing data
-  df_int <- replace(zoo::na.spline(df), is.na(zoo::na.approx(df, na.rm=FALSE)), NA)
-  df_int <- as.data.frame(df_int)
-
   if (save_output) {
     out_folder <- file.path(recording$data_home, folder_out)
     if (!dir.exists(out_folder)) dir.create(out_folder)
     out_file_name <- file.path(out_folder, paste0(recording$stem, "_", inst, '_FEATURE.csv'))
-    utils::write.csv(df_int, out_file_name, row.names=FALSE)
+    utils::write.csv(df, out_file_name, row.names=FALSE)
   }
 
-  l <- list(df = df_int, vid = vid, direct = direct,
+  l <- list(df = df, vid = vid, direct = direct,
             inst = inst, recording = recording)
   class(l) <- c("FilteredView", "ProcessedView", "RawView", "View")
 

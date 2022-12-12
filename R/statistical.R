@@ -705,7 +705,7 @@ visualise_sample_splices <- function(splicing_list, jv, overlay = TRUE,
 
   } else {
     g <- ggplot2::ggplot(df, ggplot2::aes(y = Segment)) +
-    ggplot2::geom_linerange(aes(xmin = Start, xmax = End), linewidth = 3, alpha = 0.1) +
+    ggplot2::geom_linerange(ggplot2::aes(xmin = Start, xmax = End), linewidth = 3, alpha = 0.1) +
       ggplot2::geom_rect(data = splicing_tabla_solo_df,
                          ggplot2::aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5)
   }
@@ -717,8 +717,8 @@ visualise_sample_splices <- function(splicing_list, jv, overlay = TRUE,
 
   if (nrow(avoid_splice_dfr) > 0) {
     if (unstack) avoid_splice_dfr <- avoid_splice_dfr[-1] else avoid_splice_dfr$Segment <- NA
-    g <- g + geom_rect(data = avoid_splice_dfr,
-                       aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
+    g <- g + ggplot2::geom_rect(data = avoid_splice_dfr,
+                       ggplot2::aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
   }
 
   g

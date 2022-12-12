@@ -3,14 +3,14 @@
 #' Granger causality tests applied to a SplicedView
 #'
 #' @param obj SplicedView object
-#' @param var1
-#' @param var2
+#' @param var1 column name of response
+#' @param var2 column name of predictor
+#' @param var3 column name of conditioning
 #' @param lag in seconds (rounded to nearest frame)
-#' @param granger_fn
-#' @param var3
-#' @param cond_granger_fn
+#' @param granger_fn function to perform Granger test (defaults to ms_grangertest2)
+#' @param cond_granger_fn function to perform conditional Granger test (defaults to ms_condgrangertest)
 #'
-#' @return
+#' @return GrangerTime object
 #' @export
 #'
 #' @examples
@@ -80,9 +80,9 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
 
 #' Plot a Granger S3 object
 #'
-#' @param obj
-#' @param columns
-#' @param maxpts
+#' @param object S3 object
+#' @param splicing_df Splicing data.frame object
+#' @param lev_sig significance level
 #'
 #' @return
 #' @exportS3Method
@@ -103,11 +103,11 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
 #' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
 #' autoplot(g, splicing_df)
 
-autoplot.GrangerTime <- function(obj, splicing_df = splicing_df, lev_sig = 0.05) {
+autoplot.GrangerTime <- function(object, splicing_df = splicing_df, lev_sig = 0.05, ...) {
 
-  df <- obj$df
+  df <- object$df
 
-  title <- paste0(class(obj)[1], ": Lagged at ", obj$order / obj$recording$fps, "s")
+  title <- paste0(class(object)[1], ": Lagged at ", object$order / object$recording$fps, "s")
   splicing_df$Centre <- (splicing_df$Start + splicing_df$End) / 2
   splicing_df$Width <- splicing_df$End - splicing_df$Start
   df <- dplyr::inner_join(df, splicing_df[c('Segment', 'Centre', 'Width')], by = 'Segment')
@@ -116,7 +116,7 @@ autoplot.GrangerTime <- function(obj, splicing_df = splicing_df, lev_sig = 0.05)
   ggplot2::ggplot(df) +
     ggplot2::geom_col(ggplot2::aes(x = Centre, y = P_Value), width = max(df$Width)/10, fill = 'black') +
     ggplot2::geom_hline(yintercept = lev_sig, colour = 'blue') +
-    ggplot2::labs(title = title, subtitle = obj$recording$stem) +
+    ggplot2::labs(title = title, subtitle = object$recording$stem) +
     ggplot2::xlab("Time / min:sec") +
     ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
     ggplot2::facet_grid(rows = ggplot2::vars(Test))
@@ -127,8 +127,8 @@ autoplot.GrangerTime <- function(obj, splicing_df = splicing_df, lev_sig = 0.05)
 #'
 #' Arrows show causality direction.
 #' @param obj GrangerTest object
-#' @param splicing_df
-#' @param lev_sig
+#' @param splicing_df Splicing data.frame object
+#' @param lev_sig significance level
 #'
 #' @return ggplot object
 #' @export
@@ -207,14 +207,14 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 
 #' Get Granger Causality interactions
 #'
-#' @param sv
-#' @param columns
-#' @param sig_level
+#' @param sv SplicedView object
+#' @param columns vector of column names
+#' @param sig_level significance level
 #' @param lag in seconds (rounded to nearest frame)
-#' @param cond_column
-#' @param granger_fn
+#' @param cond_column name of conditioning column
+#' @param granger_fn function to perform Granger test (defaults to ms_grangertest2)
 #'
-#' @return
+#' @return GrangerInteraction object
 #' @export
 #'
 #' @examples
@@ -250,13 +250,12 @@ get_granger_interactions <- function(sv, columns, cond_column = "", sig_level = 
 
 #' Plot network diagram of Granger Causalities
 #'
-#' @param obj
-#' @param mfrow
-#' @param mar
-#' @param oma
+#' @param x GrangerInteration object
+#' @param mfrow passed to [par()]
+#' @param mar passed to [par()]
+#' @param oma passed to [par()]
 #' @param ... passed through to [plot.igraph()]
 #'
-#' @return
 #' @export
 #'
 #' @examples
@@ -271,14 +270,14 @@ get_granger_interactions <- function(sv, columns, cond_column = "", sig_level = 
 #' gi <- get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"), lag = 1/25)
 #' plot(gi)
 #' }
-plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1),
+plot.GrangerInteraction <- function(x, mfrow = NULL, mar = c(1, 1, 1, 1),
                                     oma = c(1, 1, 1, 1), ...) {
 
-  gc_list <- obj$gc_list
+  gc_list <- x$gc_list
 
   # Single data frame of P-values
   df <- dplyr::bind_rows(lapply(gc_list, function(x) x$df), .id = "Test")
-  df$mlog10pv <- ifelse(df$P_Value < obj$sig_level, -log10(df$P_Value), NA_real_)
+  df$mlog10pv <- ifelse(df$P_Value < x$sig_level, -log10(df$P_Value), NA_real_)
 
   if (is.null(mfrow)) {
     num_segments <- length(unique(df$Segment))
@@ -312,8 +311,8 @@ plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1),
     plot(net, layout=l, edge.curved=.4, main=segment, ...)
   }
 
-  main_title <- paste0("Recording: ", obj$gc_list[[1]]$recording$stem, ", Lag = ",
-                       obj$lag, "s")
+  main_title <- paste0("Recording: ", x$gc_list[[1]]$recording$stem, ", Lag = ",
+                       x$lag, "s")
   mtext(text = main_title, side = 1, line = -1, outer = TRUE)
   par(old_params)
 
@@ -326,13 +325,13 @@ plot.GrangerInteraction <- function(obj, mfrow = NULL, mar = c(1, 1, 1, 1),
 #' Faster implementation of the vector version of  [lmtest::grangertest()]
 #' which uses a vectorised lag operation.
 #'
-#' @param x
-#' @param y
-#' @param order number of lags (in frames)
-#' @param na.action
-#' @param ...
+#' @param x either a bivariate series (in which case y has to be missing) or a univariate series of observations.
+#' @param y a univariate series of observations (if x is univariate, too).
+#' @param order number of lags (in frames).
+#' @param na.action a function for eliminating NAs after aligning the series x and y.
+#' @param ... passed to [lmtest::waldtest()].
 #'
-#' @return
+#' @return Anova object
 #' @export
 #'
 #' @examples
@@ -391,13 +390,13 @@ ms_grangertest1 <- function(x, y, order = 1, na.action = na.omit, ...) {
 #' function assumes time series always have the same start date and periodicity,
 #' which is true for the data in this package.
 #'
-#' @param x
-#' @param y
-#' @param order number of lags (in frames)
-#' @param na.action
-#' @param ...
+#' @param x either a bivariate series (in which case y has to be missing) or a univariate series of observations
+#' @param y a univariate series of observations (if x is univariate, too).
+#' @param order number of lags (in frames).
+#' @param na.action a function for eliminating NAs after aligning the series x and y.
+#' @param ... passed to [lmtest::waldtest()].
 #'
-#' @return
+#' @return Anova object
 #' @export
 #'
 #' @examples
@@ -455,14 +454,14 @@ ms_grangertest2 <- function(x, y, order = 1, na.action = na.omit, ...) {
 #' have the same start date and periodicity, which is true for the data in this
 #' package.
 #'
-#' @param x
-#' @param y
-#' @param z
-#' @param order
-#' @param na.action
-#' @param ...
+#' @param x response vector of observations.
+#' @param y explanatory vector of observations.
+#' @param z conditioning vector of observations
+#' @param order number of lags (in frames).
+#' @param na.action a function for eliminating NAs after aligning the series x and y.
+#' @param ... passed to [lmtest::waldtest()].
 #'
-#' @return
+#' @return Anova object
 #' @export
 #'
 #' @examples

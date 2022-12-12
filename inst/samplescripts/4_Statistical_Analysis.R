@@ -14,6 +14,7 @@ autoplot(jv1)
 # Splices based on Duration object
 d1 <- get_duration_annotation_data(r1)
 autoplot(d1)
+autoplot(d1) + theme(axis.text.x = element_text(size = 8)) # resize x-labels
 
 # Mutual look and smile
 splicing_smile_df <- splice_time(

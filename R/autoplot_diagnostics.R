@@ -3,7 +3,7 @@
 #' Diagnostic plots
 #'
 #' Autoplot methods for S3 objects in the movementsync package.
-#' @param obj S3 object
+#' @param object S3 object
 #' @param columns names of columns in input data
 #' @param maxpts maximum number of points to plot
 #' @param ... passed to [zoo::plot.zoo()]
@@ -45,9 +45,9 @@ autoplot.Duration <- function(object, ...) {
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.OnsetsSelected <- function(obj, instrument = 'Inst', matra = 'Matra') {
+autoplot.OnsetsSelected <- function(object, instrument = 'Inst', matra = 'Matra', ...) {
 
-  dfr_list <- obj[sapply(obj, class) == 'data.frame']
+  dfr_list <- object[sapply(object, class) == 'data.frame']
   df <- dplyr::bind_rows(dfr_list, .id = "Tala")
   stopifnot(instrument %in% colnames(df), matra %in% colnames(df))
 
@@ -65,8 +65,8 @@ autoplot.OnsetsSelected <- function(obj, instrument = 'Inst', matra = 'Matra') {
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.Metre <- function(obj) {
-  zoo_list <- lapply(obj, function(x) zoo::zoo(diff(x$Time), order.by = x$Time))
+autoplot.Metre <- function(object, ...) {
+  zoo_list <- lapply(object, function(x) zoo::zoo(diff(x$Time), order.by = x$Time))
   z <- do.call(merge, zoo_list)
 
   if (is.null(ncol(z))) {
@@ -86,28 +86,28 @@ autoplot.Metre <- function(obj) {
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
+autoplot.View <- function(object, columns=NULL, maxpts=1000, ...) {
 
   max_num_cols <- 9
 
   # Restrict points and columns to plot
   columns <- if (is.null(columns)) {
-    if (ncol(obj$df) > max_num_cols + 2)
+    if (ncol(object$df) > max_num_cols + 2)
       warning(paste("Only plotting first", max_num_cols, "data columns"))
-    seq_len(min(ncol(obj$df), max_num_cols + 2))[-1]
+    seq_len(min(ncol(object$df), max_num_cols + 2))[-1]
   } else c("Time", columns)
-  sp <- if (nrow(obj$df) > maxpts) sample(nrow(obj$df), maxpts) else seq_len(nrow(obj$df))
+  sp <- if (nrow(object$df) > maxpts) sample(nrow(object$df), maxpts) else seq_len(nrow(object$df))
 
-  df <- obj$df[sp, columns, drop = FALSE]
+  df <- object$df[sp, columns, drop = FALSE]
   zoo_list <- lapply(df[-1], function(x) zoo::zoo(x, order.by = df$Time))
   z <- do.call(merge, zoo_list)
 
-  subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
+  subtitle <- c(object$recording$stem, object$vid, object$direct, object$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
   autoplot(z) +
     ggplot2::facet_wrap(Series ~ ., scales="free_y") +
-    ggplot2::labs(title = class(obj)[1], subtitle = subtitle) +
+    ggplot2::labs(title = class(object)[1], subtitle = subtitle) +
     ggplot2::xlab("Time / min:sec") +
     ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
 }
@@ -115,11 +115,11 @@ autoplot.View <- function(obj, columns=NULL, maxpts=1000, ...) {
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.SplicedView <- function(obj, columns=NULL, segments=NULL, maxpts=1000) {
+autoplot.SplicedView <- function(object, columns=NULL, segments=NULL, maxpts=1000, ...) {
 
   max_num_segments <- 10
   max_num_cols <- 9
-  df <- obj$df
+  df <- object$df
 
   # Restrict points, columns, splices to plot
   columns <- if (is.null(columns)) {
@@ -162,7 +162,7 @@ autoplot.SplicedView <- function(obj, columns=NULL, segments=NULL, maxpts=1000) 
 
   long_df$Segment_f <- factor(long_df$Segment, levels = start_df$Segment)
 
-  subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
+  subtitle <- c(object$recording$stem, object$vid, object$direct, object$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
   # Use seconds to time scale if max Duration less than a minute
@@ -176,7 +176,7 @@ autoplot.SplicedView <- function(obj, columns=NULL, segments=NULL, maxpts=1000) 
 
   ggplot2::ggplot(long_df, ggplot2::aes(x = Time, y = Value, col = Series)) +
     ggplot2::geom_point() + ggplot2::geom_line() +
-    ggplot2::labs(title = class(obj)[1], subtitle = subtitle) +
+    ggplot2::labs(title = class(object)[1], subtitle = subtitle) +
     xlab + scale_x_time +
     ggplot2::facet_wrap(~Segment_f, scales = "free_x")
 }
@@ -185,7 +185,18 @@ autoplot.SplicedView <- function(obj, columns=NULL, segments=NULL, maxpts=1000) 
 #' Autolayer methods
 #'
 #' Layers of annotation data to add to ggplots.
-#' @param obj S3 object
+#' @param object S3 object
+#' @param alpha aesthetic
+#' @param fill name of column for filling.
+#' @param instrument_cols instrument column names.
+#' @param ... passed to geom.
+#' @param xmin minimum value for Metre lines.
+#' @param xmax maximum value for Metre lines.
+#' @param colour name of column for colouring.
+#' @param expr logical expression for filtering.
+#' @param fill_column data column used for fill.
+#' @param geom 'rect' or 'vline'.
+#' @param vline_column column name for position of vertical lines.
 #'
 #' @return ggplot geom object
 #'
@@ -219,19 +230,12 @@ autoplot.SplicedView <- function(obj, columns=NULL, segments=NULL, maxpts=1000) 
 NULL
 
 
-#' @param alpha
-#'
-#' @param colour
-#' @param fill
-#' @param obj
-#' @param instrument_cols
-#' @param ...
 #'
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.OnsetsSelected <- function(obj, colour = "Inst.Name", fill = "Tala",
+autolayer.OnsetsSelected <- function(object, colour = "Inst.Name", fill = "Tala",
                                      alpha = 0.4, instrument_cols = NULL, ...) {
-  dfr_list <- obj[sapply(obj, class) == 'data.frame']
+  dfr_list <- object[sapply(object, class) == 'data.frame']
   df <- dplyr::bind_rows(dfr_list, .id = "Tala")
   if (!is.null(instrument_cols)) {
     df <- tidyr::pivot_longer(df, cols = instrument_cols, names_to = "Inst.Name",
@@ -248,15 +252,10 @@ autolayer.OnsetsSelected <- function(obj, colour = "Inst.Name", fill = "Tala",
 }
 
 
-#' @param xmin
-#' @param xmax
-#' @param colour
-#' @param alpha
-#' @param ...
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.Metre <- function(obj, xmin = -Inf, xmax = Inf, colour = "hotpink", alpha = 0.4, ...) {
-  x <- unlist(lapply(obj, function(y) y$Time))
+autolayer.Metre <- function(object, xmin = -Inf, xmax = Inf, colour = "hotpink", alpha = 0.4, ...) {
+  x <- unlist(lapply(object, function(y) y$Time))
   x[x < xmin] <- NA
   x[x > xmax] <- NA
 
@@ -264,17 +263,12 @@ autolayer.Metre <- function(obj, xmin = -Inf, xmax = Inf, colour = "hotpink", al
 }
 
 
-#' @param expr logical expression for filtering
-#' @param fill_column data column used for fill
-#' @param geom
-#' @param vline_column
-#' @param ...
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.Duration <- function(obj, expr = 'Tier == "FORM"', fill_column = "Comments",
+autolayer.Duration <- function(object, expr = 'Tier == "FORM"', fill_column = "Comments",
                                geom = "rect", vline_column = "In", ...) {
   expr <- rlang::parse_expr(expr)
-  df <- as.data.frame(obj)
+  df <- as.data.frame(object)
   rects <- dplyr::filter(df, !!expr)
   # order the fill column for legend
   rects[fill_column] <- factor(rects[[fill_column]], levels = unique(rects[[fill_column]]))
@@ -298,14 +292,11 @@ autolayer.Duration <- function(obj, expr = 'Tier == "FORM"', fill_column = "Comm
 }
 
 
-#' @param geom
-#' @param vline_column
-#' @param ...
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.Splice <- function(obj, geom = "rect", vline_column = "Start", ...) {
+autolayer.Splice <- function(object, geom = "rect", vline_column = "Start", ...) {
 
-  rects <- obj
+  rects <- object
   # order the Segment column for legend
   rects['Segment'] <- factor(rects[['Segment']], levels = unique(rects[['Segment']]))
 
@@ -330,9 +321,8 @@ autolayer.Splice <- function(obj, geom = "rect", vline_column = "Start", ...) {
 
 #' Get a ggplot2 xlim object based on duration data
 #'
-#' @param obj
-#'
-#' @param expr
+#' @param object Duration object.
+#' @param expr R expression to subset rows.
 #'
 #' @examples
 #' \dontrun{
@@ -348,9 +338,9 @@ autolayer.Splice <- function(obj, geom = "rect", vline_column = "Start", ...) {
 #' autolayer(d, 'Tier == "Form" & substr(Comments, 1, 1) == "J"')
 #' }
 #' @export
-xlim_duration <- function(obj, expr = 'Tier == "Form"') {
+xlim_duration <- function(object, expr = 'Tier == "Form"') {
   expr <- rlang::parse_expr(expr)
-  rects <- dplyr::filter(obj, !!expr)
+  rects <- dplyr::filter(object, !!expr)
   xmin <- min(rects$In, na.rm = TRUE)
   xmax <- max(rects$Out, na.rm = TRUE)
 

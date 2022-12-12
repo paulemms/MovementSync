@@ -242,7 +242,10 @@ get_spliced_view <- function(v, splicing_df) {
 
 #' Get a list of Views from a SplicedView
 #'
-#' @param obj SplicedView object
+#' @param x S3 object
+#' @param f ignored
+#' @param drop ignored
+#' @param ... ignored
 #'
 #' @return list of Views
 #' @exportS3Method
@@ -254,14 +257,14 @@ get_spliced_view <- function(v, splicing_df) {
 #' l <- list(a = c(0, 10), b = c(10, 20), c = c(20, 30))
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(pv, splicing_df)
-#' sv_list <- split(sv)
-split.SplicedView <- function(obj) {
-  df_list <- split(obj$df, obj$df[['Segment']])
-  v_list <- lapply(df_list, function(x) {
-    df <- x[, colnames(x) != "Segment", drop = FALSE]
-    l <- list(df = df, vid = obj$vid, direct = obj$direct,
-         inst = obj$inst, recording = obj$recording)
-    class(l) <- class(obj)[-1]
+#' v_list <- split(sv)
+split.SplicedView <- function(x, f, drop, ...) {
+  df_list <- split(x$df, x$df[['Segment']])
+  v_list <- lapply(df_list, function(df) {
+    new_dfr <- df[, colnames(df) != "Segment", drop = FALSE]
+    l <- list(df = new_dfr, vid = x$vid, direct = x$direct,
+         inst = x$inst, recording = x$recording)
+    class(l) <- class(x)[-1]
     l
   })
 

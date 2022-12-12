@@ -68,10 +68,10 @@ periodicity <- function(view, data_points = NULL, ...) {
 #' fv <- apply_filter_sgolay(pv, data_points = c("LElbow", "LEye"), n = 19, p = 4)
 #' per2 <- periodicity(fv, data_points = c("LElbow", "LEye"), spans = 5)
 #' autoplot(per2)
-autoplot.PeriodicityView <- function(obj, time_range = c(0, 10), colour = "blue") {
+autoplot.PeriodicityView <- function(object, time_range = c(0, 10), colour = "blue", ...) {
 
-  view <- obj$view
-  df <- obj$df
+  view <- object$view
+  df <- object$df
   long_df <- tidyr::pivot_longer(df, colnames(df[-1]))
   colnames(long_df) <- c("Time", "DataPoint", "Ampl")
 
@@ -89,7 +89,7 @@ autoplot.PeriodicityView <- function(obj, time_range = c(0, 10), colour = "blue"
   #   limits = c(time_range[1], time_range[2]),
   #   breaks = seq(time_range[1], time_range[2], by = (time_range[2]-time_range[1]) / 5)
   # ) +
-  ggplot2::labs(title = class(obj)[1], subtitle = title) +
+  ggplot2::labs(title = class(object)[1], subtitle = title) +
   ggplot2::facet_wrap(~DataPoint, scales = "free") +
   ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
 }
