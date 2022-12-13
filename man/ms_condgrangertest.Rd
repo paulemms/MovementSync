@@ -4,7 +4,7 @@
 \alias{ms_condgrangertest}
 \title{Test for Conditional Granger Causality}
 \usage{
-ms_condgrangertest(x, y, z, order = 1, na.action = na.omit, ...)
+ms_condgrangertest(x, y, z, order = 1, na.action = stats::na.omit, ...)
 }
 \arguments{
 \item{x}{response vector of observations.}

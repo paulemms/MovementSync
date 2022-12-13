@@ -7,7 +7,7 @@ library(movementsync)
 r1 <- get_sample_recording() # defaults to NIR_ABh_Puriya
 summary(r1)
 
-# Load feature data (should be made continuous before import)
+# Load feature data (by default it is not made continuous)
 fd <- get_feature_data(r1, "Central" ,"", "Sitar")
 pv_list <- get_processed_views(r1)
 pv_list$Feature <- fd

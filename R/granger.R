@@ -338,7 +338,7 @@ plot.GrangerInteraction <- function(x, mfrow = NULL, mar = c(1, 1, 1, 1),
 #' data(ChickEgg, package = "lmtest")
 #' ms_grangertest1(ChickEgg, order = 3)
 
-ms_grangertest1 <- function(x, y, order = 1, na.action = na.omit, ...) {
+ms_grangertest1 <- function(x, y, order = 1, na.action = stats::na.omit, ...) {
   ## either x is a 2-column time series
   ## or x and y are univariate time series
   if((NCOL(x) == 2) && missing(y)) {
@@ -403,7 +403,7 @@ ms_grangertest1 <- function(x, y, order = 1, na.action = na.omit, ...) {
 #' data(ChickEgg, package = "lmtest")
 #' ms_grangertest2(ChickEgg, order = 3)
 
-ms_grangertest2 <- function(x, y, order = 1, na.action = na.omit, ...) {
+ms_grangertest2 <- function(x, y, order = 1, na.action = stats::na.omit, ...) {
 
   ## either x is a 2-column time series
   ## or x and y are univariate time series
@@ -475,7 +475,7 @@ ms_grangertest2 <- function(x, y, order = 1, na.action = na.omit, ...) {
 #'
 #' ms_condgrangertest(diff_wages[, 'w'], diff_wages[, 'CPI'], diff_wages[, 'u'], order = 3)
 
-ms_condgrangertest <- function(x, y, z, order = 1, na.action = na.omit, ...) {
+ms_condgrangertest <- function(x, y, z, order = 1, na.action = stats::na.omit, ...) {
 
   xnam <- deparse(substitute(x))
   ynam <- deparse(substitute(y))

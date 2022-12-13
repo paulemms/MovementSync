@@ -74,6 +74,7 @@ plot(fv2, nc = 3)
 ################################################################################
 r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 o2 <- get_onsets_selected_data(r2)
+autoplot(o2)
 m2 <- get_metre_data(r2)
 d2 <- get_duration_annotation_data(r2)
 plot(m2)
@@ -146,6 +147,7 @@ instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa"
 r5 <- get_recording("Gagaku_5_Juha", fps = 60)
 o5 <- get_onsets_selected_data(r5)
 plot(o5, instrument = 'Hichiriki', matra = 'SD_T')
+autoplot(o5, instrument = 'Hichiriki', matra = 'SD_T')
 m5 <- get_metre_data(r5)
 autoplot(m5)
 d5 <- get_duration_annotation_data(r5) # not in same format as others
@@ -175,14 +177,19 @@ autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", al
 ###  Data analysis
 ################################################################################
 
-# Estimate the spectral density of data points using spectrum in the stats package
-spec <- spectral_density(fv1, data_points = "Nose", spans = 5)
-autoplot(spec)
+# Specgrams
 
-# Specgram on processed data (colour)
-rv_list <- get_raw_views(r2)
-pv_list <- lapply(rv_list, get_processed_view)
-sub_pv <- subset(pv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y"))
+# Use the Tabla player in recording NIR_DBh_Malhar_2Gats for analysis
+pv_list <- get_processed_views(r2)
+
+# Limit to avoid period at end of recording and focus on RWrist
+sub_pv <- subset(pv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y", "RWrist_d"))
+
+# Estimate the spectral density of data points using spectrum in the stats package
+spec <- spectral_density(sub_pv, data_points = "RWrist", spans = c(3, 3))
+autoplot(spec, period_range = c(0, 12))
+
+# Specgram on processed data (colour) using signal::specgram function
 specgram_plot(sub_pv)
 
 # Specgram on filtered data (colour)
@@ -194,4 +201,35 @@ specgram_plot(sub_fv)
 specgram_plot(sub_fv, window = 200) +
   ggplot2::scale_fill_gradient(low = "white", high = "black")
 
+# Filtered specgram with In time duration annotation data
+specgram_plot(sub_fv) + autolayer(d2, geom = "vline", nudge_x = -10, size = 3)
 
+# Unfiltered specgram with Out time duration annotation data
+specgram_plot(sub_pv) + autolayer(d2, geom = "vline", nudge_x = -10, size = 3, vline_column = "Out")
+
+# BW palette
+specgram_plot(sub_pv, window = 200) +
+  ggplot2::scale_fill_gradient(low = "white", high = "black") +
+  autolayer(d2, geom = "vline", nudge_x = -10, size = 3, colour = "cyan")
+
+# Motiongram
+
+# Use first recording and look at Left and Right Elbow of Sitar player
+pv1 <- get_processed_view(rv1)
+fv1 <- apply_filter_sgolay(pv1, data_points = c("LElbow", "RElbow"), n = 41, p = 3)
+
+# Position of Elbows for the first 100s
+sub_fv1 <- subset(fv1, Time >= 0 & Time <= 100, by = 10)
+plot_history_xy(sub_fv1)
+
+# Use 1 minute of data and plot distribution of body over time
+dp <- c("LWrist", "RWrist", "LElbow", "RElbow", "LEye", "REye", "Neck", "MidHip")
+fv_body <- apply_filter_sgolay(pv1, data_point = dp, n = 41, p = 4)
+sub_1min_fv1 <- subset(fv_body, Time >= 0 & Time <= 60)
+distribution_dp(sub_1min_fv1)
+
+# Plot the absolute velocity of body
+velocity_dp(sub_1min_fv1)
+
+# Plot Sitar motiongram for first minute
+motion_gram(sub_1min_fv1)

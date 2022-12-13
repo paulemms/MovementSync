@@ -16,7 +16,24 @@ ave_power_over_splices(
 )
 }
 \arguments{
-\item{num_splices}{}
+\item{jv}{\code{JoinedView} object.}
+
+\item{splicing_df}{\code{Splice} object.}
+
+\item{num_splices}{number of randomly chosen splices.}
+
+\item{column}{name of data column on which to calculate average power.}
+
+\item{sampling_type}{either 'offset' or 'gap'.}
+
+\item{rejection_list}{list of splice objects that random splices must not overlap.}
+
+\item{include_original}{include the original splice in output? (Default is TRUE).}
+
+\item{show_plot}{show a plot? (Default is TRUE).}
+}
+\value{
+data.frame of splice segments and their average power.
 }
 \description{
 Randomly generates splices from a splicing table and calculates average

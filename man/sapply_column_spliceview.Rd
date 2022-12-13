@@ -7,7 +7,18 @@
 sapply_column_spliceview(sv, FUN, simplify = TRUE, USE.NAMES = TRUE, ...)
 }
 \arguments{
-\item{...}{}
+\item{sv}{\code{SplicedView} object.}
+
+\item{FUN}{function to apply.}
+
+\item{simplify}{see \code{\link[=sapply]{sapply()}}.}
+
+\item{USE.NAMES}{see \code{\link[=sapply]{sapply()}}.}
+
+\item{...}{passed to FUN.}
+}
+\value{
+see \code{\link[=sapply]{sapply()}}.
 }
 \description{
 Apply summary function to each data point column in a SplicedView and return list of output data.

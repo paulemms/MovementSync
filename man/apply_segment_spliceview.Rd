@@ -7,7 +7,11 @@
 apply_segment_spliceview(sv, FUN, ...)
 }
 \arguments{
-\item{...}{}
+\item{sv}{\code{SplicedView} object.}
+
+\item{FUN}{function to apply.}
+
+\item{...}{passed to FUN.}
 }
 \value{
 list of two elements: 'output' containing results of apply FUN to 'input'

@@ -171,6 +171,11 @@ motion_gram <- function(obj, maxpts = 10000, alpha =0.5, ...) {
     ggplot2::theme(axis.title.y=ggplot2::element_blank(),
           axis.text.y=ggplot2::element_blank(),
           axis.ticks.y=ggplot2::element_blank())
-  gridExtra::grid.arrange(p1, p2, nrow = 1, top = paste("Motiongram:", subtitle), widths=c(0.4, 0.6))
+
+  grided <- gridExtra::grid.arrange(p1, p2, nrow = 1,
+                                    top = paste("Motiongram:", subtitle),
+                                    widths=c(0.4, 0.6))
+
+  invisible(grided)
 }
 

@@ -23,9 +23,9 @@ Estimates the periodicity of data points in a \code{View} object.
 r <- get_recording("NIR_ABh_Puriya", fps = 25)
 rv <- get_raw_view(r, "Central", "", "Sitar")
 pv <- get_processed_view(rv)
-per <- spectral_density(pv, data_points = c("LEar", "REar"), spans = 5)
+sd1 <- spectral_density(pv, data_points = c("LEar", "REar"), spans = 5)
 
 fv <- apply_filter_sgolay(pv, data_points = c("LEye"), n = 19, p = 4)
-per <- spectral_density(fv, data_points = c("LEye"), spans = 5)
+sd1 <- spectral_density(fv, data_points = c("LEye"), spans = 5)
 
 }

@@ -53,12 +53,15 @@ autoplot.OnsetsSelected <- function(object, instrument = 'Inst', matra = 'Matra'
 
   df <- dplyr::rename(df, 'Matra' = matra)
   df <- df[!is.na(df[instrument]),,drop=FALSE]
+  min_x <- min(df$Matra, na.rm = TRUE)
+  max_x <- max(df$Matra, na.rm = TRUE)
 
   ggplot2::ggplot(df) +
-    ggplot2::geom_bar(ggplot2::aes(x = Matra, fill = Tala), stat = "count",
-                      position = ggplot2::position_dodge2(width = 0.9, preserve = 'single')) +
+    ggplot2::geom_bar(ggplot2::aes(x = Matra, fill = Tala), stat = "count") +
+    ggplot2::scale_x_continuous(breaks = min_x:max_x, labels=as.character(min_x:max_x)) +
     ggplot2::ylab("Onset Count") +
-    ggplot2::labs(title = paste("OnsetsSelected Object:", instrument))
+    ggplot2::labs(title = paste("OnsetsSelected Object:", instrument)) +
+    ggplot2::facet_wrap(~Tala)
 
 }
 
@@ -68,17 +71,16 @@ autoplot.OnsetsSelected <- function(object, instrument = 'Inst', matra = 'Matra'
 autoplot.Metre <- function(object, ...) {
   zoo_list <- lapply(object, function(x) zoo::zoo(c(NA, diff(x$Time)), order.by = x$Time))
   z <- do.call(merge, zoo_list)
-  browser()
 
   if (is.null(ncol(z))) {
     autoplot(z) +
-      ggplot2::labs(title = "Metre Object", subtitle = "Time Between Cycles") +
+      ggplot2::labs(title = "Metre Object", subtitle = "Cycle Length") +
       ggplot2::xlab("Time / min:sec") + ggplot2::ylab("")  +
       ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
   } else {
     autoplot(z) +
       ggplot2::facet_grid(Series ~ ., scales="free_y") +
-      ggplot2::labs(title = "Metre Object", subtitle = "Time Between Cycles") +
+      ggplot2::labs(title = "Metre Object", subtitle = "Cycle Length") +
       ggplot2::xlab("Time / min:sec") +
       ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
   }

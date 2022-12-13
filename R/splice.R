@@ -44,7 +44,7 @@ splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, make.
   df$End <- df$Ref_Beat_Time + window_duration / 2
   df$Segment <- paste('Reference_Beat', as.character(df$Segment), sep="_")
   df <- df[match(c("Segment", "Start", "End"), colnames(df), nomatch = 0)]
-  df <- na.omit(df)
+  df <- stats::na.omit(df)
 
   if (make.unique) df$Segment <- make.unique(df$Segment, ...)
   output_df <- dplyr::arrange(df, Start)

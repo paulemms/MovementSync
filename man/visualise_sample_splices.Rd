@@ -13,7 +13,14 @@ visualise_sample_splices(
 )
 }
 \arguments{
-\item{overlay}{}
+\item{splicing_list}{a list of \code{Splice} objects.}
+
+\item{jv}{\code{JoinedView} object.}
+
+\item{overlay}{overlay the segments for a density plot?}
+}
+\value{
+a \code{ggplot} object.
 }
 \description{
 Visualise random splices

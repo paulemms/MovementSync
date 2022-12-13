@@ -619,28 +619,28 @@ get_processed_views <- function(r, data_points) {
 #' Output from new analysis process that generates data at the same sample
 #' rate as the video data. The user is responsible for ensuring that this
 #' data is continuous before using this function.
+#'
 #' @param recording `Recording` object.
 #' @param vid camera.
 #' @param direct direction.
 #' @param inst instrument.
 #' @param save_output save the output?
 #' @param folder_out output folder relative to recording home (default is 'Raw').
+#' @param interpolate_data should the data be interpolated? (default is FALSE).
 #'
 #' @return a `FilteredView` object.
 #' @export
 #' @family data functions
 #'
 #' @examples
-#' \dontrun{
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' fd <- get_feature_data(r, "Central" ,"", "Sitar")
 #' fv_list <- get_filtered_views(r, 'LEar', n = 41, p =3)
 #' fv_list$Feature <- fd
 #' jv <- get_joined_view(fv_list)
 #' get_data_points(jv)
 #' autoplot(jv)
-#' }
-get_feature_data <- function(recording, vid, direct, inst,
+get_feature_data <- function(recording, vid, direct, inst, interpolate_data = FALSE,
                                  folder_out = "Raw", save_output = TRUE) {
   fn_cpts <- c(recording$stem, vid, direct, 'Feature', inst)
   fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
@@ -654,6 +654,12 @@ get_feature_data <- function(recording, vid, direct, inst,
 
   # Add a time column
   df <- cbind(df[1], Time = df[[1]] / recording$fps, df[-1])
+
+  # Interpolate missing data
+  if (interpolate_data) {
+    df <- replace(zoo::na.spline(df), is.na(zoo::na.approx(df, na.rm=FALSE)), NA)
+    df <- as.data.frame(df)
+  }
 
   if (save_output) {
     out_folder <- file.path(recording$data_home, folder_out)

@@ -16,7 +16,24 @@ summary_onsets(
 )
 }
 \arguments{
-\item{na_omit}{}
+\item{onset_obj}{\code{OnsetsSelected} object.}
+
+\item{recording}{\code{Recording} object.}
+
+\item{instruments}{character vector of instrument names.}
+
+\item{splicing_dfr}{\code{Splice} object}
+
+\item{expr}{R expression to subset onsetsSelected}
+
+\item{show_plot}{show a plot? (Default is FALSE).}
+
+\item{filter_pair}{regular expression to filter instrument pair names.}
+
+\item{na_omit}{omit NAs (Default is TRUE).}
+}
+\value{
+a summary data frame of onset difference statistics.
 }
 \description{
 Summary of difference in onsets

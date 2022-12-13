@@ -19,10 +19,10 @@ Autoplot a SpectralDensityView S3 object
 r <- get_recording("NIR_ABh_Puriya", fps = 25)
 rv <- get_raw_view(r, "Central", "", "Sitar")
 pv <- get_processed_view(rv)
-per1 <- periodicity(pv, data_points = c("LElbow", "LEye"), spans = 5)
-autoplot(per1)
+sd1 <- spectral_density(pv, data_points = c("LElbow", "LEye"), spans = 5)
+autoplot(sd1)
 
 fv <- apply_filter_sgolay(pv, data_points = c("LElbow", "LEye"), n = 19, p = 4)
-per2 <- periodicity(fv, data_points = c("LElbow", "LEye"), spans = c(3, 3))
-autoplot(per2)
+sd2 <- spectral_density(fv, data_points = c("LElbow", "LEye"), spans = c(3, 3))
+autoplot(sd2)
 }

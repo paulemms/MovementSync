@@ -9,6 +9,7 @@ get_feature_data(
   vid,
   direct,
   inst,
+  interpolate_data = FALSE,
   folder_out = "Raw",
   save_output = TRUE
 )
@@ -21,6 +22,8 @@ get_feature_data(
 \item{direct}{direction.}
 
 \item{inst}{instrument.}
+
+\item{interpolate_data}{should the data be interpolated? (default is FALSE).}
 
 \item{folder_out}{output folder relative to recording home (default is 'Raw').}
 
@@ -35,15 +38,13 @@ rate as the video data. The user is responsible for ensuring that this
 data is continuous before using this function.
 }
 \examples{
-\dontrun{
-r <- get_recording("NIR_ABh_Puriya", fps = 25)
+r <- get_sample_recording()
 fd <- get_feature_data(r, "Central" ,"", "Sitar")
 fv_list <- get_filtered_views(r, 'LEar', n = 41, p =3)
 fv_list$Feature <- fd
 jv <- get_joined_view(fv_list)
 get_data_points(jv)
 autoplot(jv)
-}
 }
 \seealso{
 Other data functions: 

@@ -4,16 +4,17 @@
 #' Apply summary function to the columns in each segment of a SpliceView object
 #'
 #' Apply summary function to each data point column in a SplicedView and return list of output data.
-#' @param sv
-#' @param FUN
-#' @param simplify
-#' @param USE.NAMES
-#' @param ...
+#' @param sv `SplicedView` object.
+#' @param FUN function to apply.
+#' @param simplify see [sapply()].
+#' @param USE.NAMES see [sapply()].
+#' @param ... passed to FUN.
 #'
-#' @return
+#' @return see [sapply()].
 #' @export
 #'
 #' @examples
+
 apply_column_spliceview <- function(sv, FUN, simplify = FALSE, USE.NAMES = FALSE, ...) {
   v_list <- split(sv)
   sapply(v_list, function(x) {
@@ -28,16 +29,17 @@ apply_column_spliceview <- function(sv, FUN, simplify = FALSE, USE.NAMES = FALSE
 #'
 #' Apply summary function to each data point column in a SplicedView and return list of output data.
 #' Simplify list to matrix.
-#' @param sv
-#' @param FUN
-#' @param simplify
-#' @param USE.NAMES
-#' @param ...
+#' @param sv `SplicedView` object.
+#' @param FUN function to apply.
+#' @param simplify see [sapply()].
+#' @param USE.NAMES see [sapply()].
+#' @param ... passed to FUN.
 #'
-#' @return
+#' @return see [sapply()].
 #' @export
 #'
 #' @examples
+
 sapply_column_spliceview <- function(sv, FUN, simplify = TRUE, USE.NAMES = TRUE, ...) {
   apply_column_spliceview(sv, FUN, simplify = simplify, USE.NAMES = USE.NAMES, ...)
 }
@@ -45,16 +47,15 @@ sapply_column_spliceview <- function(sv, FUN, simplify = TRUE, USE.NAMES = TRUE,
 
 #' Apply complex function to each segment in a SpliceView object
 #'
-#' @param sv
-#' @param FUN
-#' @param column
-#' @param member
-#' @param ...
+#' @param sv `SplicedView` object.
+#' @param FUN function to apply.
+#' @param ... passed to FUN.
 #'
 #' @return list of two elements: 'output' containing results of apply FUN to 'input'
 #' @export
 #'
 #' @examples
+
 apply_segment_spliceview <- function(sv, FUN, ...) {
   view_list <- split(sv)
   output_list <- lapply(view_list, FUN = FUN, ...)
@@ -64,24 +65,33 @@ apply_segment_spliceview <- function(sv, FUN, ...) {
 
 #' Compare average power distribution using a splicing table
 #'
-#' @param jv
-#' @param splicing_df
-#' @param column
-#' @param splice_name
-#' @param num_segment_samples
-#' @param num_splice_samples
-#' @param rejection_list
-#' @param show_plot
-#' @param sampling_type
+#' @param jv `JoinedView` object.
+#' @param splicing_df `Splice` object.
+#' @param splice_name Name to give randomly spliced segments.
+#' @param num_segment_samples number of segments to randomly sample.
+#' @param num_splice_samples number of randomly chosen splices.
+#' @param rejection_list list of splice objects that random splices must not overlap.
+#' @param show_plot show the plot? (Default  is TRUE).
+#' @param sampling_type either 'offset' or 'gap'.
+#' @param column name of data column on which to calculate average power.
 #'
 #' @export
+#' @return list of two data frames: one containing average power on the first
+#' splice and the other containing the average power on randomly generated splices.
 #'
 #' @examples
+#' r <- get_sample_recording()
+#' fv_list <- get_filtered_views(r, data_points = 'Nose', n = 41, p = 3)
+#' jv <- get_joined_view(fv_list)
+#' splicing_df <- splice_time(list(a = c(0, 5), b = c(10, 15)))
+#' output_list <- compare_ave_power1(jv, splicing_df, 'Random Splices', 5, 5, 'Nose_x_Central_Tabla')
+
 compare_ave_power1 <- function(jv, splicing_df, splice_name, num_segment_samples,
                               num_splice_samples,
                               column, sampling_type = 'offset', rejection_list = list(),
                               show_plot = TRUE) {
   stopifnot(class(jv)[1] == "JoinedView",
+            class(splicing_df)[1] == "Splice",
             sampling_type %in% c('offset', 'gap'),
             is.list(rejection_list))
 
@@ -128,8 +138,8 @@ compare_ave_power1 <- function(jv, splicing_df, splice_name, num_segment_samples
       ggplot2::xlab("Period / sec") +
       ggplot2::labs(title = "Comparison of Average Power on Sampled Segments",
                     subtitle = paste(subtitle, ':', column)) +
-      scale_x_continuous(trans='log2') +
-      ggplot2::geom_line(aes(y = Average_Power)) +
+      ggplot2::scale_x_continuous(trans='log2') +
+      ggplot2::geom_line(ggplot2::aes(y = Average_Power)) +
       ggplot2::facet_wrap(~Sampled_From)
     print(g)
   }
@@ -145,14 +155,15 @@ compare_ave_power1 <- function(jv, splicing_df, splice_name, num_segment_samples
 #' over the random splices for each segment and period. Compares with the
 #' average power for the original splice.
 #'
-#' @param jv
-#' @param splicing_df
-#' @param column
-#' @param sampling_type
-#' @param include_original
-#' @param rejection_list
-#' @param show_plot
-#' @param num_splices
+#' @param jv `JoinedView` object.
+#' @param splicing_df `Splice` object.
+#' @param column name of data column on which to calculate average power.
+#' @param sampling_type either 'offset' or 'gap'.
+#' @param include_original include the original splice in output? (Default is TRUE).
+#' @param rejection_list list of splice objects that random splices must not overlap.
+#' @param show_plot show a plot? (Default is TRUE).
+#' @param num_splices number of randomly chosen splices.
+#' @return data.frame of splice segments and their average power.
 #'
 #' @export
 #'
@@ -607,16 +618,16 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
 
 #' Summary of difference in onsets
 #'
-#' @param onset_obj
-#' @param instruments
-#' @param splicing_dfr
-#' @param expr
-#' @param recording
-#' @param show_plot
-#' @param filter_pair
-#' @param na_omit
+#' @param onset_obj `OnsetsSelected` object.
+#' @param instruments character vector of instrument names.
+#' @param splicing_dfr `Splice` object
+#' @param expr R expression to subset onsetsSelected
+#' @param recording `Recording` object.
+#' @param show_plot show a plot? (Default is FALSE).
+#' @param filter_pair regular expression to filter instrument pair names.
+#' @param na_omit omit NAs (Default is TRUE).
 #'
-#' @return
+#' @return a summary data frame of onset difference statistics.
 #' @export
 #'
 #' @examples
@@ -677,11 +688,11 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
 
 #' Visualise random splices
 #'
-#' @param splicing_list
-#' @param jv
-#' @param overlay
+#' @param splicing_list a list of `Splice` objects.
+#' @param jv `JoinedView` object.
+#' @param overlay overlay the segments for a density plot?
 #'
-#' @return
+#' @return a `ggplot` object.
 #' @export
 #'
 #' @examples
@@ -723,6 +734,4 @@ visualise_sample_splices <- function(splicing_list, jv, overlay = TRUE,
 
   g
 }
-
-
 

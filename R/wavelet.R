@@ -142,7 +142,7 @@ plot_power_spectrum <- function(obj, view, ...) {
   axis.2 <- obj$axis.2
   period.tick <- unique(trunc(axis.2))
   period.tick[period.tick < log2(obj$Period[1])] <- NA
-  period.tick <- na.omit(period.tick)
+  period.tick <- stats::na.omit(period.tick)
   period.tick.label <- 2^(period.tick) / fps
   spec_period_axis <-  list(at = 2^period.tick, labels = period.tick.label)
 
@@ -190,7 +190,7 @@ plot_cross_spectrum <- function(obj, view,  ...) {
   axis.2 <- obj$axis.2
   period.tick <- unique(trunc(axis.2))
   period.tick[period.tick < log2(obj$Period[1])] <- NA
-  period.tick <- na.omit(period.tick)
+  period.tick <- stats::na.omit(period.tick)
   period.tick.label <- 2^(period.tick) / fps
   spec_period_axis <-  list(at = 2^period.tick, labels = period.tick.label)
 
@@ -247,7 +247,7 @@ plot_average_power <- function(obj, view, ...) {
   axis.2 <- obj$axis.2
   period.tick <- unique(trunc(axis.2))
   period.tick[period.tick < log2(obj$Period[1])] <- NA
-  period.tick <- na.omit(period.tick)
+  period.tick <- stats::na.omit(period.tick)
   period.tick.label <- 2^(period.tick) / fps
   spec_period_axis <-  list(at = 2^period.tick, labels = period.tick.label)
 
@@ -365,7 +365,7 @@ plot_average_coherency <- function(obj, view, ...) {
   axis.2 <- obj$axis.2
   period.tick <- unique(trunc(axis.2))
   period.tick[period.tick < log2(obj$Period[1])] <- NA
-  period.tick <- na.omit(period.tick)
+  period.tick <- stats::na.omit(period.tick)
   period.tick.label <- 2^(period.tick) / fps
   spec_period_axis <-  list(at = 2^period.tick, labels = period.tick.label)
 
@@ -464,7 +464,7 @@ plot_phase_difference <- function(obj, view,  ...) {
   axis.2 <- obj$axis.2
   period.tick <- unique(trunc(axis.2))
   period.tick[period.tick < log2(obj$Period[1])] <- NA
-  period.tick <- na.omit(period.tick)
+  period.tick <- stats::na.omit(period.tick)
   period.tick.label <- 2^(period.tick) / fps
   spec_period_axis <-  list(at = 2^period.tick, labels = period.tick.label)
 

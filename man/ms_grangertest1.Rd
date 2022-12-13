@@ -4,7 +4,7 @@
 \alias{ms_grangertest1}
 \title{Test for Granger Causality}
 \usage{
-ms_grangertest1(x, y, order = 1, na.action = na.omit, ...)
+ms_grangertest1(x, y, order = 1, na.action = stats::na.omit, ...)
 }
 \arguments{
 \item{x}{either a bivariate series (in which case y has to be missing) or a univariate series of observations.}

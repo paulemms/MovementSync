@@ -17,8 +17,35 @@ compare_ave_power1(
 )
 }
 \arguments{
-\item{sampling_type}{}
+\item{jv}{\code{JoinedView} object.}
+
+\item{splicing_df}{\code{Splice} object.}
+
+\item{splice_name}{Name to give randomly spliced segments.}
+
+\item{num_segment_samples}{number of segments to randomly sample.}
+
+\item{num_splice_samples}{number of randomly chosen splices.}
+
+\item{column}{name of data column on which to calculate average power.}
+
+\item{sampling_type}{either 'offset' or 'gap'.}
+
+\item{rejection_list}{list of splice objects that random splices must not overlap.}
+
+\item{show_plot}{show the plot? (Default  is TRUE).}
+}
+\value{
+list of two data frames: one containing average power on the first
+splice and the other containing the average power on randomly generated splices.
 }
 \description{
 Compare average power distribution using a splicing table
+}
+\examples{
+r <- get_sample_recording()
+fv_list <- get_filtered_views(r, data_points = 'Nose', n = 41, p = 3)
+jv <- get_joined_view(fv_list)
+splicing_df <- splice_time(list(a = c(0, 5), b = c(10, 15)))
+output_list <- compare_ave_power1(jv, splicing_df, 'Random Splices', 5, 5, 'Nose_x_Central_Tabla')
 }

@@ -37,9 +37,10 @@ spectral_density <- function(view, data_points = NULL, ...) {
     stats::spectrum(
       df[, -(1:2), drop=FALSE],
       plot = FALSE,
-      na.action = na.omit,
+      na.action = stats::na.omit,
       ...
     )
+
   spx <- spec$freq * sampling_rate # to get cycles per second
   spy <- spec$spec
   colnames(spy) <- colnames(df)[-(1:2)]
@@ -88,7 +89,7 @@ autoplot.SpectralDensityView <- function(object, period_range = c(0, 10), colour
   ggplot2::xlab('Period / min:sec') +
   ggplot2::ylab('Spectral Density') +
   ggplot2::labs(title = class(object)[1], subtitle = title) +
-  ggplot2::facet_wrap(~DataPoint, scales = "free") +
+  ggplot2::facet_grid(DataPoint ~ ., scales = "free") +
   ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
 }
 
@@ -150,7 +151,7 @@ specgram_plot <- function(obj, ...) {
     ggplot2::labs(title = paste("Specgram for", class(obj)[1]), subtitle = subtitle) +
     ggplot2::theme(legend.position = "none") +
     ggplot2::xlab("Time / min:sec") +
-    ggplot2::ylab("Frequency") +
+    ggplot2::ylab("Frequency / per sec") +
     ggplot2::scale_x_time(expand = c(0,0), labels = function(l) strftime(l, '%M:%S')) +
     ggplot2::scale_y_continuous(expand = c(0,0)) +
     ggplot2::facet_grid(rows = ggplot2::vars(DataPoint))
