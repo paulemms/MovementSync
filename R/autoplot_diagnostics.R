@@ -66,8 +66,9 @@ autoplot.OnsetsSelected <- function(object, instrument = 'Inst', matra = 'Matra'
 #' @exportS3Method
 #' @rdname autoplot
 autoplot.Metre <- function(object, ...) {
-  zoo_list <- lapply(object, function(x) zoo::zoo(diff(x$Time), order.by = x$Time))
+  zoo_list <- lapply(object, function(x) zoo::zoo(c(NA, diff(x$Time)), order.by = x$Time))
   z <- do.call(merge, zoo_list)
+  browser()
 
   if (is.null(ncol(z))) {
     autoplot(z) +

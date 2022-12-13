@@ -1,12 +1,11 @@
 # TODO
+# Add periodicity FFT plot to data analysis walkthrough
+# motiongram - displacement gives velocity - include in data prep walkthrough
 # Martin Word Doc 10122022 Section 1
 # Martin Word Doc 10122022 Section 2
 # Martin Word Doc 10122022 Section 3
 # Martin Word Doc 10122022 Section 4
-# Add function for wavelet power vs time
-# motiongram - displacement gives velocity - include in data prep walkthrough
-# Add periodicity FFT plot to data analysis walkthrough
-# Package checks (include documentation)
+# Package checks (include documentation) - add man pages
 # Look at some possible conditional granger implementations - modify lmtest?
 # If interior NAs in filter issue warning and interpolate
 # Check splice data.frames really are Splice objects in functions
@@ -15,9 +14,11 @@
 # Periodicity - restrict time domain, windowed 10s version
 # Order onsetselected data
 # Generalise autolayer to accept parameters or expr - done for splice_time.Duration - others?
+# Martin Word Doc 10122022 Section 5 - no interpolation on feature data - interpolate feature default off.
 
 # DONE
-# Martin Word Doc 10122022 Section 5 - no interpolation on feature data
+# Fixed Metre default plot at end
+# Added function for wavelet power vs time - included in walkthrough script
 # Infer wavelet the relative phase of two ts - autolayer overlays on window plot, add reference lines to
 # function call, phase angle degrees in summary
 # Moved walk-through scripts to inst directory

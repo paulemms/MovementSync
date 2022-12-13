@@ -169,3 +169,29 @@ autoplot(fv_view$V3_Ryuteki) + autolayer(m5) +
   xlim_duration(d5, 'Tier == "Section" & Comments == "B"')
 autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", alpha = 0,
                                          instrument_cols = instruments)
+
+
+################################################################################
+###  Data analysis
+################################################################################
+
+# Estimate the spectral density of data points using spectrum in the stats package
+spec <- spectral_density(fv1, data_points = "Nose", spans = 5)
+autoplot(spec)
+
+# Specgram on processed data (colour)
+rv_list <- get_raw_views(r2)
+pv_list <- lapply(rv_list, get_processed_view)
+sub_pv <- subset(pv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y"))
+specgram_plot(sub_pv)
+
+# Specgram on filtered data (colour)
+fv_list <- lapply(pv_list, apply_filter_sgolay, data_points = "RWrist", n = 11, p = 3)
+sub_fv <- subset(fv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y"))
+specgram_plot(sub_fv)
+
+# Specgram on filtered data (bw)
+specgram_plot(sub_fv, window = 200) +
+  ggplot2::scale_fill_gradient(low = "white", high = "black")
+
+

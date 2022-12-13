@@ -1,24 +1,24 @@
 # Functions to assess and plot periodicity of movement data
 
-#' Estimate the periodicity of data points
+#' Estimate the spectral density of data points
 #'
 #' Estimates the periodicity of data points in a `View` object.
 #' @param view `ProcessedView` or `FilteredView` object.
 #' @param data_points Data points to process.
 #' @param ... passed to [stats::spectrum()].
 #'
-#' @return `PeriodicityView` object.
+#' @return `SpectralDensityView` object.
 #' @export
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' per <- periodicity(pv, data_points = c("LEar", "REar"), spans = 5)
+#' sd1 <- spectral_density(pv, data_points = c("LEar", "REar"), spans = 5)
 #'
 #' fv <- apply_filter_sgolay(pv, data_points = c("LEye"), n = 19, p = 4)
-#' per <- periodicity(fv, data_points = c("LEye"), spans = 5)
+#' sd1 <- spectral_density(fv, data_points = c("LEye"), spans = 5)
 #'
-periodicity <- function(view, data_points = NULL, ...) {
+spectral_density <- function(view, data_points = NULL, ...) {
   stopifnot(any(c("ProcessedView", "FilteredView") %in% class(view)))
 
   df <- view$df
@@ -40,21 +40,21 @@ periodicity <- function(view, data_points = NULL, ...) {
       na.action = na.omit,
       ...
     )
-  spx <- spec$freq * sampling_rate # to get cycles per seconds
+  spx <- spec$freq * sampling_rate # to get cycles per second
   spy <- spec$spec
   colnames(spy) <- colnames(df)[-(1:2)]
-  output_df <- data.frame(Time = 1 / spx, spy)
+  output_df <- data.frame(Period = 1 / spx, spy)
 
   l <- list(df = output_df, view = view)
-  class(l) <- "PeriodicityView"
+  class(l) <- "SpectralDensityView"
 
   l
 }
 
 
-#' Autoplot a PeriodicityView S3 object
+#' Autoplot a SpectralDensityView S3 object
 #'
-#' @param obj `PeriodicityView` object.
+#' @param obj `SpectralDensityView` object.
 #'
 #' @return a `ggplot` object.
 #' @exportS3Method
@@ -63,33 +63,30 @@ periodicity <- function(view, data_points = NULL, ...) {
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' per1 <- periodicity(pv, data_points = c("LElbow", "LEye"), spans = 5)
-#' autoplot(per1)
+#' sd1 <- spectral_density(pv, data_points = c("LElbow", "LEye"), spans = 5)
+#' autoplot(sd1)
 #'
 #' fv <- apply_filter_sgolay(pv, data_points = c("LElbow", "LEye"), n = 19, p = 4)
-#' per2 <- periodicity(fv, data_points = c("LElbow", "LEye"), spans = 5)
-#' autoplot(per2)
-autoplot.PeriodicityView <- function(object, time_range = c(0, 10), colour = "blue", ...) {
+#' sd2 <- spectral_density(fv, data_points = c("LElbow", "LEye"), spans = c(3, 3))
+#' autoplot(sd2)
+autoplot.SpectralDensityView <- function(object, period_range = c(0, 10), colour = "blue", ...) {
 
   view <- object$view
   df <- object$df
+
   long_df <- tidyr::pivot_longer(df, colnames(df[-1]))
-  colnames(long_df) <- c("Time", "DataPoint", "Ampl")
+  colnames(long_df) <- c("Period", "DataPoint", "Density")
 
   title <- c(view$recording$stem, view$vid, view$direct, view$inst)
   title <- paste(title[title != ""], collapse="_")
 
   # Restrict time domain
-  long_df <- dplyr::filter(long_df, Time >= time_range[1] & Time <= time_range[2])
+  long_df <- dplyr::filter(long_df, Period >= period_range[1] & Period <= period_range[2])
 
-  ggplot2::ggplot(long_df, ggplot2::aes(x = Time, y = Ampl)) +
+  ggplot2::ggplot(long_df, ggplot2::aes(x = Period, y = Density)) +
   ggplot2::geom_line(colour = colour) +
-  ggplot2::xlab('Time / min:sec') +
-  ggplot2::ylab('Amplitude') +
-  # ggplot2::scale_x_continuous(
-  #   limits = c(time_range[1], time_range[2]),
-  #   breaks = seq(time_range[1], time_range[2], by = (time_range[2]-time_range[1]) / 5)
-  # ) +
+  ggplot2::xlab('Period / min:sec') +
+  ggplot2::ylab('Spectral Density') +
   ggplot2::labs(title = class(object)[1], subtitle = title) +
   ggplot2::facet_wrap(~DataPoint, scales = "free") +
   ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))

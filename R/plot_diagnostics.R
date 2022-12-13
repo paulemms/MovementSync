@@ -54,7 +54,7 @@ plot.OnsetsSelected <- function(x, instrument = 'Inst', matra = 'Matra', ...) {
 #' plot(m)
 #' @exportS3Method
 plot.Metre <- function(x, ...) {
-  zoo_list <- lapply(x, function(x) zoo::zoo(diff(x$Time), order.by = x$Time))
+  zoo_list <- lapply(x, function(x) zoo::zoo(c(NA, diff(x$Time)), order.by = x$Time))
   z <- do.call(merge, zoo_list)
   if (is.null(ncol(z))) {
     plot(z, yax.flip = TRUE, xlab = "Time / s", ylab = "", main = "Metre Object - Time Between Cycles", ...)
