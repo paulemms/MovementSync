@@ -2,27 +2,28 @@
 
 #' S3 generic function to splice a timeline
 #'
-#' @param x
-#' @param ...
+#' @param x S3 object.
+#' @param ... passed to relevant method.
 #'
-#' @return
+#' @return a `Splice` object.
 #' @export
-#'
-#' @examples
+#' @family splicing functions
+
 splice_time <- function(x, ...) {
   UseMethod("splice_time", x)
 }
 
 
-#' Generate spliced timeline using an OnsetsDifference object
+#' Generate spliced timeline using an `OnsetsDifference` object
 #'
-#' @param x
-#' @param window_duration
-#' @param ...
-#' @param talas
+#' @param x `OnsetsDifference` object.
+#' @param window_duration duration of window around onset point in seconds.
+#' @param ... passed to [make.unique()].
+#' @param talas vector of tala to subset.
 #'
-#' @return
+#' @return a `Splice` object.
 #' @exportS3Method
+#' @family splicing functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -56,13 +57,14 @@ splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, make.
 
 #' Generate spliced timeline using a Metre object
 #'
-#' @param x
-#' @param window_duration
-#' @param rhythms
-#' @param ...
+#' @param x `Metre` object.
+#' @param window_duration duration of window around metre.
+#' @param rhythms vector of talas to subset on.
+#' @param ... ignored.
 #'
-#' @return
+#' @return a `Splice` object.
 #' @exportS3Method
+#' @family splicing functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -93,11 +95,12 @@ splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
 
 #' Generate spliced timeline using a list
 #'
-#' @param x
-#' @param ...
+#' @param x named list.
+#' @param ... ignored.
 #'
-#' @return
+#' @return a `Splice` object.
 #' @exportS3Method
+#' @family splicing functions
 #'
 #' @examples
 #' l <- list(a = c(0, 10), b = c(10, 20), c = c(20, 30))
@@ -120,15 +123,16 @@ splice_time.list <- function(x, ...) {
 
 #' Generate spliced timeline using a Duration object
 #'
-#' @param x
-#' @param expr
-#' @param make.unique
+#' @param x `Duration` object.
+#' @param expr R expression to filter data on.
+#' @param make.unique make the segments unique? (Default is TRUE).
 #' @param ... passed to [make.unique()]
-#' @param tier
-#' @param comments
+#' @param tier exact tier name to filter on.
+#' @param comments exact comment to filter on.
 #'
-#' @return
+#' @return a `Splice` object.
 #' @exportS3Method
+#' @family splicing functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -170,11 +174,12 @@ splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
 
 #' Generate spliced timeline using a view
 #'
-#' @param x
-#' @param ...
+#' @param x `View` object.
+#' @param ... ignored.
 #'
-#' @return
+#' @return a `Splice` object.
 #' @exportS3Method
+#' @family splicing functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -204,11 +209,11 @@ splice_time.View <- function(x, win_size, step_size, ...) {
 #' Get spliced view from view object
 #'
 #' @param v View object
-#' @param splicing_df
-#' @param na.pad
+#' @param splicing_df `Splice` object.
 #'
-#' @return SplicedView object
+#' @return a `SplicedView` object.
 #' @export
+#' @family splicing functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -242,13 +247,14 @@ get_spliced_view <- function(v, splicing_df) {
 
 #' Get a list of Views from a SplicedView
 #'
-#' @param x S3 object
-#' @param f ignored
-#' @param drop ignored
-#' @param ... ignored
+#' @param x `SplicedView` object.
+#' @param f ignored.
+#' @param drop ignored.
+#' @param ... ignored.
 #'
-#' @return list of Views
+#' @return list of `View` objects.
 #' @exportS3Method
+#' @family splicing functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -274,11 +280,11 @@ split.SplicedView <- function(x, f, drop, ...) {
 
 #' Sample the time line from a list of Views
 #'
-#' @param ...
-#' @param num_samples
-#' @param replace
+#' @param ... names arguments of `SplicedView` objects.
+#' @param num_samples number of time points to sample
+#' @param replace sample with replacement (default is FALSE)?
 #'
-#' @return
+#' @return a list of `SplitView` object or a `SplitView` object
 #' @export
 #'
 #' @examples
@@ -361,6 +367,7 @@ sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.acti
 #'
 #' @return logical
 #' @export
+#' @family splicing functions
 #'
 #' @examples
 #' l1 <- list(a=c(1, 10), a = c(20, 30), b = c(30, 40))
@@ -380,12 +387,13 @@ is_splice_overlapping <- function(...) {
 
 #' Clip a splice so segments are of fixed duration
 #'
-#' @param splice_dfr
-#' @param duration
-#' @param location
+#' @param splice_dfr `Splice` object.
+#' @param duration window duration in seconds.
+#' @param location 'beginning', 'middle' or 'end'.
 #'
-#' @return
+#' @return a `Splice` object.
 #' @export
+#' @family splicing functions
 #'
 #' @examples
 #' l <- list(a = c(10, 20), b = c(30, 40),c = c(50, 55))
@@ -439,11 +447,12 @@ clip_splice <- function(splice_dfr, duration, location = 'middle') {
 
 #' Merge splices together using set operations
 #'
-#' @param ...
-#' @param operation
+#' @param ... a collection of named `Splice` objects.
+#' @param operation either 'union' or 'intersection'.
 #'
-#' @return
+#' @return a `Splice` object.
 #' @export
+#' @family splicing functions
 #'
 #' @examples
 #' l1 <- list(a1 = c(100, 200), a2 = c(250, 300), a3 = c(400, 550), a4 = c(600, 650))
@@ -465,6 +474,7 @@ merge_splice <- function(..., operation) {
 
   # Checks
   stopifnot(length(l) > 1, operation %in% c('union', 'intersection'))
+  stopifnot(all(sapply(l, function(x) class(x)[1] == 'Splice')))
   stopifnot(all(sapply(l, Negate(is_splice_overlapping))))
 
   overlap <- switch(operation, 'union' = 1, 'intersection' = length(l))

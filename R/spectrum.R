@@ -1,12 +1,13 @@
 # Functions to assess and plot periodicity of movement data
 
-#' Estimate the periodicity of data points in a view
+#' Estimate the periodicity of data points
 #'
-#' @param view ProcessedView or FilteredView object
-#' @param data_points Data points to process
-#' @param ...
+#' Estimates the periodicity of data points in a `View` object.
+#' @param view `ProcessedView` or `FilteredView` object.
+#' @param data_points Data points to process.
+#' @param ... passed to [stats::spectrum()].
 #'
-#' @return PeriodicityView object
+#' @return `PeriodicityView` object.
 #' @export
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
@@ -53,9 +54,9 @@ periodicity <- function(view, data_points = NULL, ...) {
 
 #' Autoplot a PeriodicityView S3 object
 #'
-#' @param obj
+#' @param obj `PeriodicityView` object.
 #'
-#' @return
+#' @return a `ggplot` object.
 #' @exportS3Method
 #'
 #' @examples
@@ -97,10 +98,10 @@ autoplot.PeriodicityView <- function(object, time_range = c(0, 10), colour = "bl
 
 #' Specgram Plot
 #'
-#' @param obj
-#' @param ... passed to signal::specgram
+#' @param obj `View` object.
+#' @param ... passed to [signal::specgram()].
 #'
-#' @return
+#' @return a `ggplot` object.
 #' @export
 #'
 #' @examples

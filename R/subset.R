@@ -1,18 +1,17 @@
 # Subset overload
 
-
 #' Subset a View
 #'
 #' Simple time and column subsetting of views.
 #'
-#' @param data_point
-#' @param by
-#' @param expr
-#' @param column
-#' @param x
-#' @param ...
+#' @param x `View` object
+#' @param data_point body part in the data e.g. 'Nose'.
+#' @param by increment of the sequence of rows to return.
+#' @param expr an R expression to subset time or other variables.
+#' @param column column name in the data e.g. 'Nose_x'.
+#' @param ... unused.
 #'
-#' @return
+#' @return a `View` object.
 #' @exportS3Method
 #'
 #' @examples

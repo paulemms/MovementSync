@@ -84,7 +84,7 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
 #' @param splicing_df Splicing data.frame object
 #' @param lev_sig significance level
 #'
-#' @return
+#' @return `ggplot` object.
 #' @exportS3Method
 #'
 #' @examples

@@ -487,7 +487,7 @@ sample_offset_splice <- function(splicing_dfr, v, num_splices, rejection_list = 
 #' d1 <- get_duration_annotation_data(r1)
 #' rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 #' splicing_df <- splice_time(d1, tier ='INTERACTION', comments = 'Mutual look and smile')
-#' x <- sample_gap_splice(splicing_df, rv1, num_splices = 1000)
+#' x <- sample_gap_splice(splicing_df, rv1, num_splices = 10)
 sample_gap_splice <- function(splicing_dfr, v, num_splices, rejection_list = list()) {
 
   stopifnot(is.data.frame(splicing_dfr), "View" %in% class(v),

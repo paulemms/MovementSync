@@ -4,7 +4,7 @@
 #'
 #' @param v view object
 #'
-#' @return
+#' @return `ggplot` object.
 #' @export
 #'
 #' @examples
@@ -45,12 +45,12 @@ plot_history_xy <- function(obj, maxpts=10000) {
 
 #' Distribution plot of a view object
 #'
-#' @param obj view object
-#' @param alpha
-#' @param maxpts
-#' @param ...
+#' @param obj `View` object.
+#' @param alpha ggplot aesthetic value.
+#' @param maxpts maximum number of points to plot.
+#' @param ... passed to [ggplot2::geom_point()],
 #'
-#' @return
+#' @return a `ggplot` object.
 #' @export
 #'
 #' @examples
@@ -87,12 +87,12 @@ distribution_dp <- function(obj, maxpts = 50000, alpha = 0.1, ...) {
 
 #' Velocity plot of a view object
 #'
-#' @param obj view object
-#' @param alpha
-#' @param maxpts
-#' @param ...
+#' @param obj View object.
+#' @param alpha ggplot aesthetic value.
+#' @param maxpts maximum number of points to plot.
+#' @param ... passed to [ggplot2::geom_point()],
 #'
-#' @return
+#' @return a `ggplot` object.
 #' @export
 #'
 #' @examples
@@ -111,7 +111,6 @@ velocity_dp <- function(obj, add_mean = "y", vscale = 5, maxpts = 10000, alpha =
   y_dp <- paste(data_point, "y", sep = "_")
   d_dp <- paste(data_point, "d", sep = "_")
 
-  # TODO - improve the sweep
   if (add_mean == "y") {
     col_means <- colMeans(df[y_dp], na.rm = TRUE)
     print(col_means)
@@ -137,11 +136,11 @@ velocity_dp <- function(obj, add_mean = "y", vscale = 5, maxpts = 10000, alpha =
 #' Motion gram of a view object
 #'
 #' @param obj view object
-#' @param alpha
-#' @param maxpts
-#' @param ...
+#' @param alpha ggplot aesthetic value.
+#' @param maxpts maximum number of points to plot.
+#' @param ... passed to [ggplot2::geom_point()],
 #'
-#' @return
+#' @return a `gtable` object.
 #' @export
 #'
 #' @examples

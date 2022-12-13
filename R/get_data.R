@@ -2,10 +2,11 @@
 
 #' Get sample meta-data recording object
 #'
-#' @param stem
+#' @param stem recording identifier.
 #'
-#' @return
+#' @return a `Recording` object.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -17,13 +18,14 @@ get_sample_recording <- function(stem = "NIR_ABh_Puriya") {
 
 #' Get a meta-data recording object
 #'
-#' @param stem
-#' @param folder_in
-#' @param path
-#' @param fps
+#' @param stem recording identifier.
+#' @param folder_in input folder relative to recording home (default is 'Original').
+#' @param path recording home folder.
+#' @param fps frames per second.
 #'
-#' @return
+#' @return a `Recording` object.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
@@ -41,10 +43,11 @@ get_recording <- function(stem, fps, folder_in = "Original", path = "~/movements
 
 #' Get onsets selected files
 #'
-#' @param recording
+#' @param recording `Recording` object.
 #'
-#' @return
+#' @return list of data.frames
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
@@ -78,10 +81,11 @@ get_onsets_selected_data <- function(recording) {
 
 #' Get metre files
 #'
-#' @param recording
+#' @param recording `Recording` object.
 #'
-#' @return
+#' @return list of data.frames.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
@@ -114,10 +118,11 @@ get_metre_data <- function(recording) {
 
 #' Get duration annotation data
 #'
-#' @param recording
+#' @param recording `Recording` object.
 #'
-#' @return
+#' @return list of data.frames.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
@@ -152,19 +157,18 @@ get_duration_annotation_data <- function(recording) {
 
 #' Get view from Pose video data
 #'
-#' Creates time reference and displacement from raw csv data
+#' Creates time reference and displacement from raw csv data for the view.
 #'
-#' Adds OptFlow data for head if present and a camera is specified in filename.
-#'
-#' @param recording object
-#' @param vid video camera
-#' @param direct direction
-#' @param inst instrument
+#' @param recording `Recording` object.
+#' @param vid video camera.
+#' @param direct direction.
+#' @param inst instrument.
 #' @param save_output save the output?
-#' @param folder_out output folder relative to recording home
+#' @param folder_out output folder relative to recording home (default is 'Raw').
 #'
-#' @return
+#' @return a `RawView` object.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -218,16 +222,17 @@ get_raw_view <- function(recording, vid, direct, inst,
 
 #' Creates time reference and displacement from raw csv optflow data
 #'
-#' Used to loads OptFlow data.
-#' @param recording object
-#' @param vid camera
-#' @param direct direction
-#' @param inst instrument
+#' Used to load OptFlow data.
+#' @param recording `Recording` object.
+#' @param vid camera.
+#' @param direct direction.
+#' @param inst instrument.
 #' @param save_output save the output?
-#' @param folder_out output folder relative to recording home
+#' @param folder_out output folder relative to recording home  (default is 'Raw').
 #'
-#' @return
+#' @return an `OptFlowView` object.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' \dontrun{
@@ -270,10 +275,11 @@ get_raw_optflow_view <- function(recording, vid, direct, inst,
 
 #' Get Pose views from a recording
 #'
-#' @param recording
+#' @param recording `Recording` object.
 #'
 #' @return named list of views
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -315,12 +321,13 @@ get_raw_views <- function(recording) {
 #'
 #' Normalises and interpolates missing data in the view.
 #'
-#' @param rv RawView object
-#' @param save_output
-#' @param folder_out
+#' @param rv `RawView` object.
+#' @param save_output save the output?
+#' @param folder_out output folder relative to recording home (default is 'Normalized').
 #'
-#' @return ProcessedView object
+#' @return a `ProcessedView` object.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -419,16 +426,16 @@ get_processed_view <- function(rv, folder_out = "Normalized",
 
 #' Apply a Savitzky-Golay filter to a view
 #'
-#' @param view View object
-#' @param data_points
-#' @param n window size
-#' @param p poly order
-#' @param save_output
-#' @param sig_filter S3 filter object from signals package
-#' @param folder_out
+#' @param view `View` object.
+#' @param data_points body parts e.g. 'Nose'.
+#' @param n window size.
+#' @param p poly order.
+#' @param save_output save the output?
+#' @param folder_out output folder relative to recording home (default is 'Filtered').
 #'
 #' @export
-#' @return
+#' @return a `FilteredView` object.
+#' @family data functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -447,6 +454,17 @@ apply_filter_sgolay <- function(view, data_points, n, p, folder_out = "Filtered"
                folder_out, save_output)
 }
 
+
+
+#' Apply a filter to a View
+#'
+#' @param view `ProcessedView` object.
+#' @param data_points body parts e.g. 'Nose'.
+#' @param sig_filter S3 filter object from signals package.
+#' @param param_str string of parameter values to add to output file if desired.
+#' @param folder_out output folder relative to recording home (default is 'Filtered').
+#' @param save_output save the output?
+#'
 #' @export
 apply_filter <- function(view, data_points, sig_filter, param_str = "", folder_out = "Filtered",
                          save_output = FALSE) {
@@ -486,10 +504,11 @@ apply_filter <- function(view, data_points, sig_filter, param_str = "", folder_o
 
 #' Get the data points held in a view
 #'
-#' @param obj view object
+#' @param obj `View` object.
 #'
-#' @return character vector
+#' @return character vector of body parts.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -503,13 +522,13 @@ get_data_points <- function(obj) {
 
 #' Get joined view from multiple views from the same recording
 #'
-#' @param l named list of view objects
-#' @param save_output
-#' @param folder_out
-#' @param lead_diff
+#' @param l named list of `View` objects.
+#' @param save_output save the output?
+#' @param folder_out output folder relative to recording home (default is 'Joined').
 #'
 #' @return JoinedView object
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -548,13 +567,14 @@ get_joined_view <- function(l, folder_out = "Joined", save_output = FALSE) {
 
 #' Get filtered views
 #'
-#' @param r
-#' @param data_points
-#' @param n
-#' @param p
+#' @param r `Recording` object.
+#' @param data_points vector of body parts e.g. 'Nose'.
+#' @param n window size.
+#' @param p poly order.
 #'
-#' @return List of FilteredView objects
+#' @return list of `FilteredView` objects.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -573,11 +593,12 @@ get_filtered_views <- function(r, data_points, n, p) {
 
 #' Get processed views
 #'
-#' @param r
-#' @param data_points
+#' @param r `Recording` object.
+#' @param data_points vector of body parts e.g. 'Nose'.
 #'
-#' @return List of ProcessedView objects
+#' @return list of `ProcessedView` objects.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -598,15 +619,16 @@ get_processed_views <- function(r, data_points) {
 #' Output from new analysis process that generates data at the same sample
 #' rate as the video data. The user is responsible for ensuring that this
 #' data is continuous before using this function.
-#' @param recording object
-#' @param vid camera
-#' @param direct direction
-#' @param inst instrument
+#' @param recording `Recording` object.
+#' @param vid camera.
+#' @param direct direction.
+#' @param inst instrument.
 #' @param save_output save the output?
-#' @param folder_out output folder relative to recording home
+#' @param folder_out output folder relative to recording home (default is 'Raw').
 #'
-#' @return
+#' @return a `FilteredView` object.
 #' @export
+#' @family data functions
 #'
 #' @examples
 #' \dontrun{

@@ -3,10 +3,10 @@
 
 #' Summarise Recording object
 #'
-#' @param object
-#' @param ...
+#' @param object `Recording` object.
+#' @param ... ignored.
 #'
-#' @return
+#' @return list
 #' @exportS3Method
 #'
 #' @examples
@@ -19,10 +19,10 @@ summary.Recording <- function(object, ...) {
 
 #' Summarise Duration object
 #'
-#' @param object
-#' @param ...
+#' @param object `Duration` object.
+#' @param ... ignored.
 #'
-#' @return
+#' @return data.frame
 #' @exportS3Method
 #'
 #' @examples
@@ -36,10 +36,10 @@ summary.Duration <- function(object, ...) {
 
 #' Summarise OnsetsSelected object
 #'
-#' @param object
-#' @param ...
+#' @param object `OnsetsSelected` object.
+#' @param ... ignored.
 #'
-#' @return
+#' @return list of summaries.
 #' @exportS3Method
 #'
 #' @examples
@@ -53,10 +53,10 @@ summary.OnsetsSelected <- function(object, ...) {
 
 #' Summarise Metre object
 #'
-#' @param object
-#' @param ...
+#' @param object `Metre` object.
+#' @param ... ignored.
 #'
-#' @return
+#' @return list of summaries.
 #' @exportS3Method
 #'
 #' @examples
@@ -70,10 +70,10 @@ summary.Metre <- function(object, ...) {
 
 #' Summarise a View object
 #'
-#' @param object
-#' @param ...
+#' @param object `View` object.
+#' @param ... ignored.
 #'
-#' @return
+#' @return summary of data.frame.
 #' @exportS3Method
 #'
 #' @examples
@@ -91,11 +91,11 @@ summary.View <- function(object, ...) {
 
 #' Summarise an analyze.wavelet object
 #'
-#' @param object
-#' @param v
-#' @param ...
+#' @param object `analyze.wavelet` object.
+#' @param v `View` object
+#' @param ... ignored.
 #'
-#' @return
+#' @return data.frame
 #' @exportS3Method
 #'
 #' @examples
@@ -113,11 +113,11 @@ summary.analyze.wavelet <- function(object, v, ...) {
 
 #' Summarises a sel.phases object
 #'
-#' @param na.rm
-#' @param object
-#' @param ...
+#' @param na.rm remove missings?
+#' @param object `sel.phases` object.
+#' @param ... ignored.
 #'
-#' @return
+#' @return list of `Circular` statistics.
 #' @exportS3Method
 #'
 #' @examples
