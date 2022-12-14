@@ -39,10 +39,27 @@ a summary data frame of onset difference statistics.
 Summary of difference in onsets
 }
 \examples{
-r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+r1 <- get_sample_recording()
 o1 <- get_onsets_selected_data(r1)
 d1 <- get_duration_annotation_data(r1)
-splice_dfr <- splice_time(d1, tier = 'Event', comments = 'tabla solo')
+splice_dfr <- splice_time(d1, tier = 'FORM')
 summary_onsets(o1, r1, instruments = c('Inst', 'Tabla'),
   splicing_dfr = splice_dfr, show_plot = TRUE)
 }
+\seealso{
+Other statistical and analysis functions: 
+\code{\link{apply_column_spliceview}()},
+\code{\link{apply_segment_spliceview}()},
+\code{\link{ave_cross_power_spliceview}()},
+\code{\link{ave_power_over_splices}()},
+\code{\link{ave_power_spliceview}()},
+\code{\link{compare_ave_power1}()},
+\code{\link{compare_avg_cross_power2}()},
+\code{\link{compare_avg_power2}()},
+\code{\link{difference_onsets}()},
+\code{\link{pull_segment_spliceview}()},
+\code{\link{sample_gap_splice}()},
+\code{\link{sample_offset_splice}()},
+\code{\link{visualise_sample_splices}()}
+}
+\concept{statistical and analysis functions}

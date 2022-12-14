@@ -28,7 +28,9 @@ get_sample_recording <- function(stem = "NIR_ABh_Puriya") {
 #' @family data functions
 #'
 #' @examples
+#' \dontrun{
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' }
 get_recording <- function(stem, fps, folder_in = "Original", path = "~/movementsync") {
   stopifnot(dir.exists(path))
 
@@ -50,7 +52,7 @@ get_recording <- function(stem, fps, folder_in = "Original", path = "~/movements
 #' @family data functions
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
+#' r <- get_sample_recording()
 #' o <- get_onsets_selected_data(r)
 get_onsets_selected_data <- function(recording) {
 
@@ -88,10 +90,8 @@ get_onsets_selected_data <- function(recording) {
 #' @family data functions
 #'
 #' @examples
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' o <- get_metre_data(r)
-#' r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
-#' m2 <- get_metre_data(r2)
+#' r <- get_sample_recording()
+#' m <- get_metre_data(r)
 get_metre_data <- function(recording) {
 
   # Identify metre files
@@ -125,13 +125,13 @@ get_metre_data <- function(recording) {
 #' @family data functions
 #'
 #' @examples
-#' r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+#' r <- get_sample_recording()
 #' df <- get_duration_annotation_data(r)
 get_duration_annotation_data <- function(recording) {
 
   # Identify duration files
   is_duration_file <- grepl(
-    paste0("^", recording$stem, ".*_(Annotation|MD)\\.csv"),
+    paste0("^", recording$stem, ".*_(Annotation|Annotation_Influence)\\.csv"),
     recording$data_files)
   duration_files <- file.path(recording$data_path, recording$data_files[is_duration_file])
 
@@ -346,10 +346,10 @@ get_processed_view <- function(rv, folder_out = "Normalized",
 
   # If there is a Head data_point we need to remove linear drift
   if ("Head" %in% data_points) {
-    fit_head_x <- stats::lm(Head_x ~ Time, data = df, na.action = na.exclude)
-    fit_head_y <- stats::lm(Head_y ~ Time, data = df, na.action = na.exclude)
-    df[['Head_x']] <- as.numeric(residuals(fit_head_x))
-    df[['Head_y']] <- as.numeric(residuals(fit_head_y))
+    fit_head_x <- stats::lm(Head_x ~ Time, data = df, na.action = stats::na.exclude)
+    fit_head_y <- stats::lm(Head_y ~ Time, data = df, na.action = stats::na.exclude)
+    df[['Head_x']] <- as.numeric(stats::residuals(fit_head_x))
+    df[['Head_y']] <- as.numeric(stats::residuals(fit_head_y))
     message("Removed linear trend in Head data point")
   }
 
@@ -453,7 +453,6 @@ apply_filter_sgolay <- function(view, data_points, n, p, folder_out = "Filtered"
   apply_filter(view, data_points, signal::sgolay(p, n), param_str = paste(n, p, sep = "_"),
                folder_out, save_output)
 }
-
 
 
 #' Apply a filter to a View

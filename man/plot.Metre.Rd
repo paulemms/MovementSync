@@ -7,7 +7,9 @@
 \method{plot}{Metre}(x, ...)
 }
 \arguments{
-\item{x}{S3 object}
+\item{x}{S3 object.}
+
+\item{...}{ignored.}
 }
 \description{
 Plot a Metre S3 object

@@ -16,7 +16,7 @@ list of data.frames
 Get onsets selected files
 }
 \examples{
-r <- get_recording("NIR_ABh_Puriya", fps = 25)
+r <- get_sample_recording()
 o <- get_onsets_selected_data(r)
 }
 \seealso{

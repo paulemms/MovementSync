@@ -73,7 +73,7 @@ splicing_tier_df
 
 # apply splicing_df to full joined view
 sv_tier <- get_spliced_view(jv, splicing_tier_df)
-autoplot(sv_tier)
+autoplot(sv_tier, time_breaks = 3)
 
 # Granger Causality Test on each Tiered time slice
 g_tier <- granger_test(sv_tier, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
@@ -103,7 +103,7 @@ splicing3_df
 
 # get a spliced view object
 sv3 <- get_spliced_view(jv3, splicing_df = splicing3_df)
-autoplot(sv3)
+autoplot(sv3, time_breaks = 3)
 
 # Plot Granger Causality tests on each splice of data
 gi3 <- get_granger_interactions(sv3, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer",
@@ -122,8 +122,9 @@ harmonium_splicing_df
 
 # Plot Granger Causality interactions
 harmonium_sv <- get_spliced_view(jv3, splicing_df = harmonium_splicing_df)
-autoplot(harmonium_sv)
+autoplot(harmonium_sv, breaks = 2)
 harmonium_gi <- get_granger_interactions(
   harmonium_sv, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer", "Nose_x_Cam2_Tabla"))
 plot(harmonium_gi)
 plot(harmonium_gi, edge.arrow.size = 0.3, vertex.color = "yellow")
+

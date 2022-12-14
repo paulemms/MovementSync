@@ -4,14 +4,16 @@
 \alias{splice_time.OnsetsDifference}
 \title{Generate spliced timeline using an \code{OnsetsDifference} object}
 \usage{
-\method{splice_time}{OnsetsDifference}(x, window_duration, talas = NULL, make.unique = TRUE, ...)
+\method{splice_time}{OnsetsDifference}(x, window_duration, metres = NULL, make.unique = TRUE, ...)
 }
 \arguments{
 \item{x}{\code{OnsetsDifference} object.}
 
 \item{window_duration}{duration of window around onset point in seconds.}
 
-\item{talas}{vector of tala to subset.}
+\item{metres}{vector of metres to subset.}
+
+\item{make.unique}{give unique names to each segment?}
 
 \item{...}{passed to \code{\link[=make.unique]{make.unique()}}.}
 }

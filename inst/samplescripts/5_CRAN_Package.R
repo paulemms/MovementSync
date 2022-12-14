@@ -13,7 +13,7 @@ pv_list <- get_processed_views(r1)
 pv_list$Feature <- fd
 jv <- get_joined_view(pv_list)
 get_data_points(jv)
-jv_sub <- subset(jv, data_point = c('LEar', 'Pitch', 'Smooth'))
+jv_sub <- subset(jv, data_points = c('LEar', 'Pitch', 'Smooth'))
 autoplot(jv_sub)
 
 # Applying SG filter can re-introduce interior NAs

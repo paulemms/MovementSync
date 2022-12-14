@@ -11,63 +11,62 @@ summary(r1)
 
 o1 <- get_onsets_selected_data(r1)
 summary(o1)
-plot(o1)
 autoplot(o1)
 
 m1 <- get_metre_data(r1)
 summary(m1)
-plot(m1)
 autoplot(m1)
 
 d1 <- get_duration_annotation_data(r1)
 summary(d1)
-plot(d1)
+autoplot(d1)
 
 rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 summary(rv1)
-plot(rv1, nc = 3, maxpts = 500)
-plot(rv1, columns = c("LEar_x", "LEar_y"))
+autoplot(rv1)
 
 rv2 <- get_raw_optflow_view(r1, "Central", "", "Sitar")
-plot(rv2, columns = c("Head_x", "Head_y", "Head_d")) # drift in camera
-plot(rv1, xlim = c(500,1000), nc = 3)
+autoplot(rv2, columns = c("Head_x", "Head_y", "Head_d")) # drift in camera
+
+# Time limit axis
+autoplot(rv1, columns = c("LEar_x", "LEar_y"), time_limits = c(15*60, 20*60), maxpts = 2000)
 
 # Autolayering with OnsetSelected, Metre and Duration objects,
-autoplot(rv1, columns = c("LEar_x", "LEar_y"), maxpts = 2000)
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(d1)
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(o1)
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(d1, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
-autoplot(rv1, columns = c("LEar_x", "LEar_y"), maxpts=5000) + ggplot2::xlim(1000, 2000) +
-  autolayer(m1)
+autoplot(rv1, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000), maxpts=5000) +
+  autolayer(m1, time_limits = c(1000, 2000))
 
-# Set x-scale using Duration object
+# Set time-scale using Duration object
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
   xlim_duration(d1, 'Tier == "FORM" & Comments == "Alap"')
 
 # Processed data
 pv1 <- get_processed_view(rv1)
-plot(pv1, nc = 3)
+autoplot(pv1)
 autoplot(pv1, columns = c("LEar_x", "LEar_y", "LEar_d"))
 pv2 <- get_processed_view(rv2)
-plot(pv2, columns = c("Head_x", "Head_y", "Head_d")) # Trend in Head removed
+autoplot(pv2, columns = c("Head_x", "Head_y", "Head_d")) # Trend in Head removed
 
 # Filtered data
 fv1 <- apply_filter_sgolay(pv1, c("Nose", "RWrist", "LWrist"), n = 19, p = 4)
 summary(fv1)
-plot(fv1, nc = 3)
 autoplot(fv1)
 autoplot(fv1) + autolayer(d1)
+
+# Saving data objects to the file system ...
 
 # Save the filtered objected in an RDS file
 fv1_file <- file.path(tempdir(), "fv1.rds")
 saveRDS(fv1, file = fv1_file)
 rm(fv1)
 fv1 <- readRDS(fv1_file)
-plot(fv1, nc = 3)
+autoplot(fv1)
 
 # Different filter
 fv2 <- apply_filter(pv1, c("Nose", "RWrist", "LWrist"), signal::MedianFilter(n = 3))
-plot(fv2, nc = 3)
+autoplot(fv2)
 
 ################################################################################
 ### Recording 2
@@ -77,65 +76,65 @@ o2 <- get_onsets_selected_data(r2)
 autoplot(o2)
 m2 <- get_metre_data(r2)
 d2 <- get_duration_annotation_data(r2)
-plot(m2)
+autoplot(m2)
 # 4 views
 rv2_SideL_Guitar <- get_raw_view(r2, "SideL", "", "Guitar")
-plot(rv2_SideL_Guitar, nc=3)
+autoplot(rv2_SideL_Guitar, columns = c('LEar_x', 'LEar_y'))
 rv2_SideL_Tabla <- get_raw_view(r2, "SideL", "", "Tabla")
-plot(rv2_SideL_Tabla, nc=3)
+autoplot(rv2_SideL_Tabla)
 rv2_SideR_Tabla <- get_raw_view(r2, "SideR", "", "Tabla")
-plot(rv2_SideL_Tabla, nc=3)
+autoplot(rv2_SideL_Tabla)
 rv2_SideR_Tabla <- get_raw_view(r2, "SideR", "", "Tabla")
-plot(rv2_SideL_Tabla, nc=3)
+autoplot(rv2_SideL_Tabla)
 
-# OptFlow data has no camera in filename so load separately
+# OptFlow data has no camera in filename so lo ad separately
 rv2_OptFlow_Guitar <- get_raw_optflow_view(r2, "", "", "Guitar")
 rv2_OptFlow_Tabla <- get_raw_optflow_view(r2, "", "", "Tabla")
 pv2_OptFlow_Guitar <- get_processed_view(rv2_OptFlow_Guitar)
 pv2_OptFlow_Tabla <- get_processed_view(rv2_OptFlow_Tabla)
 fv2_OptFlow_Guitar <- apply_filter_sgolay(pv2_OptFlow_Guitar, "Head", n = 19, p = 4)
 fv2_OptFlow_Tabla <- apply_filter_sgolay(pv2_OptFlow_Tabla, "Head", n = 19, p = 4)
-plot(fv2_OptFlow_Guitar) # linear drift removed
-plot(fv2_OptFlow_Tabla)
+autoplot(fv2_OptFlow_Guitar) # linear drift removed
+autoplot(fv2_OptFlow_Tabla)
 
 ################################################################################
 ###  Recording 3
 ################################################################################
 r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)
 o3 <- get_onsets_selected_data(r3)
-plot(o3, instrument = 'Onset')
+autoplot(o3, instrument = 'Onset')
 m3 <- get_metre_data(r3)
-plot(m3)
+autoplot(m3)
 d3 <- get_duration_annotation_data(r3)
-plot(d3)
+autoplot(d3)
 o3 <- get_onsets_selected_data(r3)
 # 3 views
-rv3_Cam1_Guitar <- get_raw_view(r3, "Cam1", "", "Harmonium")
-plot(rv3_Cam1_Guitar, nc=3)
+rv3_Cam1_Harmonium <- get_raw_view(r3, "Cam1", "", "Harmonium")
+autoplot(rv3_Cam1_Harmonium)
 rv3_Cam2_Singer <- get_raw_view(r3, "Cam2", "", "Singer")
-plot(rv3_Cam2_Singer, nc=3)
+autoplot(rv3_Cam2_Singer)
 rv3_Cam2_Tabla <- get_raw_view(r3, "Cam2", "", "Tabla")
-plot(rv3_Cam2_Tabla, nc=3) # Ear only has one point on sampling
+autoplot(rv3_Cam2_Tabla) # Ear only has one point on sampling
 
 ################################################################################
 ###  Recording 4
 ################################################################################
 r4 <- get_recording("NIRP1_VS_Hams", fps = 25)
 o4 <- get_onsets_selected_data(r4)
-plot(o4, instrument = 'Onset')
+autoplot(o4, instrument = 'Onset')
 m4 <- get_metre_data(r4)
-plot(m4)
+autoplot(m4)
 # 5 views
 rv4_Central_Harmonium <- get_raw_view(r4, "Central", "", "Harmonium")
-plot(rv4_Central_Harmonium, nc=3)
+autoplot(rv4_Central_Harmonium)
 rv4_Central_Singer <- get_raw_view(r4, "Central", "", "Singer")
-plot(rv4_Central_Singer, nc=3)
+autoplot(rv4_Central_Singer)
 rv4_Central_Tabla <- get_raw_view(r4, "Central", "", "Tabla")
-plot(rv4_Central_Tabla, nc=3)
+autoplot(rv4_Central_Tabla)
 rv4_Central_TanpuraL <- get_raw_view(r4, "Central", "", "TanpuraL")
-plot(rv4_Central_TanpuraL, nc=3)
+autoplot(rv4_Central_TanpuraL)
 rv4_Central_TanpuraR <- get_raw_view(r4, "Central", "", "TanpuraR")
-plot(rv4_Central_TanpuraR, nc=3)
+autoplot(rv4_Central_TanpuraR)
 
 ################################################################################
 ###  Recording 5
@@ -146,24 +145,23 @@ instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa"
 
 r5 <- get_recording("Gagaku_5_Juha", fps = 60)
 o5 <- get_onsets_selected_data(r5)
-plot(o5, instrument = 'Hichiriki', matra = 'SD_T')
-autoplot(o5, instrument = 'Hichiriki', matra = 'SD_T')
+autoplot(o5, instrument = 'Hichiriki', tactus = 'SD_T')
 m5 <- get_metre_data(r5)
 autoplot(m5)
 d5 <- get_duration_annotation_data(r5) # not in same format as others
 
-# Fudge it
+# Alter the column names to be consistent
 colnames(d5) <- c("Tier", "Comments", "In", "Out", "Duration")
 
 # 8 views - automation
 rv_view <- get_raw_views(r5)
 names(rv_view)
-plot(rv_view$V1_M_Taiko, nc = 3)
+autoplot(rv_view$V1_M_Taiko)
 pv_view <- lapply(rv_view, get_processed_view)
-str(pv_view)
+str(pv_view, 2) # shows underlying data structure
 
 # 8 filtered views
-fv_view <- get_filtered_views(r5, data_points = c("Nose"), n = 19, p = 4)
+fv_view <- get_filtered_views(r5, data_points = "Nose", n = 19, p = 4)
 
 autoplot(fv_view$V3_Ryuteki)
 autoplot(fv_view$V3_Ryuteki) + autolayer(d5, expr = 'Tier == "Section"')
@@ -177,38 +175,44 @@ autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", al
 ###  Data analysis
 ################################################################################
 
-# Specgrams
+# To compare data from different cameras use a JoinedView
+two_cameras <- fv_view[c('V4_2_Biwa', 'V2_M_Taiko')]
+jv <- get_joined_view(two_cameras)
+autoplot(jv, time_breaks = 3)
+
+# Spectograms
 
 # Use the Tabla player in recording NIR_DBh_Malhar_2Gats for analysis
 pv_list <- get_processed_views(r2)
 
-# Limit to avoid period at end of recording and focus on RWrist
-sub_pv <- subset(pv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y", "RWrist_d"))
+# Focus on RWrist on 10s window at 20 minutes
+sub_pv <- subset(pv_list$SideL_Tabla, Time >= 60*20 & Time <= 60*20+10, columns = "RWrist_x")
 
 # Estimate the spectral density of data points using spectrum in the stats package
-spec <- spectral_density(sub_pv, data_points = "RWrist", spans = c(3, 3))
-autoplot(spec, period_range = c(0, 12))
+spec <- spectral_density(sub_pv, columns = "RWrist_x", spans = c(3, 3))
+autoplot(spec, period_range = c(0, 10))
 
 # Specgram on processed data (colour) using signal::specgram function
-specgram_plot(sub_pv)
+sub_full_pv <- subset(pv_list$SideL_Tabla, Time <= 1700, columns = c("RWrist_x", "RWrist_y"))
+specgram_plot(sub_full_pv)
 
 # Specgram on filtered data (colour)
-fv_list <- lapply(pv_list, apply_filter_sgolay, data_points = "RWrist", n = 11, p = 3)
-sub_fv <- subset(fv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y"))
-specgram_plot(sub_fv)
+fv_tabla <- apply_filter_sgolay(pv_list$SideL_Tabla, data_points = "RWrist", n = 11, p = 3)
+sub_full_fv <- subset(fv_tabla, Time <= 1700)
+specgram_plot(sub_full_fv)
 
 # Specgram on filtered data (bw)
-specgram_plot(sub_fv, window = 200) +
+specgram_plot(sub_full_fv, window = 200) +
   ggplot2::scale_fill_gradient(low = "white", high = "black")
 
 # Filtered specgram with In time duration annotation data
-specgram_plot(sub_fv) + autolayer(d2, geom = "vline", nudge_x = -10, size = 3)
+specgram_plot(sub_full_fv) + autolayer(d2, geom = "vline", nudge_x = -10, size = 3)
 
 # Unfiltered specgram with Out time duration annotation data
-specgram_plot(sub_pv) + autolayer(d2, geom = "vline", nudge_x = -10, size = 3, vline_column = "Out")
+specgram_plot(sub_full_pv) + autolayer(d2, geom = "vline", nudge_x = -10, size = 3, vline_column = "Out")
 
 # BW palette
-specgram_plot(sub_pv, window = 200) +
+specgram_plot(sub_full_pv, window = 200) +
   ggplot2::scale_fill_gradient(low = "white", high = "black") +
   autolayer(d2, geom = "vline", nudge_x = -10, size = 3, colour = "cyan")
 

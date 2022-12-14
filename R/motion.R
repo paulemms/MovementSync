@@ -2,9 +2,10 @@
 
 #' Plot a set of data points over time
 #'
-#' @param v view object
+#' @param obj `View` object.
+#' @param maxpts maximum number of points to plot.
 #'
-#' @return `ggplot` object.
+#' @return a `ggplot` object.
 #' @export
 #'
 #' @examples
@@ -91,6 +92,8 @@ distribution_dp <- function(obj, maxpts = 50000, alpha = 0.1, ...) {
 #' @param alpha ggplot aesthetic value.
 #' @param maxpts maximum number of points to plot.
 #' @param ... passed to [ggplot2::geom_point()],
+#' @param add_mean add the mean to each line? (default is TRUE).
+#' @param vscale a vertical scaling to apply to the plot (default is 5).
 #'
 #' @return a `ggplot` object.
 #' @export
@@ -103,7 +106,7 @@ distribution_dp <- function(obj, maxpts = 50000, alpha = 0.1, ...) {
 #' fv1 <- apply_filter_sgolay(pv1, data_point = dp, n = 41, p = 4)
 #' sub_fv1 <- subset(fv1, Time >= 10 & Time <= 20, by = 2)
 #' velocity_dp(sub_fv1)
-velocity_dp <- function(obj, add_mean = "y", vscale = 5, maxpts = 10000, alpha = 0.5, ...) {
+velocity_dp <- function(obj, add_mean = TRUE, vscale = 5, maxpts = 10000, alpha = 0.5, ...) {
   df <- obj$df
   stopifnot(nrow(df) < maxpts)
 
@@ -111,7 +114,7 @@ velocity_dp <- function(obj, add_mean = "y", vscale = 5, maxpts = 10000, alpha =
   y_dp <- paste(data_point, "y", sep = "_")
   d_dp <- paste(data_point, "d", sep = "_")
 
-  if (add_mean == "y") {
+  if (add_mean) {
     col_means <- colMeans(df[y_dp], na.rm = TRUE)
     print(col_means)
     for (i in seq_along(d_dp)) {

@@ -1,6 +1,10 @@
 # TODO
+# If interior NAs in filter issue warning and interpolate - only apply filters to interior numeric data
+# Update the show_plot type graphs to have similar features to other plots- see ave_power_spliceview
+# Replace Matra by Tactus for beat in function calls and plots
+# Replace Tala by Metre for beat in function calls and plots
+# Add time_limits to autoplots and autolayers - do duration layer
 # Martin Word Doc 10122022 Section 1
-# If interior NAs in filter issue warning and interpolate
 # Martin Word Doc 10122022 Section 2
 # Martin Word Doc 10122022 Section 3
 # Martin Word Doc 10122022 Section 4
@@ -16,6 +20,8 @@
 # Single time series autoplot has z axis label see section 5.
 
 # DONE
+# Updated names of Metre files on google drive.
+# Email on structure of duration data in 5th reordering to Martin
 # Added periodicity FFT plot to data analysis walkthrough
 # Added motiongram plots to data prep walkthrough
 # Martin Word Doc 10122022 Section 5 - added interpolate feature which is by default off.

@@ -4,10 +4,14 @@
 \alias{velocity_dp}
 \title{Velocity plot of a view object}
 \usage{
-velocity_dp(obj, add_mean = "y", vscale = 5, maxpts = 10000, alpha = 0.5, ...)
+velocity_dp(obj, add_mean = TRUE, vscale = 5, maxpts = 10000, alpha = 0.5, ...)
 }
 \arguments{
 \item{obj}{View object.}
+
+\item{add_mean}{add the mean to each line? (default is TRUE).}
+
+\item{vscale}{a vertical scaling to apply to the plot (default is 5).}
 
 \item{maxpts}{maximum number of points to plot.}
 

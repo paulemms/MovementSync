@@ -5,10 +5,10 @@
 #' Simple time and column subsetting of views.
 #'
 #' @param x `View` object
-#' @param data_point body part in the data e.g. 'Nose'.
+#' @param data_points body part in the data e.g. 'Nose'.
 #' @param by increment of the sequence of rows to return.
 #' @param expr an R expression to subset time or other variables.
-#' @param column column name in the data e.g. 'Nose_x'.
+#' @param columns column name in the data e.g. 'Nose_x'.
 #' @param ... unused.
 #'
 #' @return a `View` object.
@@ -19,7 +19,7 @@
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' vv <- subset(v, Time < 10, data_point = "Nose")
 #' plot(vv)
-subset.View <- function(x, expr = NULL, data_point = NULL, column = NULL, by = NULL, ...) {
+subset.View <- function(x, expr = NULL, data_points = NULL, columns = NULL, by = NULL, ...) {
   stopifnot("View" %in% class(x))
 
   df <- x$df
@@ -36,12 +36,12 @@ subset.View <- function(x, expr = NULL, data_point = NULL, column = NULL, by = N
     leading_col_names <- c("Frame" , "Time")
   }
 
-  if (is.null(column)) {
-    if (is.null(data_point)) data_point <- get_data_points(x)
+  if (is.null(columns)) {
+    if (is.null(data_points)) data_points <- get_data_points(x)
     col_names <- setdiff(colnames(df), leading_col_names)
-    col_names <- col_names[sub("(.*?)_.*", "\\1", col_names) %in% data_point]
+    col_names <- col_names[sub("(.*?)_.*", "\\1", col_names) %in% data_points]
   } else {
-    col_names <- column
+    col_names <- columns
   }
 
   sdf <- df[is_row_included, c(leading_col_names, col_names), drop = FALSE]

@@ -11,27 +11,50 @@
 \usage{
 \method{autoplot}{Duration}(object, ...)
 
-\method{autoplot}{OnsetsSelected}(object, instrument = "Inst", matra = "Matra", ...)
+\method{autoplot}{OnsetsSelected}(object, instrument = "Inst", tactus = "Matra", ...)
 
 \method{autoplot}{Metre}(object, ...)
 
-\method{autoplot}{View}(object, columns = NULL, maxpts = 1000, ...)
+\method{autoplot}{View}(
+  object,
+  columns = NULL,
+  maxpts = 1000,
+  time_limits = c(-Inf, Inf),
+  time_breaks = NULL,
+  ...
+)
 
-\method{autoplot}{SplicedView}(object, columns = NULL, segments = NULL, maxpts = 1000, ...)
+\method{autoplot}{SplicedView}(
+  object,
+  columns = NULL,
+  segments = NULL,
+  time_breaks = NULL,
+  time_limits = c(-Inf, Inf),
+  maxpts = 1000,
+  ...
+)
 }
 \arguments{
 \item{object}{S3 object}
 
-\item{...}{passed to \code{\link[zoo:plot.zoo]{zoo::plot.zoo()}}}
+\item{...}{passed to \code{\link[zoo:plot.zoo]{zoo::plot.zoo()}}.}
 
-\item{columns}{names of columns in input data}
+\item{instrument}{instrument column name.}
+
+\item{tactus}{beat column name.}
+
+\item{columns}{names of columns in input data.}
 
 \item{maxpts}{maximum number of points to plot}
 
-\item{segments}{only include these segments in a SplicedView plot}
+\item{time_limits}{tuple to restrict the timeline.}
+
+\item{time_breaks}{suggests the number of major time tick marks (default is NULL).}
+
+\item{segments}{only include these segments in a SplicedView plot.}
 }
 \value{
-a ggplot object
+a ggplot object.
 }
 \description{
 Autoplot methods for S3 objects in the movementsync package.
@@ -45,9 +68,9 @@ autoplot(o)
 m <- get_metre_data(r)
 autoplot(m)
 v <- get_raw_view(r, "Central", "", "Sitar")
-autoplot(v, columns = c("LEar_x", "LEar_y"))
+autoplot(v, columns = c("LEar_x", "LEar_y"), time_limits = c(20, 40))
 l <- list(a = c(0, 10), b = c(20, 30), c = c(30, 60))
 splicing_df <- splice_time(l)
 sv <- get_spliced_view(v, splicing_df)
-autoplot(sv, columns = c("LEar_x", "LEar_y", "Nose_x", "Nose_y"), maxpts = 1000)
+autoplot(sv, columns = c("LEar_x", "LEar_y", "Nose_x", "Nose_y"), time_breaks = 4, maxpts = 1000)
 }

@@ -12,41 +12,42 @@
 #' plot(d)
 #' @exportS3Method
 plot.Duration <- function(x, ...) {
-  barplot(Duration ~ In + Tier, main = "Duration Object", data = x, ...)
+  graphics::barplot(Duration ~ In + Tier, main = "Duration Object", data = x, ...)
 }
 
 #' Plot a OnsetsSelected S3 object
 #'
-#' @param x S3 object
-#' @param ... passed to [barplot()]
-#' @param instrument column name
-#' @param matra column name
+#' @param x S3 object.
+#' @param ... passed to [barplot()].
+#' @param instrument column name.
+#' @param tactus beat column name.
 #'
 #' @examples
 #' r <- get_sample_recording()
 #' o <- get_onsets_selected_data(r)
 #' plot(o)
 #' @exportS3Method
-plot.OnsetsSelected <- function(x, instrument = 'Inst', matra = 'Matra', ...) {
+plot.OnsetsSelected <- function(x, instrument = 'Inst', tactus = 'Matra', ...) {
 
   dfr_list <- x[sapply(x, class) == 'data.frame']
   df <- dplyr::bind_rows(dfr_list, .id = 'Tala')
-  stopifnot(instrument %in% colnames(df), matra %in% colnames(df))
+  stopifnot(instrument %in% colnames(df), tactus %in% colnames(df))
 
-  df <- dplyr::rename(df, 'Matra' = matra)
+  df <- dplyr::rename(df, 'Tactus' = tactus)
   df['is_na_column'] <- !is.na(df[instrument])
 
-  group_df <- dplyr::group_by(df, Matra, Tala)
+  group_df <- dplyr::group_by(df, Tactus, Tala)
   output_df <- dplyr::summarise(group_df, Number_of_Onsets = sum(is_na_column))
 
-  barplot(Number_of_Onsets ~ Tala + Matra, beside = T, legend.text = T, data = output_df,
+  graphics::barplot(Number_of_Onsets ~ Tala + Tactus, beside = T, legend.text = T, data = output_df,
           main = paste("OnsetsSelected Object:", instrument))
 }
 
 
 #' Plot a Metre S3 object
 #'
-#' @param x S3 object
+#' @param x S3 object.
+#' @param ... ignored.
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -69,6 +70,7 @@ plot.Metre <- function(x, ...) {
 #'
 #' @param x S3 object
 #' @param columns names of columns
+#' @param maxpts maximum number of points to plot.
 #' @param ... passed to [plot.zoo()]
 #'
 #' @examples

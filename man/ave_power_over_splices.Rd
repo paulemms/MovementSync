@@ -41,3 +41,33 @@ power for each segment and splice. Calculates the mean average power
 over the random splices for each segment and period. Compares with the
 average power for the original splice.
 }
+\examples{
+r <- get_sample_recording()
+fv_list <- get_filtered_views(r, data_points = "Nose", n = 41, p = 3)
+jv <- get_joined_view(fv_list)
+
+d <- get_duration_annotation_data(r)
+splicing_tabla_solo_df <- splice_time(d,
+  expr = "Tier == 'INTERACTION' & Comments == 'Mutual look and smile'")
+
+# Only do the first splice for sample data
+mean_ave_power_df <- ave_power_over_splices(jv, splicing_tabla_solo_df[1,], num_splices = 10,
+column = 'Nose_x_Central_Sitar', show_plot = TRUE)
+}
+\seealso{
+Other statistical and analysis functions: 
+\code{\link{apply_column_spliceview}()},
+\code{\link{apply_segment_spliceview}()},
+\code{\link{ave_cross_power_spliceview}()},
+\code{\link{ave_power_spliceview}()},
+\code{\link{compare_ave_power1}()},
+\code{\link{compare_avg_cross_power2}()},
+\code{\link{compare_avg_power2}()},
+\code{\link{difference_onsets}()},
+\code{\link{pull_segment_spliceview}()},
+\code{\link{sample_gap_splice}()},
+\code{\link{sample_offset_splice}()},
+\code{\link{summary_onsets}()},
+\code{\link{visualise_sample_splices}()}
+}
+\concept{statistical and analysis functions}

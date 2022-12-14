@@ -3,9 +3,11 @@
 #' Estimate the spectral density of data points
 #'
 #' Estimates the periodicity of data points in a `View` object.
+#'
 #' @param view `ProcessedView` or `FilteredView` object.
-#' @param data_points Data points to process.
+#' @param data_points data points to process e.g. Nose.
 #' @param ... passed to [stats::spectrum()].
+#' @param columns names of data columns e.g. Nose_x.
 #'
 #' @return `SpectralDensityView` object.
 #' @export
@@ -13,12 +15,12 @@
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' sd1 <- spectral_density(pv, data_points = c("LEar", "REar"), spans = 5)
+#' sd1 <- spectral_density(pv, columns = "LEar_x", spans = 5)
 #'
 #' fv <- apply_filter_sgolay(pv, data_points = c("LEye"), n = 19, p = 4)
 #' sd1 <- spectral_density(fv, data_points = c("LEye"), spans = 5)
-#'
-spectral_density <- function(view, data_points = NULL, ...) {
+
+spectral_density <- function(view, columns = NULL, data_points = NULL, ...) {
   stopifnot(any(c("ProcessedView", "FilteredView") %in% class(view)))
 
   df <- view$df
@@ -28,7 +30,10 @@ spectral_density <- function(view, data_points = NULL, ...) {
     d_colnames <- paste0(data_points, "_d")
     cn <- c(colnames(df)[1:2], rbind(x_colnames, y_colnames, d_colnames))
     df <- df[, cn, drop=FALSE]
-  }
+  } else if (!is.null(columns)) {
+    cn <- c(colnames(df)[1:2], columns)
+    df <- df[, cn, drop=FALSE]
+  } else stop()
 
   sampling_rate <-view$recording$fps
 
@@ -38,11 +43,12 @@ spectral_density <- function(view, data_points = NULL, ...) {
       df[, -(1:2), drop=FALSE],
       plot = FALSE,
       na.action = stats::na.omit,
+      log = 'no',
       ...
     )
 
   spx <- spec$freq * sampling_rate # to get cycles per second
-  spy <- spec$spec
+  spy <- as.data.frame(spec$spec)
   colnames(spy) <- colnames(df)[-(1:2)]
   output_df <- data.frame(Period = 1 / spx, spy)
 
@@ -55,7 +61,10 @@ spectral_density <- function(view, data_points = NULL, ...) {
 
 #' Autoplot a SpectralDensityView S3 object
 #'
-#' @param obj `SpectralDensityView` object.
+#' @param object `SpectralDensityView` object.
+#' @param period_range tuple for limiting range of periods.
+#' @param colour name of line colour.
+#' @param ... ignored.
 #'
 #' @return a `ggplot` object.
 #' @exportS3Method
@@ -64,12 +73,13 @@ spectral_density <- function(view, data_points = NULL, ...) {
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' sd1 <- spectral_density(pv, data_points = c("LElbow", "LEye"), spans = 5)
+#' sd1 <- spectral_density(pv, columns = c("LElbow_x", "LEye_x"), spans = 5)
 #' autoplot(sd1)
 #'
 #' fv <- apply_filter_sgolay(pv, data_points = c("LElbow", "LEye"), n = 19, p = 4)
 #' sd2 <- spectral_density(fv, data_points = c("LElbow", "LEye"), spans = c(3, 3))
 #' autoplot(sd2)
+
 autoplot.SpectralDensityView <- function(object, period_range = c(0, 10), colour = "blue", ...) {
 
   view <- object$view
@@ -107,19 +117,19 @@ autoplot.SpectralDensityView <- function(object, period_range = c(0, 10), colour
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' rv <- get_raw_view(r, "Central", "", "Sitar")
 #' pv <- get_processed_view(rv)
-#' sub_pv <- subset(pv, Time >= 15*60 & Time <= 25*60, column = c("RWrist_x", "RWrist_y"))
+#' sub_pv <- subset(pv, Time >= 15*60 & Time <= 25*60, columns = c("RWrist_x", "RWrist_y"))
 #' specgram_plot(sub_pv)
 #' fv <- apply_filter_sgolay(pv, data_points = c("RWrist"), n = 11, p = 4)
-#' sub_fv <- subset(fv, Time >= 15*60 & Time <= 25*60, column = c("RWrist_x", "RWrist_y"))
+#' sub_fv <- subset(fv, Time >= 15*60 & Time <= 25*60, columns = c("RWrist_x", "RWrist_y"))
 #' specgram_plot(sub_fv)
 #'
 #' r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 #' rv_list <- get_raw_views(r2)
 #' pv_list <- lapply(rv_list, get_processed_view)
-#' sub_pv <- subset(pv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y"))
+#' sub_pv <- subset(pv_list$SideL_Tabla, Time <= 1700, columns = c("RWrist_x", "RWrist_y"))
 #' specgram_plot(sub_pv)
 #' fv_list <- lapply(pv_list, apply_filter_sgolay, data_points = "RWrist", n = 11, p = 3)
-#' sub_fv <- subset(fv_list$SideL_Tabla, Time <= 1700, column = c("RWrist_x", "RWrist_y"))
+#' sub_fv <- subset(fv_list$SideL_Tabla, Time <= 1700, columns = c("RWrist_x", "RWrist_y"))
 #' specgram_plot(sub_fv)
 #'
 #' specgram_plot(sub_fv, window = 200) + ggplot2::scale_fill_gradient(low = "white", high = "black")

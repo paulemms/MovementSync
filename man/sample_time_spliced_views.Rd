@@ -8,7 +8,7 @@ sample_time_spliced_views(
   ...,
   num_samples,
   replace = FALSE,
-  na.action = na.pass
+  na.action = stats::na.pass
 )
 }
 \arguments{
@@ -17,6 +17,8 @@ sample_time_spliced_views(
 \item{num_samples}{number of time points to sample}
 
 \item{replace}{sample with replacement (default is FALSE)?}
+
+\item{na.action}{function to deal with NAs in data (default is na.pass).}
 }
 \value{
 a list of \code{SplitView} object or a \code{SplitView} object

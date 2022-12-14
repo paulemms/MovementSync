@@ -49,3 +49,20 @@ jv <- get_joined_view(fv_list)
 splicing_df <- splice_time(list(a = c(0, 5), b = c(10, 15)))
 output_list <- compare_ave_power1(jv, splicing_df, 'Random Splices', 5, 5, 'Nose_x_Central_Tabla')
 }
+\seealso{
+Other statistical and analysis functions: 
+\code{\link{apply_column_spliceview}()},
+\code{\link{apply_segment_spliceview}()},
+\code{\link{ave_cross_power_spliceview}()},
+\code{\link{ave_power_over_splices}()},
+\code{\link{ave_power_spliceview}()},
+\code{\link{compare_avg_cross_power2}()},
+\code{\link{compare_avg_power2}()},
+\code{\link{difference_onsets}()},
+\code{\link{pull_segment_spliceview}()},
+\code{\link{sample_gap_splice}()},
+\code{\link{sample_offset_splice}()},
+\code{\link{summary_onsets}()},
+\code{\link{visualise_sample_splices}()}
+}
+\concept{statistical and analysis functions}

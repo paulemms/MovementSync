@@ -4,16 +4,16 @@
 \alias{subset.View}
 \title{Subset a View}
 \usage{
-\method{subset}{View}(x, expr = NULL, data_point = NULL, column = NULL, by = NULL, ...)
+\method{subset}{View}(x, expr = NULL, data_points = NULL, columns = NULL, by = NULL, ...)
 }
 \arguments{
 \item{x}{\code{View} object}
 
 \item{expr}{an R expression to subset time or other variables.}
 
-\item{data_point}{body part in the data e.g. 'Nose'.}
+\item{data_points}{body part in the data e.g. 'Nose'.}
 
-\item{column}{column name in the data e.g. 'Nose_x'.}
+\item{columns}{column name in the data e.g. 'Nose_x'.}
 
 \item{by}{increment of the sequence of rows to return.}
 

@@ -4,12 +4,14 @@
 \alias{spectral_density}
 \title{Estimate the spectral density of data points}
 \usage{
-spectral_density(view, data_points = NULL, ...)
+spectral_density(view, columns = NULL, data_points = NULL, ...)
 }
 \arguments{
 \item{view}{\code{ProcessedView} or \code{FilteredView} object.}
 
-\item{data_points}{Data points to process.}
+\item{columns}{names of data columns e.g. Nose_x.}
+
+\item{data_points}{data points to process e.g. Nose.}
 
 \item{...}{passed to \code{\link[stats:spectrum]{stats::spectrum()}}.}
 }
@@ -23,9 +25,8 @@ Estimates the periodicity of data points in a \code{View} object.
 r <- get_recording("NIR_ABh_Puriya", fps = 25)
 rv <- get_raw_view(r, "Central", "", "Sitar")
 pv <- get_processed_view(rv)
-sd1 <- spectral_density(pv, data_points = c("LEar", "REar"), spans = 5)
+sd1 <- spectral_density(pv, columns = "LEar_x", spans = 5)
 
 fv <- apply_filter_sgolay(pv, data_points = c("LEye"), n = 19, p = 4)
 sd1 <- spectral_density(fv, data_points = c("LEye"), spans = 5)
-
 }

@@ -7,7 +7,13 @@
 \method{autoplot}{SpectralDensityView}(object, period_range = c(0, 10), colour = "blue", ...)
 }
 \arguments{
-\item{obj}{\code{SpectralDensityView} object.}
+\item{object}{\code{SpectralDensityView} object.}
+
+\item{period_range}{tuple for limiting range of periods.}
+
+\item{colour}{name of line colour.}
+
+\item{...}{ignored.}
 }
 \value{
 a \code{ggplot} object.
@@ -19,7 +25,7 @@ Autoplot a SpectralDensityView S3 object
 r <- get_recording("NIR_ABh_Puriya", fps = 25)
 rv <- get_raw_view(r, "Central", "", "Sitar")
 pv <- get_processed_view(rv)
-sd1 <- spectral_density(pv, data_points = c("LElbow", "LEye"), spans = 5)
+sd1 <- spectral_density(pv, columns = c("LElbow_x", "LEye_x"), spans = 5)
 autoplot(sd1)
 
 fv <- apply_filter_sgolay(pv, data_points = c("LElbow", "LEye"), n = 19, p = 4)

@@ -15,7 +15,7 @@
 list of summaries.
 }
 \description{
-Summarise Metre object
+Summarises the cycle length for each Tala.
 }
 \examples{
 r <- get_sample_recording()

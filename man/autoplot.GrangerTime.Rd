@@ -7,14 +7,16 @@
 \method{autoplot}{GrangerTime}(object, splicing_df = splicing_df, lev_sig = 0.05, ...)
 }
 \arguments{
-\item{object}{S3 object}
+\item{object}{S3 object.}
 
-\item{splicing_df}{Splicing data.frame object}
+\item{splicing_df}{Splicing data.frame object.}
 
-\item{lev_sig}{significance level}
+\item{lev_sig}{significance level.}
+
+\item{...}{ignored.}
 }
 \value{
-\code{ggplot} object.
+a \code{ggplot} object.
 }
 \description{
 Plot a Granger S3 object

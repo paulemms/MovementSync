@@ -7,10 +7,16 @@
 sample_gap_splice(splicing_dfr, v, num_splices, rejection_list = list())
 }
 \arguments{
-\item{num_splices}{}
+\item{splicing_dfr}{\code{Splice} object.}
+
+\item{v}{\code{View} object.}
+
+\item{num_splices}{number of random splices to generate.}
+
+\item{rejection_list}{list of \code{Splice} objects for rejection.}
 }
 \value{
-list of splicing data.frames
+list of splicing data.frames.
 }
 \description{
 Works by randomly varying the gaps between segments assuming that the gap number
@@ -18,13 +24,31 @@ follow a Poisson process with rate given by the average sample gap length in
 the input splice. Durations of segments remain the same.
 }
 \details{
-Uses rejection sampling to avoid overlaps with the input segments and a
+Uses rejection sampling to avoid overlaps with the input segments and
 additional segments from a list of splices.
 }
 \examples{
-r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
+r1 <- get_sample_recording()
 d1 <- get_duration_annotation_data(r1)
 rv1 <- get_raw_view(r1, "Central", "", "Sitar")
 splicing_df <- splice_time(d1, tier ='INTERACTION', comments = 'Mutual look and smile')
-x <- sample_gap_splice(splicing_df, rv1, num_splices = 10)
+# Only first segment relevant for sample data
+x <- sample_gap_splice(splicing_df[1,], rv1, num_splices = 10)
 }
+\seealso{
+Other statistical and analysis functions: 
+\code{\link{apply_column_spliceview}()},
+\code{\link{apply_segment_spliceview}()},
+\code{\link{ave_cross_power_spliceview}()},
+\code{\link{ave_power_over_splices}()},
+\code{\link{ave_power_spliceview}()},
+\code{\link{compare_ave_power1}()},
+\code{\link{compare_avg_cross_power2}()},
+\code{\link{compare_avg_power2}()},
+\code{\link{difference_onsets}()},
+\code{\link{pull_segment_spliceview}()},
+\code{\link{sample_offset_splice}()},
+\code{\link{summary_onsets}()},
+\code{\link{visualise_sample_splices}()}
+}
+\concept{statistical and analysis functions}

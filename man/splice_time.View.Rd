@@ -9,6 +9,10 @@
 \arguments{
 \item{x}{\code{View} object.}
 
+\item{win_size}{duration of window segment in seconds.}
+
+\item{step_size}{increment in seconds between segments.}
+
 \item{...}{ignored.}
 }
 \value{

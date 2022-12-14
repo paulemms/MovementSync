@@ -16,10 +16,8 @@ list of data.frames.
 Get metre files
 }
 \examples{
-r <- get_recording("NIR_ABh_Puriya", fps = 25)
-o <- get_metre_data(r)
-r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
-m2 <- get_metre_data(r2)
+r <- get_sample_recording()
+m <- get_metre_data(r)
 }
 \seealso{
 Other data functions: 

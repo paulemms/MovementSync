@@ -80,11 +80,12 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
 
 #' Plot a Granger S3 object
 #'
-#' @param object S3 object
-#' @param splicing_df Splicing data.frame object
-#' @param lev_sig significance level
+#' @param object S3 object.
+#' @param splicing_df Splicing data.frame object.
+#' @param lev_sig significance level.
+#' @param ... ignored.
 #'
-#' @return `ggplot` object.
+#' @return a `ggplot` object.
 #' @exportS3Method
 #'
 #' @examples
@@ -284,7 +285,7 @@ plot.GrangerInteraction <- function(x, mfrow = NULL, mar = c(1, 1, 1, 1),
     mfrow <- c(num_segments %/% 4 + (num_segments %% 4 > 0), min(num_segments, 4))
   }
 
-  old_params <- par(mfrow=mfrow, oma=oma, mar=mar)
+  old_params <- graphics::par(mfrow=mfrow, oma=oma, mar=mar)
 
   # Extract the node names
   nodes <- data.frame(id = sapply(strsplit(unique(df$Var1), "_"), function(x) x[4]))
@@ -313,8 +314,8 @@ plot.GrangerInteraction <- function(x, mfrow = NULL, mar = c(1, 1, 1, 1),
 
   main_title <- paste0("Recording: ", x$gc_list[[1]]$recording$stem, ", Lag = ",
                        x$lag, "s")
-  mtext(text = main_title, side = 1, line = -1, outer = TRUE)
-  par(old_params)
+  graphics::mtext(text = main_title, side = 1, line = -1, outer = TRUE)
+  graphics::par(old_params)
 
   invisible(df)
 }
@@ -421,8 +422,8 @@ ms_grangertest2 <- function(x, y, order = 1, na.action = stats::na.omit, ...) {
   ## compute lagged observations
   x1 <- c(rep(NA, order), x)
   y1 <- c(rep(NA, order), y)
-  lagX <- embed(x1, order + 1) # first column contains x
-  lagY <- embed(y1, order + 1) # first column contains y
+  lagX <- stats::embed(x1, order + 1) # first column contains x
+  lagY <- stats::embed(y1, order + 1) # first column contains y
 
   # Apply na.action
   numcolX <- ncol(lagX)
@@ -485,8 +486,8 @@ ms_condgrangertest <- function(x, y, z, order = 1, na.action = stats::na.omit, .
   ## compute lagged observations
   x1 <- c(rep(NA, order), as.vector(x))
   y1 <- c(rep(NA, order), as.vector(y))
-  lagX <- embed(x1, order + 1)
-  lagY <- embed(y1, order + 1)
+  lagX <- stats::embed(x1, order + 1)
+  lagY <- stats::embed(y1, order + 1)
   z <- as.vector(z)
 
   # Apply na.action

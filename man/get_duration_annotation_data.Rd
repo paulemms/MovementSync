@@ -16,7 +16,7 @@ list of data.frames.
 Get duration annotation data
 }
 \examples{
-r <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
+r <- get_sample_recording()
 df <- get_duration_annotation_data(r)
 }
 \seealso{

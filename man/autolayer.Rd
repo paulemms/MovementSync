@@ -11,7 +11,7 @@
 \method{autolayer}{OnsetsSelected}(
   object,
   colour = "Inst.Name",
-  fill = "Tala",
+  fill = "Metre",
   alpha = 0.4,
   instrument_cols = NULL,
   ...
@@ -19,8 +19,7 @@
 
 \method{autolayer}{Metre}(
   object,
-  xmin = -Inf,
-  xmax = Inf,
+  time_limits = c(-Inf, Inf),
   colour = "hotpink",
   alpha = 0.4,
   ...
@@ -50,9 +49,7 @@
 
 \item{...}{passed to geom.}
 
-\item{xmin}{minimum value for Metre lines.}
-
-\item{xmax}{maximum value for Metre lines.}
+\item{time_limits}{tuple of time limits for the Metre object.}
 
 \item{expr}{logical expression for filtering.}
 

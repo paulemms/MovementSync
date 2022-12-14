@@ -4,16 +4,16 @@
 \alias{plot.OnsetsSelected}
 \title{Plot a OnsetsSelected S3 object}
 \usage{
-\method{plot}{OnsetsSelected}(x, instrument = "Inst", matra = "Matra", ...)
+\method{plot}{OnsetsSelected}(x, instrument = "Inst", tactus = "Matra", ...)
 }
 \arguments{
-\item{x}{S3 object}
+\item{x}{S3 object.}
 
-\item{instrument}{column name}
+\item{instrument}{column name.}
 
-\item{matra}{column name}
+\item{tactus}{beat column name.}
 
-\item{...}{passed to \code{\link[=barplot]{barplot()}}}
+\item{...}{passed to \code{\link[=barplot]{barplot()}}.}
 }
 \description{
 Plot a OnsetsSelected S3 object

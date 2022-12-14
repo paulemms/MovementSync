@@ -53,6 +53,8 @@ summary.OnsetsSelected <- function(object, ...) {
 
 #' Summarise Metre object
 #'
+#' Summarises the cycle length for each Tala.
+#'
 #' @param object `Metre` object.
 #' @param ... ignored.
 #'
@@ -64,7 +66,8 @@ summary.OnsetsSelected <- function(object, ...) {
 #' m <- get_metre_data(r)
 #' summary(m)
 summary.Metre <- function(object, ...) {
-  lapply(object, function(x) if (is.data.frame(x)) summary(x))
+  df_list <- lapply(object, function(x) if (is.data.frame(x)) diff(x$Time))
+  lapply(df_list, summary)
 }
 
 

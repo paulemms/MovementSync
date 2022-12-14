@@ -19,7 +19,8 @@ splice_time <- function(x, ...) {
 #' @param x `OnsetsDifference` object.
 #' @param window_duration duration of window around onset point in seconds.
 #' @param ... passed to [make.unique()].
-#' @param talas vector of tala to subset.
+#' @param metres vector of metres to subset.
+#' @param make.unique give unique names to each segment?
 #'
 #' @return a `Splice` object.
 #' @exportS3Method
@@ -31,10 +32,10 @@ splice_time <- function(x, ...) {
 #' po1 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
 #' splicing_df <- splice_time(po1, window_duration = 1)
 #' head(splicing_df)
-splice_time.OnsetsDifference <- function(x, window_duration, talas = NULL, make.unique = TRUE, ...) {
-  stopifnot(all(talas %in% unique(x$Tala)))
-  if (!is.null(talas)) {
-    df <- dplyr::filter(x, Tala %in% unique(x$Tala))
+splice_time.OnsetsDifference <- function(x, window_duration, metres = NULL, make.unique = TRUE, ...) {
+  stopifnot(all(metres %in% unique(x$Metre)))
+  if (!is.null(metres)) {
+    df <- dplyr::filter(x, Metre %in% unique(x$Metre))
   } else {
     df <- x
   }
@@ -176,6 +177,8 @@ splice_time.Duration <- function(x, expr = NULL, make.unique = TRUE,
 #'
 #' @param x `View` object.
 #' @param ... ignored.
+#' @param win_size duration of window segment in seconds.
+#' @param step_size increment in seconds between segments.
 #'
 #' @return a `Splice` object.
 #' @exportS3Method
@@ -283,6 +286,7 @@ split.SplicedView <- function(x, f, drop, ...) {
 #' @param ... names arguments of `SplicedView` objects.
 #' @param num_samples number of time points to sample
 #' @param replace sample with replacement (default is FALSE)?
+#' @param na.action function to deal with NAs in data (default is na.pass).
 #'
 #' @return a list of `SplitView` object or a `SplitView` object
 #' @export
@@ -304,7 +308,7 @@ split.SplicedView <- function(x, f, drop, ...) {
 #' sv <- get_spliced_view(jv1, splicing_df = splicing_df)
 #' sv_new <- sample_time_spliced_views(sv, num_samples = 20, replace = TRUE)
 #' autoplot(sv_new)
-sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.action = na.pass) {
+sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.action = stats::na.pass) {
   input_sv <- list(...)
   stopifnot(all(sapply(input_sv, function(x) "SplicedView" %in% class(x))))
   stopifnot(num_samples > 0)
@@ -336,7 +340,7 @@ sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.acti
 
       new_data <- sapply(
         data_columns,
-        function(col) approx(x = dfr[['Time']], y = dfr[[col]], xout = new_times, ties = 'ordered')$y
+        function(col) stats::approx(x = dfr[['Time']], y = dfr[[col]], xout = new_times, ties = 'ordered')$y
         )
 
       # Build new sampled data.frame
@@ -485,7 +489,7 @@ merge_splice <- function(..., operation) {
   dd <- rbind(data.frame(pos = dfr$Start, event = 1),
               data.frame(pos = dfr$End, event = -1))
 
-  dd <- aggregate(event ~ pos, dd, sum)
+  dd <- stats::aggregate(event ~ pos, dd, sum)
   dd <- dd[order(dd$pos), , drop=FALSE]
   dd$open <- cumsum(dd$event)
   r <- rle(dd$open >= overlap)

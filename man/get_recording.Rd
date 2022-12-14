@@ -22,7 +22,9 @@ a \code{Recording} object.
 Get a meta-data recording object
 }
 \examples{
+\dontrun{
 r <- get_recording("NIR_ABh_Puriya", fps = 25)
+}
 }
 \seealso{
 Other data functions: 

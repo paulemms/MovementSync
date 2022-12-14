@@ -4,12 +4,16 @@
 #'
 #' Autoplot methods for S3 objects in the movementsync package.
 #' @param object S3 object
-#' @param columns names of columns in input data
+#' @param columns names of columns in input data.
 #' @param maxpts maximum number of points to plot
-#' @param ... passed to [zoo::plot.zoo()]
-#' @param segments only include these segments in a SplicedView plot
+#' @param time_limits tuple to restrict the timeline.
+#' @param time_breaks suggests the number of major time tick marks (default is NULL).
+#' @param ... passed to [zoo::plot.zoo()].
+#' @param segments only include these segments in a SplicedView plot.
+#' @param instrument instrument column name.
+#' @param tactus beat column name.
 #'
-#' @return a ggplot object
+#' @return a ggplot object.
 #' @importFrom ggplot2 autoplot
 #' @name autoplot
 #' @export
@@ -22,11 +26,11 @@
 #' m <- get_metre_data(r)
 #' autoplot(m)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
-#' autoplot(v, columns = c("LEar_x", "LEar_y"))
+#' autoplot(v, columns = c("LEar_x", "LEar_y"), time_limits = c(20, 40))
 #' l <- list(a = c(0, 10), b = c(20, 30), c = c(30, 60))
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(v, splicing_df)
-#' autoplot(sv, columns = c("LEar_x", "LEar_y", "Nose_x", "Nose_y"), maxpts = 1000)
+#' autoplot(sv, columns = c("LEar_x", "LEar_y", "Nose_x", "Nose_y"), time_breaks = 4, maxpts = 1000)
 NULL
 
 
@@ -45,23 +49,23 @@ autoplot.Duration <- function(object, ...) {
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.OnsetsSelected <- function(object, instrument = 'Inst', matra = 'Matra', ...) {
+autoplot.OnsetsSelected <- function(object, instrument = 'Inst', tactus = 'Matra', ...) {
 
   dfr_list <- object[sapply(object, class) == 'data.frame']
-  df <- dplyr::bind_rows(dfr_list, .id = "Tala")
-  stopifnot(instrument %in% colnames(df), matra %in% colnames(df))
+  df <- dplyr::bind_rows(dfr_list, .id = "Metre")
+  stopifnot(instrument %in% colnames(df), tactus %in% colnames(df))
 
-  df <- dplyr::rename(df, 'Matra' = matra)
+  df <- dplyr::rename(df, 'Tactus' = tactus)
   df <- df[!is.na(df[instrument]),,drop=FALSE]
-  min_x <- min(df$Matra, na.rm = TRUE)
-  max_x <- max(df$Matra, na.rm = TRUE)
+  min_x <- min(df$Tactus, na.rm = TRUE)
+  max_x <- max(df$Tactus, na.rm = TRUE)
 
   ggplot2::ggplot(df) +
-    ggplot2::geom_bar(ggplot2::aes(x = Matra, fill = Tala), stat = "count") +
+    ggplot2::geom_bar(ggplot2::aes(x = Tactus, fill = Metre), stat = "count") +
     ggplot2::scale_x_continuous(breaks = min_x:max_x, labels=as.character(min_x:max_x)) +
     ggplot2::ylab("Onset Count") +
     ggplot2::labs(title = paste("OnsetsSelected Object:", instrument)) +
-    ggplot2::facet_wrap(~Tala)
+    ggplot2::facet_wrap(~Metre)
 
 }
 
@@ -89,9 +93,11 @@ autoplot.Metre <- function(object, ...) {
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.View <- function(object, columns=NULL, maxpts=1000, ...) {
+autoplot.View <- function(object, columns=NULL, maxpts=1000, time_limits = c(-Inf, Inf),
+                          time_breaks = NULL, ...) {
 
   max_num_cols <- 9
+  breaks <- if (is.null(time_breaks)) ggplot2::waiver() else scales::pretty_breaks(time_breaks)
 
   # Restrict points and columns to plot
   columns <- if (is.null(columns)) {
@@ -102,24 +108,36 @@ autoplot.View <- function(object, columns=NULL, maxpts=1000, ...) {
   sp <- if (nrow(object$df) > maxpts) sample(nrow(object$df), maxpts) else seq_len(nrow(object$df))
 
   df <- object$df[sp, columns, drop = FALSE]
+  df <- df[df$Time >= time_limits[1] & df$Time <= time_limits[2],, drop = FALSE]
+
   zoo_list <- lapply(df[-1], function(x) zoo::zoo(x, order.by = df$Time))
   z <- do.call(merge, zoo_list)
 
   subtitle <- c(object$recording$stem, object$vid, object$direct, object$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-  autoplot(z) +
-    ggplot2::facet_wrap(Series ~ ., scales="free_y") +
-    ggplot2::labs(title = class(object)[1], subtitle = subtitle) +
-    ggplot2::xlab("Time / min:sec") +
-    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+  if (is.null(ncol(z))) {
+    autoplot(z) +
+      ggplot2::labs(title = class(object)[1], subtitle = subtitle) +
+      ggplot2::xlab("Time / min:sec") +
+      ggplot2::ylab(columns[2]) +
+      ggplot2::scale_x_time(breaks = breaks, labels = function(l) strftime(l, '%M:%S'))
+  } else {
+    autoplot(z) +
+      ggplot2::facet_wrap(Series ~ ., scales="free_y") +
+      ggplot2::labs(title = class(object)[1], subtitle = subtitle) +
+      ggplot2::xlab("Time / min:sec") +
+      ggplot2::scale_x_time(breaks = breaks, labels = function(l) strftime(l, '%M:%S'))
+  }
 }
 
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.SplicedView <- function(object, columns=NULL, segments=NULL, maxpts=1000, ...) {
+autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
+                                 time_breaks = NULL, time_limits = c(-Inf, Inf), maxpts=1000, ...) {
 
+  breaks <- if (is.null(time_breaks)) ggplot2::waiver() else scales::pretty_breaks(time_breaks)
   max_num_segments <- 10
   max_num_cols <- 9
   df <- object$df
@@ -151,6 +169,7 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL, maxpts=100
     sample(seq_len(nrow(df)), maxpts)
   } else seq_len(nrow(df))
   df <- df[sp, columns, drop = FALSE]
+  df <- df[df$Time >= time_limits[1] & df$Time <= time_limits[2],, drop = FALSE]
 
   # Convert data to long form
   columns_to_remove <- match(c("Segment", "Frame", "Time"), colnames(df), nomatch = 0)
@@ -171,10 +190,10 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL, maxpts=100
   # Use seconds to time scale if max Duration less than a minute
   if (max(start_df$Duration, na.rm = TRUE) < 60) {
     xlab <- ggplot2::xlab("Time / sec")
-    scale_x_time <- NULL
+    scale_x_time <- ggplot2::scale_x_continuous(breaks = breaks, labels = ggplot2::waiver())
   } else {
     xlab <- ggplot2::xlab("Time / min:sec")
-    scale_x_time <- ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+    scale_x_time <- ggplot2::scale_x_time(breaks = breaks, labels = function(l) strftime(l, '%M:%S'))
   }
 
   ggplot2::ggplot(long_df, ggplot2::aes(x = Time, y = Value, col = Series)) +
@@ -193,8 +212,7 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL, maxpts=100
 #' @param fill name of column for filling.
 #' @param instrument_cols instrument column names.
 #' @param ... passed to geom.
-#' @param xmin minimum value for Metre lines.
-#' @param xmax maximum value for Metre lines.
+#' @param time_limits tuple of time limits for the Metre object.
 #' @param colour name of column for colouring.
 #' @param expr logical expression for filtering.
 #' @param fill_column data column used for fill.
@@ -236,15 +254,15 @@ NULL
 #'
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.OnsetsSelected <- function(object, colour = "Inst.Name", fill = "Tala",
+autolayer.OnsetsSelected <- function(object, colour = "Inst.Name", fill = "Metre",
                                      alpha = 0.4, instrument_cols = NULL, ...) {
   dfr_list <- object[sapply(object, class) == 'data.frame']
-  df <- dplyr::bind_rows(dfr_list, .id = "Tala")
+  df <- dplyr::bind_rows(dfr_list, .id = "Metre")
   if (!is.null(instrument_cols)) {
     df <- tidyr::pivot_longer(df, cols = instrument_cols, names_to = "Inst.Name",
                               values_to = "Inst")
   }
-  df <- dplyr::group_by(df, Tala, Inst.Name)
+  df <- dplyr::group_by(df, Metre, Inst.Name)
   rects <- dplyr::summarise(df, Inst_Min=min(Inst, na.rm=TRUE), Inst_Max=max(Inst, na.rm=TRUE))
 
   ggplot2::geom_rect(
@@ -257,10 +275,11 @@ autolayer.OnsetsSelected <- function(object, colour = "Inst.Name", fill = "Tala"
 
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.Metre <- function(object, xmin = -Inf, xmax = Inf, colour = "hotpink", alpha = 0.4, ...) {
+autolayer.Metre <- function(object, time_limits = c(-Inf, Inf), colour = "hotpink", alpha = 0.4, ...) {
   x <- unlist(lapply(object, function(y) y$Time))
-  x[x < xmin] <- NA
-  x[x > xmax] <- NA
+
+  x[x < time_limits[1]] <- NA
+  x[x > time_limits[2]] <- NA
 
   ggplot2::geom_vline(xintercept = x, colour = colour, alpha = alpha, ...)
 }

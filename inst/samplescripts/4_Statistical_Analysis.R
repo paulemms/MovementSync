@@ -186,7 +186,7 @@ splicing_list <- sample_offset_splice(splicing_tabla_solo_df, jv1, num_splices =
 # Add in the original for comparison
 splicing_list$Original <- splicing_tabla_solo_df
 # Check distribution of samples - plot superimposed sample Start and End segments
-visualise_sample_splices(splicing_list, jv1)
+visualise_sample_splices(splicing_tabla_solo_df, splicing_list, jv1)
 
 # Apply each sample splice to JoinedView to get a list of SplicedViews
 sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv1, splicing_df = x))
@@ -218,10 +218,10 @@ splicing2_list <- sample_offset_splice(splicing_tabla_solo_df, jv1, num_splices 
                                 rejection_list = list(avoid_splice_dfr))
 
 # Distribution of new segments faceted by original segment
-visualise_sample_splices(splicing2_list, jv1, avoid_splice_dfr = avoid_splice_dfr)
+visualise_sample_splices(splicing_tabla_solo_df, splicing2_list, jv1, avoid_splice_dfr = avoid_splice_dfr)
 
 # Sample segments faceted by original segment
-visualise_sample_splices(splicing2_list, jv1, avoid_splice_dfr = avoid_splice_dfr,
+visualise_sample_splices(splicing_tabla_solo_df, splicing2_list, jv1, avoid_splice_dfr = avoid_splice_dfr,
                          unstack = TRUE)
 
 # Sample using a Poisson process to count gaps but maintain segment durations
@@ -229,8 +229,8 @@ splicing3_list <- sample_gap_splice(splicing_tabla_solo_df, jv1, num_splices = 1
                                     rejection_list = list(avoid_splice_dfr))
 
 # Visualise samples
-visualise_sample_splices(splicing3_list, jv1, avoid_splice_dfr = avoid_splice_dfr)
-visualise_sample_splices(splicing3_list, jv1, avoid_splice_dfr = avoid_splice_dfr,
+visualise_sample_splices(splicing_tabla_solo_df, splicing3_list, jv1, avoid_splice_dfr = avoid_splice_dfr)
+visualise_sample_splices(splicing_tabla_solo_df, splicing3_list, jv1, avoid_splice_dfr = avoid_splice_dfr,
                          unstack = TRUE)
 
 ################################################################################
@@ -258,8 +258,7 @@ plot(o4, instrument = 'Onset')
 autoplot(o4, instrument = 'Onset')
 r5 <- get_recording("Gagaku_5_Juha", fps = 60)
 o5 <- get_onsets_selected_data(r5)
-plot(o5, instrument = 'Hichiriki', matra = 'SD_T')
-autoplot(o5, instrument = 'Hichiriki', matra = 'SD_T')
+autoplot(o5, instrument = 'Hichiriki', tactus = 'SD_T')
 
 instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa",
                  "Ryuteki", "Hichiriki", "Sho", "Biwa_RW", "Shoko_RW", "Taiko_LW",
@@ -344,9 +343,6 @@ sample5_list <- compare_avg_power2(
 ave_power_tabla_solo <- ave_power_spliceview(sv_tabla_solo, column = "Nose_x_Central_Sitar",
                                              show_plot = TRUE)
 
-
-# relative phase information - high-level function - paper
-# average phase angle from phase difference - statistical package - on each segment
 
 
 

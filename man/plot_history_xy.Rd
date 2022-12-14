@@ -7,10 +7,12 @@
 plot_history_xy(obj, maxpts = 10000)
 }
 \arguments{
-\item{v}{view object}
+\item{obj}{\code{View} object.}
+
+\item{maxpts}{maximum number of points to plot.}
 }
 \value{
-\code{ggplot} object.
+a \code{ggplot} object.
 }
 \description{
 Plot a set of data points over time
