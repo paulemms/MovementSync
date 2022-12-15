@@ -13,58 +13,69 @@ fv_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p =3)
 jv <- get_joined_view(fv_list)
 autoplot(jv)
 
-# Get duration annotation object
-d1 <- get_duration_annotation_data(r1)
-
-# Subset the time line to first 10 minutes
-jv_sub <- subset(jv, Time <= 10*60)
-autoplot(jv_sub)
-
-# Function to take jv_sub and generated a spliced_df
-splicing_df <- splice_time(jv_sub, win_size = 30, step_size = 5)
-splicing_df
+# Function to take jv and generated a spliced_df
+splicing_df <- splice_time(jv, win_size = 30, step_size = 5)
+head(splicing_df)
 
 # Apply spliced_df to jv_sub
-sv <- get_spliced_view(jv_sub, splicing_df)
+sv <- get_spliced_view(jv, splicing_df)
 
 # It will have a lot of sub-divisions so autoplot only shows first 10 segments
 autoplot(sv)
 
-# Apply granger_test to each Segment in spliced_df using 0.1s lag, then 1s
-g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 0.1)
+# Apply granger_test to each Segment in spliced_df using 1s lag
+# (full recording so will take a while it do all the linear regressions on each window)
+# NULL hypothesis is Tabla doesn't influence Sitar, small p-value rules this out
 g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
-g
+str(g, 2)
 
 # p-value plot both forward and backwards
 autoplot(g, splicing_df = splicing_df)
 
+# overlay with annotation data
+d1 <- get_duration_annotation_data(r1)
+autoplot(g, splicing_df = splicing_df) +
+  autolayer(d1, expr = 'Tier == "FORM"', fill_col = "Comments")
+
+# Now subset the time line to first 10 minutes and redo Granger Tests to speed things up
+jv_sub <- subset(jv, Time <= 10*60)
+autoplot(jv_sub)
+splicing_df <- splice_time(jv_sub, win_size = 30, step_size = 5)
+sv_sub <- get_spliced_view(jv_sub, splicing_df)
+g <- granger_test(sv_sub, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
+
 # p-value plot with influence colouring from annotation from duration data
 autoplot(g, splicing_df = splicing_df) +
-  autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
+  autolayer(d1, expr = '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
             fill_col = "Tier")
 
 # p-value plot with colours highlighting comment group
 autoplot(g, splicing_df = splicing_df) +
-  autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
+  autolayer(d1, expr = '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
             fill_col = "Comments")
 
 # p-value plot with influence colouring mapping to relevant facet
 d1_mapped <- map_to_granger_test(d1, g, "Influence T>S", "Influence S>T")
 autoplot(g, splicing_df = splicing_df) +
-  autolayer(d1_mapped, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
+  autolayer(d1_mapped, expr = '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
             fill_col = "Tier")
 
 # Data for arrows showing causality direction
+
+# Difference in log10(p_values) if one significant
 plot_influence_diagram(g, splicing_df = splicing_df)
+
+# -log10(p-Value) if significant
+plot_influence_diagram(g, splicing_df = splicing_df, two_arrows = TRUE)
 
 # Influence diagram with duration autolayer superimposed using Tier column
 plot_influence_diagram(g, splicing_df = splicing_df) +
-  autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
+  autolayer(d1, expr = '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
             fill_col = "Tier")
 
 # Influence diagram with duration autolayer superimposed using Comment column
 plot_influence_diagram(g, splicing_df = splicing_df) +
-  autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
+  autolayer(d1, expr = '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out < 600',
             fill_col = "Comments")
 
 # Splice time using Tier for larger time intervals
@@ -78,15 +89,18 @@ autoplot(sv_tier, time_breaks = 3)
 # Granger Causality Test on each Tiered time slice
 g_tier <- granger_test(sv_tier, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
 autoplot(g_tier, splicing_df = splicing_tier_df) +
-  autolayer(d1, 'Tier == "FORM"', fill_col = "Comments")
+  autolayer(d1, expr = 'Tier == "FORM"', fill_col = "Comments")
 
 # Data for arrows showing causality direction
 plot_influence_diagram(g_tier, splicing_df = splicing_tier_df) +
-  autolayer(d1, 'Tier == "FORM"', fill_col = "Comments")
+  autolayer(d1, expr = 'Tier == "FORM"', fill_col = "Comments")
 
 # Use igraph to illustrate causality on time segments
 gi <- get_granger_interactions(sv_tier, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"))
-plot(gi)
+plot(gi, mfrow = c(2, 3)) # overloaded plot command
+
+# further arguments are passed through to igraph - see ?igraph.plotting
+plot(gi, edge.width = 2, edge.label.cex = 1.5)
 
 # Now use a recording with three instruments
 r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)
@@ -113,7 +127,7 @@ plot(gi3)
 # Retrieve first test results from gi3
 t1 <- gi3$gc_list$`Nose_x_Cam1_Harmonium <--> Nose_x_Cam2_Singer`
 autoplot(t1, splicing_df = splicing3_df) +
-  autolayer(d3, 'Tier == "Form"', fill_col = "Comments")
+  autolayer(d3, expr = 'Tier == "Form"', fill_col = "Comments")
 
 # Focus on Harmonium time slice Events
 harmonium_splicing_df <- splice_time(
@@ -127,4 +141,34 @@ harmonium_gi <- get_granger_interactions(
   harmonium_sv, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer", "Nose_x_Cam2_Tabla"))
 plot(harmonium_gi)
 plot(harmonium_gi, edge.arrow.size = 0.3, vertex.color = "yellow")
+
+# Conditional Granger Causality
+
+# Granger causality tests for Harmonium and Singer conditional on Tabla player
+# on intervals where Harmonium is solo
+g_cond <- granger_test(harmonium_sv, "Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer", "Nose_x_Cam2_Tabla",
+                      lag = 1)
+g_cond$df # P_Value table
+
+# P-value plot with a layer
+autoplot(g_cond, splicing_df = harmonium_splicing_df) +
+  autolayer(d3, time_limit = c(8*60, Inf), expr = 'Tier == "Form"')
+
+# Conditional influence diagram
+plot_influence_diagram(g_cond, splicing_df = harmonium_splicing_df) +
+  autolayer(d3, time_limit = c(8*60, Inf), expr = 'Tier == "Form"')
+
+# Interactions between Harmonium and Singer
+harmonium_singer <- get_granger_interactions(
+  harmonium_sv, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer"))
+plot(harmonium_singer)
+
+# Now conditional on Tabla player
+harmonium_gci <- get_granger_interactions(
+  harmonium_sv, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer"),
+  cond_column = "Nose_x_Cam2_Tabla")
+plot(harmonium_gci)
+
+
+
 

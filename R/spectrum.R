@@ -92,9 +92,10 @@ autoplot.SpectralDensityView <- function(object, period_range = c(0, 10), colour
   title <- paste(title[title != ""], collapse="_")
 
   # Restrict time domain
-  long_df <- dplyr::filter(long_df, Period >= period_range[1] & Period <= period_range[2])
+  long_df <- dplyr::filter(long_df, .data$Period >= period_range[1] &
+                             .data$Period <= period_range[2])
 
-  ggplot2::ggplot(long_df, ggplot2::aes(x = Period, y = Density)) +
+  ggplot2::ggplot(long_df, ggplot2::aes(x = .data$Period, y = .data$Density)) +
   ggplot2::geom_line(colour = colour) +
   ggplot2::xlab('Period / min:sec') +
   ggplot2::ylab('Spectral Density') +
@@ -156,7 +157,7 @@ specgram_plot <- function(obj, ...) {
                                        "yellow", "#FF7F00", "red", "#7F0000"))
 
   ggplot2::ggplot(long_df) +
-    ggplot2::geom_tile(ggplot2::aes(X, Y, fill= Z)) +
+    ggplot2::geom_tile(ggplot2::aes(.data$X, .data$Y, fill= .data$Z)) +
     ggplot2::scale_fill_gradientn(colours = jet(20)) +
     ggplot2::labs(title = paste("Specgram for", class(obj)[1]), subtitle = subtitle) +
     ggplot2::theme(legend.position = "none") +
@@ -164,7 +165,7 @@ specgram_plot <- function(obj, ...) {
     ggplot2::ylab("Frequency / per sec") +
     ggplot2::scale_x_time(expand = c(0,0), labels = function(l) strftime(l, '%M:%S')) +
     ggplot2::scale_y_continuous(expand = c(0,0)) +
-    ggplot2::facet_grid(rows = ggplot2::vars(DataPoint))
+    ggplot2::facet_grid(rows = ggplot2::vars(.data$DataPoint))
 }
 
 

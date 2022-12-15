@@ -35,11 +35,11 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
 
   order <- round(lag * obj$recording$fps)
   if (var3 == "") {
-    df <- dplyr::select(df, Frame, Segment, !!var1, !!var2)
+    df <- dplyr::select(df, .data$Frame, .data$Segment, !!var1, !!var2)
   } else {
-    df <- dplyr::select(df, Frame, Segment, !!var1, !!var2, !!var3)
+    df <- dplyr::select(df, .data$Frame, .data$Segment, !!var1, !!var2, !!var3)
   }
-  df <- dplyr::group_by(df, Segment)
+  df <- dplyr::group_by(df, .data$Segment)
 
   # Error tests
   splicing_df <- obj$splicing_df
@@ -104,32 +104,46 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
 #' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
 #' autoplot(g, splicing_df)
 
-autoplot.GrangerTime <- function(object, splicing_df = splicing_df, lev_sig = 0.05, ...) {
+autoplot.GrangerTime <- function(object, splicing_df, lev_sig = 0.05, ...) {
+  stopifnot("Splice" %in% class(splicing_df))
 
   df <- object$df
+  condition_vars <- paste(unique(df$Var3), collapse = ", ")
+  if (condition_vars == "") {
+    title <- paste0(class(object)[1], ": Lagged at ", object$order / object$recording$fps, "s")
+  } else {
+    title <- paste0(class(object)[1], ": Conditioned on ", condition_vars,
+                    ", Lagged at ", object$order / object$recording$fps, "s")
+  }
 
-  title <- paste0(class(object)[1], ": Lagged at ", object$order / object$recording$fps, "s")
   splicing_df$Centre <- (splicing_df$Start + splicing_df$End) / 2
   splicing_df$Width <- splicing_df$End - splicing_df$Start
   df <- dplyr::inner_join(df, splicing_df[c('Segment', 'Centre', 'Width')], by = 'Segment')
   df$Test <- paste(df$Var1, df$Var2, sep = ' <- \n')
 
   ggplot2::ggplot(df) +
-    ggplot2::geom_col(ggplot2::aes(x = Centre, y = P_Value), width = max(df$Width)/10, fill = 'black') +
+    ggplot2::geom_col(ggplot2::aes(x = .data$Centre, y = .data$P_Value),
+                      width = max(df$Width)/10, fill = 'black') +
     ggplot2::geom_hline(yintercept = lev_sig, colour = 'blue') +
     ggplot2::labs(title = title, subtitle = object$recording$stem) +
     ggplot2::xlab("Time / min:sec") +
     ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
-    ggplot2::facet_grid(rows = ggplot2::vars(Test))
+    ggplot2::facet_grid(rows = ggplot2::vars(.data$Test))
 }
 
 
 #' Plot influence diagram from a GrangerTest object
 #'
-#' Arrows show causality direction.
+#' Arrows show causality (influencing) direction.
+#'
+#' If `two_arrows` is FALSE and one
+#' of the p-values is signficant then -log10(p_value) difference is plotted i.e
+#  an insignificant p-value may be used in the difference.
+#'
 #' @param obj GrangerTest object
 #' @param splicing_df Splicing data.frame object
 #' @param lev_sig significance level
+#' @param two_arrows plot influence arrows both ways? (Default is FALSE).
 #'
 #' @return ggplot object
 #' @export
@@ -143,35 +157,69 @@ autoplot.GrangerTime <- function(object, splicing_df = splicing_df, lev_sig = 0.
 #' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 3/25)
 #'
 #' plot_influence_diagram(g, splicing_df)
+#' plot_influence_diagram(g, splicing_df, two_arrows = TRUE)
 #'
 #' d1 <- get_duration_annotation_data(r1)
 #' plot_influence_diagram(g, splicing_df) +
 #' autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60',
 #'           fill_col = "Tier")
 
-plot_influence_diagram <- function(obj, splicing_df = splicing_df, lev_sig = 0.05) {
-  stopifnot(class(obj) == 'GrangerTime')
+plot_influence_diagram <- function(obj, splicing_df, two_arrows = FALSE, lev_sig = 0.05) {
+  stopifnot(class(obj) == 'GrangerTime', "Splice" %in% class(splicing_df))
 
   df <- obj$df
+  condition_vars <- paste(unique(df$Var3), collapse = ", ")
+  if (condition_vars == "") {
+    title <- "Influence Diagram"
+  } else {
+    title <- paste("Influence Diagram Conditioned on", condition_vars)
+  }
 
   splicing_df$Centre <- (splicing_df$Start + splicing_df$End) / 2
   df <- dplyr::inner_join(df, splicing_df[c('Segment', 'Centre')], by = 'Segment')
   x <- df[c("Var1", "Centre", "P_Value")]
   wide_df <- tidyr::pivot_wider(x, names_from = "Var1", values_from = "P_Value")
-  wide_df <- dplyr::mutate(wide_df, Value = dplyr::if_else(
-      Nose_x_Central_Sitar < lev_sig | Nose_x_Central_Tabla < lev_sig,
-      log10(Nose_x_Central_Tabla/Nose_x_Central_Sitar), NA_real_))
-  wide_df <- dplyr::select(wide_df, Centre, Value)
 
-  ggplot2::ggplot(wide_df) +
-    ggplot2::geom_segment(colour="black", ggplot2::aes(x=Centre, xend=Centre, y=0, yend=Value),
-                 arrow = ggplot2::arrow(length = ggplot2::unit(0.3, "cm"), type = "closed")) +
-    ggplot2::labs(title = "Influence Diagram", subtitle = obj$recording$stem) +
-    ggplot2::xlab("Time / min:sec") +
-    ggplot2::ylab("-log10(P_Value) difference if one significant") +
-    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
-    ggplot2::annotate("text", label = unique(df$Var1)[1], x=max(df$Centre)/2, y=max(-log10(df$P_Value))) +
-    ggplot2::annotate("text", label = unique(df$Var1)[2], x=max(df$Centre)/2, y=min(log10(df$P_Value)))
+  vars <- colnames(wide_df)[-1]
+  text_posx <- (max(df$Centre) - min(df$Centre)) / 2 + min(df$Centre)
+
+  wide_df <- dplyr::mutate(
+    wide_df,
+    Value = dplyr::if_else(.data[[vars[1]]] < lev_sig | .data[[vars[2]]] < lev_sig,
+    log10(.data[[vars[2]]]/.data[[vars[1]]]), NA_real_),
+    UpValue = dplyr::if_else(
+      .data[[vars[1]]] < lev_sig, -log10(.data[[vars[1]]]), NA_real_),
+    DownValue = dplyr::if_else(
+      .data[[vars[2]]] < lev_sig, log10(.data[[vars[2]]]), NA_real_)
+  )
+  wide_df <- dplyr::select(wide_df, .data$Centre, .data$Value, .data$UpValue, .data$DownValue)
+
+  if (two_arrows) {
+
+    ggplot2::ggplot(wide_df) +
+      ggplot2::geom_segment(colour="black", ggplot2::aes(x=.data$Centre, xend=.data$Centre, y=0, yend=.data$UpValue),
+                            arrow = ggplot2::arrow(length = ggplot2::unit(0.3, "cm"), type = "closed")) +
+      ggplot2::geom_segment(colour="black", ggplot2::aes(x=.data$Centre, xend=.data$Centre, y=0, yend=.data$DownValue),
+                            arrow = ggplot2::arrow(length = ggplot2::unit(0.3, "cm"), type = "closed")) +
+      ggplot2::labs(title = title, subtitle = obj$recording$stem) +
+      ggplot2::xlab("Time / min:sec") +
+      ggplot2::ylab("-log10(P_Value) if significant") +
+      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
+      ggplot2::annotate("text", label = vars[1], x=text_posx, y=max(-log10(df$P_Value))) +
+      ggplot2::annotate("text", label = vars[2], x=text_posx, y=min(log10(df$P_Value)))
+  } else {
+
+    ggplot2::ggplot(wide_df) +
+      ggplot2::geom_segment(colour="black", ggplot2::aes(x=.data$Centre, xend=.data$Centre, y=0, yend=.data$Value),
+                   arrow = ggplot2::arrow(length = ggplot2::unit(0.3, "cm"), type = "closed")) +
+      ggplot2::labs(title = title, subtitle = obj$recording$stem) +
+      ggplot2::xlab("Time / min:sec") +
+      ggplot2::ylab("-log10(P_Value) difference if one significant") +
+      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
+      ggplot2::annotate("text", label = vars[1], x=text_posx, y=max(-log10(df$P_Value))) +
+      ggplot2::annotate("text", label = vars[2], x=text_posx, y=min(log10(df$P_Value)))
+
+  }
 }
 
 
@@ -238,11 +286,12 @@ get_granger_interactions <- function(sv, columns, cond_column = "", sig_level = 
     var1 <- a[1, j]
     var2 <- a[2, j]
     g_test <- paste0(var1, " <--> ", var2)
+    if (cond_column != "") g_test <- paste0(g_test, " | ", cond_column)
     message("Calculating Granger Test: ", g_test)
     gc_list[[g_test]] <- granger_test(sv, var1, var2, cond_column, lag = lag,
                                       granger_fn = granger_fn)
   }
-  l <- list(gc_list = gc_list, sig_level = sig_level, lag = lag)
+  l <- list(gc_list = gc_list, sig_level = sig_level, lag = lag, cond_column = cond_column)
   class(l) <- "GrangerInteraction"
 
   invisible(l)
@@ -294,7 +343,7 @@ plot.GrangerInteraction <- function(x, mfrow = NULL, mar = c(1, 1, 1, 1),
   for (segment in unique(df$Segment)) {
 
     # Extract the links and removing missings
-    splice_df <- dplyr::filter(df, Segment == !!segment)
+    splice_df <- dplyr::filter(df, .data$Segment == !!segment)
     splice_df$Var1 <- sapply(strsplit(splice_df$Var1, "_"), function(x) x[4])
     splice_df$Var2 <- sapply(strsplit(splice_df$Var2, "_"), function(x) x[4])
     links <- data.frame(from = splice_df$Var2, to = splice_df$Var1, x = splice_df$mlog10pv)
@@ -312,8 +361,9 @@ plot.GrangerInteraction <- function(x, mfrow = NULL, mar = c(1, 1, 1, 1),
     plot(net, layout=l, edge.curved=.4, main=segment, ...)
   }
 
-  main_title <- paste0("Recording: ", x$gc_list[[1]]$recording$stem, ", Lag = ",
-                       x$lag, "s")
+  conditional <- if (x$cond_column != "") paste0(", Conditional on ", x$cond_column) else ""
+  main_title <- paste0("Recording: ", x$gc_list[[1]]$recording$stem, conditional,
+                       ", Lag = ", x$lag, "s")
   graphics::mtext(text = main_title, side = 1, line = -1, outer = TRUE)
   graphics::par(old_params)
 

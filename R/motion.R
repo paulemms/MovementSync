@@ -35,10 +35,10 @@ plot_history_xy <- function(obj, maxpts=10000) {
   subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-  ggplot2::ggplot(df1, ggplot2::aes(x, y, alpha = Time, colour = DataPoint)) +
+  ggplot2::ggplot(df1, ggplot2::aes(.data$x, .data$y, alpha = .data$Time, colour = .data$DataPoint)) +
     ggplot2::labs(title = paste("DataPoint History of", class(obj)[1]), subtitle = subtitle) +
     ggplot2::geom_point(alpha = 0.1, shape = 19) +
-    ggplot2::geom_segment(ggplot2::aes(x = x, xend = xend, y = y, yend = yend),
+    ggplot2::geom_segment(ggplot2::aes(x = .data$x, xend = .data$xend, y = .data$y, yend = .data$yend),
                           arrow = ggplot2::arrow(length = ggplot2::unit(0.2, "cm"), type = "closed"))
 
 }
@@ -79,7 +79,7 @@ distribution_dp <- function(obj, maxpts = 50000, alpha = 0.1, ...) {
   subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-  ggplot2::ggplot(df1, ggplot2::aes(x, y, colour = DataPoint, stroke = NA)) +
+  ggplot2::ggplot(df1, ggplot2::aes(.data$x, .data$y, colour = .data$DataPoint, stroke = NA)) +
     ggplot2::labs(title = paste("Distribution of", class(obj)[1]), subtitle = subtitle) +
     ggplot2::geom_point(alpha = alpha, shape = 19, ...) +
     ggplot2::guides(colour=ggplot2::guide_legend(override.aes=list(alpha=1, size=3)))
@@ -120,7 +120,7 @@ velocity_dp <- function(obj, add_mean = TRUE, vscale = 5, maxpts = 10000, alpha 
     for (i in seq_along(d_dp)) {
       df[d_dp[i]] <- df[d_dp[i]] * vscale + col_means[y_dp[i]]
     }
-  } else stop(x)
+  }
 
   long_df <- tidyr::pivot_longer(df[c("Time", d_dp)], cols = d_dp,
                                  names_to = "DataPoint", values_to = "d")
@@ -128,12 +128,13 @@ velocity_dp <- function(obj, add_mean = TRUE, vscale = 5, maxpts = 10000, alpha 
   subtitle <- c(obj$recording$stem, obj$vid, obj$direct, obj$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-  ggplot2::ggplot(long_df, ggplot2::aes(Time, d, colour = DataPoint)) +
+  ggplot2::ggplot(long_df, ggplot2::aes(.data$Time, .data$d, colour = .data$DataPoint)) +
     ggplot2::labs(title = paste("Velocity of", class(obj)[1]), subtitle = subtitle) +
     ggplot2::geom_point(alpha = alpha, ...) +
     ggplot2::geom_line() +
     ggplot2::guides(colour=ggplot2::guide_legend(override.aes=list(alpha=1, size=3))) +
     ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+
 }
 
 #' Motion gram of a view object

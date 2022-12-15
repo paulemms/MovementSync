@@ -20,7 +20,7 @@ plot.Duration <- function(x, ...) {
 #' @param x S3 object.
 #' @param ... passed to [barplot()].
 #' @param instrument column name.
-#' @param tactus beat column name.
+#' @param tactus beat column name (defaults to "Matra").
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -30,16 +30,16 @@ plot.Duration <- function(x, ...) {
 plot.OnsetsSelected <- function(x, instrument = 'Inst', tactus = 'Matra', ...) {
 
   dfr_list <- x[sapply(x, class) == 'data.frame']
-  df <- dplyr::bind_rows(dfr_list, .id = 'Tala')
+  df <- dplyr::bind_rows(dfr_list, .id = 'Metre')
   stopifnot(instrument %in% colnames(df), tactus %in% colnames(df))
 
   df <- dplyr::rename(df, 'Tactus' = tactus)
   df['is_na_column'] <- !is.na(df[instrument])
 
-  group_df <- dplyr::group_by(df, Tactus, Tala)
-  output_df <- dplyr::summarise(group_df, Number_of_Onsets = sum(is_na_column))
+  group_df <- dplyr::group_by(df, .data$Tactus, .data$Metre)
+  output_df <- dplyr::summarise(group_df, Number_of_Onsets = sum(.data$is_na_column))
 
-  graphics::barplot(Number_of_Onsets ~ Tala + Tactus, beside = T, legend.text = T, data = output_df,
+  graphics::barplot(Number_of_Onsets ~ Metre + Tactus, beside = T, legend.text = T, data = output_df,
           main = paste("OnsetsSelected Object:", instrument))
 }
 

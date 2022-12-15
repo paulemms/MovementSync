@@ -16,7 +16,8 @@ get_data_points(jv)
 jv_sub <- subset(jv, data_points = c('LEar', 'Pitch', 'Smooth'))
 autoplot(jv_sub)
 
-# Applying SG filter can re-introduce interior NAs
+# Applying SG filter can re-introduce interior NAs if the series starts with NAs
+# So filters are only applied on interval where time series starts and ends
 rv <- get_raw_view(r1, "Central" ,"", "Sitar")
 autoplot(rv, columns = 'LEar_x')
 pv <- get_processed_view(rv)
@@ -36,7 +37,7 @@ head(pvz$df)
 fvz <- apply_filter_sgolay(pvz, data_points = c('LEar', 'LElbow', 'LEye'), n = 19, p = 4)
 head(fvz$df)
 
-# Run the examples in the package
-# devtools::run_examples()
+# Check the package for CRAN
+# devtools::check()
 
 

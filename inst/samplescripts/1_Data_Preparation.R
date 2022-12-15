@@ -148,10 +148,7 @@ o5 <- get_onsets_selected_data(r5)
 autoplot(o5, instrument = 'Hichiriki', tactus = 'SD_T')
 m5 <- get_metre_data(r5)
 autoplot(m5)
-d5 <- get_duration_annotation_data(r5) # not in same format as others
-
-# Alter the column names to be consistent
-colnames(d5) <- c("Tier", "Comments", "In", "Out", "Duration")
+d5 <- get_duration_annotation_data(r5)
 
 # 8 views - automation
 rv_view <- get_raw_views(r5)
@@ -169,7 +166,6 @@ autoplot(fv_view$V3_Ryuteki) + autolayer(m5) +
   xlim_duration(d5, 'Tier == "Section" & Comments == "B"')
 autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", alpha = 0,
                                          instrument_cols = instruments)
-
 
 ################################################################################
 ###  Data analysis

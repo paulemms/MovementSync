@@ -11,7 +11,7 @@
 
 \item{window_duration}{duration of window around metre.}
 
-\item{rhythms}{vector of talas to subset on.}
+\item{rhythms}{vector of Metres to subset on.}
 
 \item{...}{ignored.}
 }

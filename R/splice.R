@@ -35,7 +35,7 @@ splice_time <- function(x, ...) {
 splice_time.OnsetsDifference <- function(x, window_duration, metres = NULL, make.unique = TRUE, ...) {
   stopifnot(all(metres %in% unique(x$Metre)))
   if (!is.null(metres)) {
-    df <- dplyr::filter(x, Metre %in% unique(x$Metre))
+    df <- dplyr::filter(x, .data$Metre %in% unique(x$Metre))
   } else {
     df <- x
   }
@@ -48,7 +48,7 @@ splice_time.OnsetsDifference <- function(x, window_duration, metres = NULL, make
   df <- stats::na.omit(df)
 
   if (make.unique) df$Segment <- make.unique(df$Segment, ...)
-  output_df <- dplyr::arrange(df, Start)
+  output_df <- dplyr::arrange(df, .data$Start)
 
   class(output_df) <- c('Splice', 'data.frame')
 
@@ -60,7 +60,7 @@ splice_time.OnsetsDifference <- function(x, window_duration, metres = NULL, make
 #'
 #' @param x `Metre` object.
 #' @param window_duration duration of window around metre.
-#' @param rhythms vector of talas to subset on.
+#' @param rhythms vector of Metres to subset on.
 #' @param ... ignored.
 #'
 #' @return a `Splice` object.
@@ -87,7 +87,7 @@ splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
     df_list[[j]] <- df
   }
   output_df <- dplyr::bind_rows(df_list)
-  output_df <- dplyr::arrange(output_df, Start)
+  output_df <- dplyr::arrange(output_df, .data$Start)
   class(output_df) <- c('Splice', 'data.frame')
 
   output_df
@@ -238,7 +238,7 @@ get_spliced_view <- function(v, splicing_df) {
 
   }
   output_df <- dplyr::bind_rows(df_list, .id = "Segment")
-  output_df <- dplyr::arrange(output_df, Frame, Segment)
+  output_df <- dplyr::arrange(output_df, .data$Frame, .data$Segment)
 
   l <- list(df = output_df, splicing_df = splicing_df, vid = v$vid,
             direct = v$direct, inst = v$inst, recording = v$recording)
@@ -325,9 +325,9 @@ sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.acti
       # stack the time intervals
       duration_dfr <- dplyr::mutate(
         sv$splicing_df,
-        Duration = End - Start,
-        Cumulative_Duration = cumsum(Duration),
-        Start_Duration = dplyr::lag(Cumulative_Duration, 1, default = 0)
+        Duration = .data$End - .data$Start,
+        Cumulative_Duration = cumsum(.data$Duration),
+        Start_Duration = dplyr::lag(.data$Cumulative_Duration, 1, default = 0)
       )
       cumduration_times <- duration_dfr[, 'Cumulative_Duration']
       # Sample from [0, total length of intervals]
@@ -382,7 +382,7 @@ sample_time_spliced_views <- function(..., num_samples, replace = FALSE, na.acti
 is_splice_overlapping <- function(...) {
 
   splice_dfr <- dplyr::bind_rows(...)
-  splice_dfr <- dplyr::arrange(splice_dfr, Start)
+  splice_dfr <- dplyr::arrange(splice_dfr, .data$Start)
   overlap <- splice_dfr[['End']] > dplyr::lead(splice_dfr[['Start']], 1)
 
   any(overlap, na.rm = TRUE)

@@ -10,6 +10,7 @@
 \usage{
 \method{autolayer}{OnsetsSelected}(
   object,
+  time_limits = c(-Inf, Inf),
   colour = "Inst.Name",
   fill = "Metre",
   alpha = 0.4,
@@ -27,6 +28,7 @@
 
 \method{autolayer}{Duration}(
   object,
+  time_limits = c(-Inf, Inf),
   expr = "Tier == \\"FORM\\"",
   fill_column = "Comments",
   geom = "rect",
@@ -39,6 +41,8 @@
 \arguments{
 \item{object}{S3 object}
 
+\item{time_limits}{tuple of time limits.}
+
 \item{colour}{name of column for colouring.}
 
 \item{fill}{name of column for filling.}
@@ -48,8 +52,6 @@
 \item{instrument_cols}{instrument column names.}
 
 \item{...}{passed to geom.}
-
-\item{time_limits}{tuple of time limits for the Metre object.}
 
 \item{expr}{logical expression for filtering.}
 

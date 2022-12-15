@@ -38,7 +38,7 @@ NULL
 #' @rdname autoplot
 autoplot.Duration <- function(object, ...) {
   ggplot2::ggplot(object) +
-    ggplot2::geom_col(ggplot2::aes(x = Tier, y = Duration, fill = In),
+    ggplot2::geom_col(ggplot2::aes(x = .data$Tier, y = .data$Duration, fill = .data$In),
                       position = "stack") +
     ggplot2::labs(title = "Duration Object") +
     ggplot2::scale_fill_viridis_b() +
@@ -61,11 +61,11 @@ autoplot.OnsetsSelected <- function(object, instrument = 'Inst', tactus = 'Matra
   max_x <- max(df$Tactus, na.rm = TRUE)
 
   ggplot2::ggplot(df) +
-    ggplot2::geom_bar(ggplot2::aes(x = Tactus, fill = Metre), stat = "count") +
+    ggplot2::geom_bar(ggplot2::aes(x = .data$Tactus, fill = .data$Metre), stat = "count") +
     ggplot2::scale_x_continuous(breaks = min_x:max_x, labels=as.character(min_x:max_x)) +
     ggplot2::ylab("Onset Count") +
     ggplot2::labs(title = paste("OnsetsSelected Object:", instrument)) +
-    ggplot2::facet_wrap(~Metre)
+    ggplot2::facet_wrap(~.data$Metre)
 
 }
 
@@ -177,10 +177,10 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
                                  names_to = "Series", values_to = "Value")
 
   # Find Start and Duration of each Segment
-  start_df <- dplyr::group_by(long_df, Segment)
-  start_df <- dplyr::summarize(start_df, Start = min(Time, na.rm=TRUE),
-                               Duration = max(Time, na.rm=TRUE) - Start)
-  start_df <- dplyr::arrange(start_df, Start)
+  start_df <- dplyr::group_by(long_df, .data$Segment)
+  start_df <- dplyr::summarize(start_df, Start = min(.data$Time, na.rm=TRUE),
+                               Duration = max(.data$Time, na.rm=TRUE) - .data$Start)
+  start_df <- dplyr::arrange(start_df, .data$Start)
 
   long_df$Segment_f <- factor(long_df$Segment, levels = start_df$Segment)
 
@@ -196,7 +196,7 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
     scale_x_time <- ggplot2::scale_x_time(breaks = breaks, labels = function(l) strftime(l, '%M:%S'))
   }
 
-  ggplot2::ggplot(long_df, ggplot2::aes(x = Time, y = Value, col = Series)) +
+  ggplot2::ggplot(long_df, ggplot2::aes(x = .data$Time, y = .data$Value, col = .data$Series)) +
     ggplot2::geom_point() + ggplot2::geom_line() +
     ggplot2::labs(title = class(object)[1], subtitle = subtitle) +
     xlab + scale_x_time +
@@ -212,7 +212,7 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
 #' @param fill name of column for filling.
 #' @param instrument_cols instrument column names.
 #' @param ... passed to geom.
-#' @param time_limits tuple of time limits for the Metre object.
+#' @param time_limits tuple of time limits.
 #' @param colour name of column for colouring.
 #' @param expr logical expression for filtering.
 #' @param fill_column data column used for fill.
@@ -254,20 +254,25 @@ NULL
 #'
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.OnsetsSelected <- function(object, colour = "Inst.Name", fill = "Metre",
-                                     alpha = 0.4, instrument_cols = NULL, ...) {
+autolayer.OnsetsSelected <- function(object, time_limits = c(-Inf, Inf), colour = "Inst.Name",
+                                     fill = "Metre", alpha = 0.4, instrument_cols = NULL, ...) {
   dfr_list <- object[sapply(object, class) == 'data.frame']
   df <- dplyr::bind_rows(dfr_list, .id = "Metre")
   if (!is.null(instrument_cols)) {
     df <- tidyr::pivot_longer(df, cols = instrument_cols, names_to = "Inst.Name",
                               values_to = "Inst")
   }
-  df <- dplyr::group_by(df, Metre, Inst.Name)
-  rects <- dplyr::summarise(df, Inst_Min=min(Inst, na.rm=TRUE), Inst_Max=max(Inst, na.rm=TRUE))
+  df <- dplyr::group_by(df, .data$Metre, .data$Inst.Name)
+  rects <- dplyr::summarise(df, Inst_Min=min(.data$Inst, na.rm=TRUE), Inst_Max=max(.data$Inst, na.rm=TRUE))
+
+  # Subset based on limits
+  rects <- dplyr::filter(rects, .data$Inst_Max >= time_limits[1] & .data$Inst_Min <= time_limits[2])
+  rects$Inst_Min <- ifelse(rects$Inst_Min < time_limits[1], time_limits[1], rects$Inst_Min)
+  rects$Inst_Max <- ifelse(rects$Inst_Max > time_limits[2], time_limits[2], rects$Inst_Max)
 
   ggplot2::geom_rect(
     data = rects,
-    ggplot2::aes(xmin = Inst_Min, xmax = Inst_Max, ymin = -Inf, ymax = Inf,
+    ggplot2::aes(xmin = .data$Inst_Min, xmax = .data$Inst_Max, ymin = -Inf, ymax = Inf,
                  colour = !!ggplot2::sym(colour), fill = !!ggplot2::sym(fill)),
     alpha = alpha)
 }
@@ -287,11 +292,17 @@ autolayer.Metre <- function(object, time_limits = c(-Inf, Inf), colour = "hotpin
 
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.Duration <- function(object, expr = 'Tier == "FORM"', fill_column = "Comments",
-                               geom = "rect", vline_column = "In", ...) {
+autolayer.Duration <- function(object, time_limits = c(-Inf, Inf), expr = 'Tier == "FORM"',
+                               fill_column = "Comments", geom = "rect", vline_column = "In", ...) {
   expr <- rlang::parse_expr(expr)
   df <- as.data.frame(object)
   rects <- dplyr::filter(df, !!expr)
+
+  # Subset based on limits
+  rects <- dplyr::filter(rects, .data$Out >= time_limits[1] & .data$In <= time_limits[2])
+  rects$In <- ifelse(rects$In < time_limits[1], time_limits[1], rects$In)
+  rects$Out <- ifelse(rects$Out > time_limits[2], time_limits[2], rects$Out)
+
   # order the fill column for legend
   rects[fill_column] <- factor(rects[[fill_column]], levels = unique(rects[[fill_column]]))
 
@@ -327,7 +338,8 @@ autolayer.Splice <- function(object, geom = "rect", vline_column = "Start", ...)
   if (geom == "rect") {
     ggplot2::geom_rect(
       data = rects,
-      ggplot2::aes(xmin = Start, xmax = End, ymin = -Inf, ymax = Inf, fill = .data[['Segment']]),
+      ggplot2::aes(xmin = .data$Start, xmax = .data$End, ymin = -Inf, ymax = Inf,
+                   fill = .data[['Segment']]),
       alpha = 0.4)
   } else if (geom == "vline") {
     colour <-  if ("colour" %in% names(l)) l[["colour"]] else "black"

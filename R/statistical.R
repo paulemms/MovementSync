@@ -142,12 +142,12 @@ compare_ave_power1 <- function(jv, splicing_df, splice_name, num_segment_samples
     subtitle <- c(jv$recording$stem, jv$vid, jv$direct, jv$inst)
     subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-    g <- ggplot2::ggplot(long_dfr, ggplot2::aes(x = Period, colour = Sampled_From)) +
+    g <- ggplot2::ggplot(long_dfr, ggplot2::aes(x = .data$Period, colour = .data$Sampled_From)) +
       ggplot2::xlab("Period / sec") +
       ggplot2::labs(title = "Comparison of Average Power on Sampled Segments",
                     subtitle = paste(subtitle, ':', column)) +
       ggplot2::scale_x_continuous(trans='log2') +
-      ggplot2::geom_line(ggplot2::aes(y = Average_Power)) +
+      ggplot2::geom_line(ggplot2::aes(y = .data$Average_Power)) +
       ggplot2::facet_wrap(~Sampled_From)
     print(g)
   }
@@ -210,19 +210,19 @@ ave_power_over_splices <- function(jv, splicing_df, num_splices, column, samplin
   ave_power_df <- dplyr::bind_rows(df_list, .id = 'Sample')
 
   sample_ave_power <- ave_power_df
-  sample_ave_power <- dplyr::filter(sample_ave_power, Sample != 'Original')
-  sample_ave_power <- dplyr::group_by(sample_ave_power, Period)
-  sample_ave_power <- dplyr::summarise(sample_ave_power, dplyr::across(!Sample, mean, na.rm = TRUE))
+  sample_ave_power <- dplyr::filter(sample_ave_power, .data$Sample != 'Original')
+  sample_ave_power <- dplyr::group_by(sample_ave_power, .data$Period)
+  sample_ave_power <- dplyr::summarise(sample_ave_power, dplyr::across(!.data$Sample, mean, na.rm = TRUE))
 
   original_ave_power <- ave_power_df
-  original_ave_power <- dplyr::filter(original_ave_power, Sample == 'Original')
+  original_ave_power <- dplyr::filter(original_ave_power, .data$Sample == 'Original')
 
   ave_power_df <- dplyr::bind_rows(
     'Random Splices' = sample_ave_power,
     'Original Splice' = original_ave_power,
   .id = 'Sample')
 
-  long_ave_power_df <- tidyr::pivot_longer(ave_power_df, cols = !c(Sample, Period),
+  long_ave_power_df <- tidyr::pivot_longer(ave_power_df, cols = !c(.data$Sample, .data$Period),
                                            names_to = 'Segment', values_to = 'Average_Power')
 
   if (show_plot) {
@@ -230,12 +230,12 @@ ave_power_over_splices <- function(jv, splicing_df, num_splices, column, samplin
     subtitle <- paste(jv$recording$stem, column, sep = ' - ')
 
     g <- ggplot2::ggplot(long_ave_power_df) +
-      ggplot2::geom_line(ggplot2::aes(x = Period, y = Average_Power, colour = Sample)) +
+      ggplot2::geom_line(ggplot2::aes(x = .data$Period, y = .data$Average_Power, colour = .data$Sample)) +
       ggplot2::labs(title = "Mean Average Power Over Random Splices", subtitle = subtitle) +
       ggplot2::xlab("Period / sec") +
       ggplot2::ylab("Mean Average Power") +
       ggplot2::scale_x_continuous(trans='log2') +
-      ggplot2::facet_wrap(~Segment)
+      ggplot2::facet_wrap(~.data$Segment)
     print(g)
 
   }
@@ -312,16 +312,16 @@ ave_power_spliceview <- function(sv, column, show_plot = FALSE, ...) {
     subtitle <- c(sv$recording$stem, sv$vid, sv$direct, sv$inst)
     subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-    dfr <- tidyr::pivot_longer(output_dfr, cols = -Period,
+    dfr <- tidyr::pivot_longer(output_dfr, cols = -.data$Period,
                                names_to = 'Segment', values_to= 'Value')
     g <- ggplot2::ggplot(dfr) +
-      ggplot2::geom_line(ggplot2::aes(x = Period, y = Value)) +
+      ggplot2::geom_line(ggplot2::aes(x = .data$Period, y = .data$Value)) +
       ggplot2::labs(title = "Average Power on Segments",
                     subtitle = paste(subtitle, ':', column)) +
       ggplot2::xlab("Period / min:sec") +
       ggplot2::ylab("Average Power") +
       ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
-      ggplot2::facet_wrap(~Segment)
+      ggplot2::facet_wrap(~.data$Segment)
     print(g)
   }
 
@@ -368,10 +368,10 @@ ave_cross_power_spliceview <- function(sv, columns, show_plot = FALSE, ...) {
     subtitle <- c(sv$recording$stem, sv$vid, sv$direct, sv$inst)
     subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-    dfr <- tidyr::pivot_longer(output_dfr, cols = -Period,
+    dfr <- tidyr::pivot_longer(output_dfr, cols = -.data$Period,
                                names_to = 'Segment', values_to= 'Value')
     g <- ggplot2::ggplot(dfr) +
-      ggplot2::geom_line(ggplot2::aes(x = Period, y = Value)) +
+      ggplot2::geom_line(ggplot2::aes(x = .data$Period, y = .data$Value)) +
       ggplot2::labs(title = "Average Cross Power on Segments",
                     subtitle = paste(subtitle, ':', paste0(columns, collapse = ", "))) +
       ggplot2::xlab("Period / min:sec") +
@@ -478,13 +478,13 @@ compare_avg_power2 <- function(sv1, sv2, name1, name2, num_samples,
     subtitle <- c(sv1$recording$stem, sv1$vid, sv1$direct, sv1$inst)
     subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-    g <- ggplot2::ggplot(long_dfr, ggplot2::aes(x = Period, colour = Sampled_From)) +
+    g <- ggplot2::ggplot(long_dfr, ggplot2::aes(x = .data$Period, colour = .data$Sampled_From)) +
       ggplot2::xlab("Period / sec") +
       ggplot2::labs(title = "Comparison of Average Power on Sampled Segments",
                     subtitle = paste(subtitle, ':', column)) +
       ggplot2::scale_x_continuous(trans='log2') +
-      ggplot2::geom_line(ggplot2::aes(y = Average_Power)) +
-      ggplot2::facet_wrap(~Sampled_From)
+      ggplot2::geom_line(ggplot2::aes(y = .data$Average_Power)) +
+      ggplot2::facet_wrap(~.data$Sampled_From)
     print(g)
   }
 
@@ -545,12 +545,12 @@ compare_avg_cross_power2 <- function(sv1, sv2, name1, name2, num_samples,
     subtitle <- c(sv1$recording$stem, sv1$vid, sv1$direct, sv1$inst)
     subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-    g <- ggplot2::ggplot(long_dfr, ggplot2::aes(x = Period, colour = Sampled_From)) +
+    g <- ggplot2::ggplot(long_dfr, ggplot2::aes(x = .data$Period, colour = .data$Sampled_From)) +
       ggplot2::xlab("Period / sec") +
       ggplot2::labs(title = "Comparison of Average Cross Power on Sampled Segments",
                     subtitle = paste(subtitle, ':', paste0(columns, collapse = ", "))) +
       ggplot2::scale_x_continuous(trans='log2') +
-      ggplot2::geom_line(ggplot2::aes(y = Average_Cross_Power)) +
+      ggplot2::geom_line(ggplot2::aes(y = .data$Average_Cross_Power)) +
       ggplot2::facet_wrap(~Sampled_From)
     print(g)
   }
@@ -804,26 +804,26 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
   dfr <- difference_onsets(onset_obj, instruments = instruments, splicing_dfr = splicing_dfr, expr = expr)
   if (nrow(dfr) == 0) stop('No data from splice to summarise')
 
-  long_dfr <- tidyr::pivot_longer(dfr, cols = -c(Metre, Ref_Beat_Time, Segment),
+  long_dfr <- tidyr::pivot_longer(dfr, cols = -c(.data$Metre, .data$Ref_Beat_Time, .data$Segment),
                                   names_to = 'Instrument_Pair', values_to = 'Value')
 
   if (!is.null(filter_pair)) {
-    long_dfr <- dplyr::filter(long_dfr, grepl(filter_pair, Instrument_Pair))
+    long_dfr <- dplyr::filter(long_dfr, grepl(filter_pair, .data$Instrument_Pair))
   }
 
   long_dfr$Segment <- factor(long_dfr$Segment, unique(long_dfr$Segment))
-  summary_dfr <- dplyr::select(long_dfr, -c(Metre, Ref_Beat_Time))
-  summary_dfr <- dplyr::group_by(summary_dfr, Instrument_Pair, Segment)
+  summary_dfr <- dplyr::select(long_dfr, -c(.data$Metre, .data$Ref_Beat_Time))
+  summary_dfr <- dplyr::group_by(summary_dfr, .data$Instrument_Pair, .data$Segment)
   summary_dfr <- dplyr::summarise(
     summary_dfr,
-    'N' = sum(!is.na(Value)),
-    'Mean Difference' = mean(Value, na.rm = TRUE),
-    'Mean Absolute Difference' = mean(abs(Value), na.rm = TRUE),
-    'SD Difference' = stats::sd(Value, na.rm = TRUE)
+    'N' = sum(!is.na(.data$Value)),
+    'Mean Difference' = mean(.data$Value, na.rm = TRUE),
+    'Mean Absolute Difference' = mean(abs(.data$Value), na.rm = TRUE),
+    'SD Difference' = stats::sd(.data$Value, na.rm = TRUE)
   )
 
   if (na_omit) {
-    summary_dfr <- dplyr::filter(summary_dfr, N > 0)
+    summary_dfr <- dplyr::filter(summary_dfr, .data$N > 0)
   }
 
 
@@ -834,7 +834,7 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
     long_dfr$Statistic_f <- factor(long_dfr$Statistic, unique(long_dfr$Statistic))
 
     g <- ggplot2::ggplot(long_dfr) +
-      ggplot2::geom_col(ggplot2::aes(x = Value, y = Instrument_Pair, fill = Statistic)) +
+      ggplot2::geom_col(ggplot2::aes(x = .data$Value, y = .data$Instrument_Pair, fill = .data$Statistic)) +
       ggplot2::theme(legend.position = "none") +
       ggplot2::facet_grid(Segment ~ Statistic_f,
                           labeller = ggplot2::labeller(Statistic_f = ggplot2::label_wrap_gen(12),
@@ -880,18 +880,19 @@ visualise_sample_splices <- function(splicing_df, splicing_list, jv, overlay = T
 
   if (unstack) {
     g <- ggplot2::ggplot(df) +
-      ggplot2::geom_linerange(ggplot2::aes(y = Sample, xmin = Start, xmax = End, colour = Segment)) +
+      ggplot2::geom_linerange(ggplot2::aes(y = .data$Sample, xmin = .data$Start, xmax = .data$End, colour = .data$Segment)) +
       ggplot2::theme(axis.ticks.y=ggplot2::element_blank(), axis.text.y=ggplot2::element_blank(),
             panel.background = ggplot2::element_blank()) +
-      ggplot2::facet_wrap(~Segment) +
+      ggplot2::facet_wrap(~.data$Segment) +
       ggplot2::geom_rect(data = splicing_df,
-                ggplot2::aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5)
+                ggplot2::aes(xmin = .data$Start, xmax = .data$End, ymin = 0, ymax = Inf, fill = .data$Segment), alpha = 0.5)
 
   } else {
-    g <- ggplot2::ggplot(df, ggplot2::aes(y = Segment)) +
-    ggplot2::geom_linerange(ggplot2::aes(xmin = Start, xmax = End), linewidth = 3, alpha = 0.1) +
+    g <- ggplot2::ggplot(df, ggplot2::aes(y = .data$Segment)) +
+    ggplot2::geom_linerange(ggplot2::aes(xmin = .data$Start, xmax = .data$End), linewidth = 3, alpha = 0.1) +
       ggplot2::geom_rect(data = splicing_df,
-                         ggplot2::aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf, fill = Segment), alpha = 0.5)
+                         ggplot2::aes(xmin = .data$Start, xmax = .data$End, ymin = 0,
+                                      ymax = Inf, fill = .data$Segment), alpha = 0.5)
   }
 
   # Add scale and title
@@ -902,7 +903,7 @@ visualise_sample_splices <- function(splicing_df, splicing_list, jv, overlay = T
   if (nrow(avoid_splice_dfr) > 0) {
     if (unstack) avoid_splice_dfr <- avoid_splice_dfr[-1] else avoid_splice_dfr$Segment <- NA
     g <- g + ggplot2::geom_rect(data = avoid_splice_dfr,
-                       ggplot2::aes(xmin = Start, xmax = End, ymin = 0, ymax = Inf), alpha = 0.5)
+                       ggplot2::aes(xmin = .data$Start, xmax = .data$End, ymin = 0, ymax = Inf), alpha = 0.5)
   }
 
   g

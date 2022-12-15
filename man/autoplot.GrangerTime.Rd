@@ -4,7 +4,7 @@
 \alias{autoplot.GrangerTime}
 \title{Plot a Granger S3 object}
 \usage{
-\method{autoplot}{GrangerTime}(object, splicing_df = splicing_df, lev_sig = 0.05, ...)
+\method{autoplot}{GrangerTime}(object, splicing_df, lev_sig = 0.05, ...)
 }
 \arguments{
 \item{object}{S3 object.}

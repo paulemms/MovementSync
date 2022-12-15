@@ -1,25 +1,24 @@
 # TODO
-# If interior NAs in filter issue warning and interpolate - only apply filters to interior numeric data
-# Update the show_plot type graphs to have similar features to other plots- see ave_power_spliceview
-# Replace Matra by Tactus for beat in function calls and plots
-# Replace Tala by Metre for beat in function calls and plots
-# Add time_limits to autoplots and autolayers - do duration layer
+# Add conditional granger implementations by modifying lmtest.
+# Option for arrows both ways on influencing plots
+# Update the show_plot type graphs to have similar features to other plots - see ave_power_spliceview
 # Martin Word Doc 10122022 Section 1
 # Martin Word Doc 10122022 Section 2
 # Martin Word Doc 10122022 Section 3
 # Martin Word Doc 10122022 Section 4
-# Package checks (include documentation) - add man pages
-# Look at some possible conditional granger implementations - modify lmtest?
 # See Martin email on modification of Metre object for Tempo
 # Check splice data.frames really are Splice objects in functions
 # Splicing for proportion of interval on metre objects
-# Option for arrows both ways on influencing plots
-# Periodicity - restrict time domain, windowed 10s version
 # Order onsetselected data
 # Generalise autolayer to accept parameters or expr - done for splice_time.Duration - others?
 # Single time series autoplot has z axis label see section 5.
 
 # DONE
+# Package checks (include documentation) - add man pages
+# Only applied filters to interior numeric data - added unit test
+# Add time_limits to autoplots and autolayers - done duration layer and onsetsselected
+# Replace Tala by Metre for beat in function calls and plots
+# Replace Matra by Tactus for beat in function calls and plots
 # Updated names of Metre files on google drive.
 # Email on structure of duration data in 5th reordering to Martin
 # Added periodicity FFT plot to data analysis walkthrough

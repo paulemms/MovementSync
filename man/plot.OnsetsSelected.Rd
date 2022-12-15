@@ -11,7 +11,7 @@
 
 \item{instrument}{column name.}
 
-\item{tactus}{beat column name.}
+\item{tactus}{beat column name (defaults to "Matra").}
 
 \item{...}{passed to \code{\link[=barplot]{barplot()}}.}
 }

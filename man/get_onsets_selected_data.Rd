@@ -4,10 +4,12 @@
 \alias{get_onsets_selected_data}
 \title{Get onsets selected files}
 \usage{
-get_onsets_selected_data(recording)
+get_onsets_selected_data(recording, tactus = "Matra")
 }
 \arguments{
 \item{recording}{\code{Recording} object.}
+
+\item{tactus}{optional name of the beat column to ensure it is turned into integer.}
 }
 \value{
 list of data.frames

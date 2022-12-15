@@ -242,19 +242,15 @@ visualise_sample_splices(splicing_tabla_solo_df, splicing3_list, jv1, avoid_spli
 # Splices based on OnsetSelected object
 r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 o1 <- get_onsets_selected_data(r1)
-plot(o1)
 autoplot(o1)
 r2 <- get_recording("NIR_DBh_Malhar_2Gats", fps = 25)
 o2 <- get_onsets_selected_data(r2)
-plot(o2)
 autoplot(o2)
 r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)
 o3 <- get_onsets_selected_data(r3)
-plot(o3, instrument = 'Onset')
 autoplot(o3, instrument = 'Onset')
 r4 <- get_recording("NIRP1_VS_Hams", fps = 25)
 o4 <- get_onsets_selected_data(r4)
-plot(o4, instrument = 'Onset')
 autoplot(o4, instrument = 'Onset')
 r5 <- get_recording("Gagaku_5_Juha", fps = 60)
 o5 <- get_onsets_selected_data(r5)
@@ -266,11 +262,11 @@ instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa"
 
 # Difference in onsets for each instrument pair
 po1 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
-ggpairs(po1, columns = 2:4, aes(colour = Tala))
+ggpairs(po1, columns = 2:4, aes(colour = Metre))
 po2 <- difference_onsets(o2, instruments = c('Inst', 'Tabla'))
-ggpairs(po2, columns = 2:4, aes(colour = Tala))
+ggpairs(po2, columns = 2:4, aes(colour = Metre))
 po5 <- difference_onsets(o5, instruments = instruments)
-ggpairs(po5, columns = 2:5, aes(colour = Tala)) # only one Tala in plot
+ggpairs(po5, columns = 2:5, aes(colour = Metre)) # only one Metre in plot
 
 # Summary of difference in onsets (allows segmentation via splicing_dfr argument)
 summary_dfr <- summary_onsets(o5, r5, instruments = instruments,

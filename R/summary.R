@@ -53,7 +53,7 @@ summary.OnsetsSelected <- function(object, ...) {
 
 #' Summarise Metre object
 #'
-#' Summarises the cycle length for each Tala.
+#' Summarises the cycle length for each Metre.
 #'
 #' @param object `Metre` object.
 #' @param ... ignored.

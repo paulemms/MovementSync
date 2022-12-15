@@ -46,6 +46,7 @@ get_recording <- function(stem, fps, folder_in = "Original", path = "~/movements
 #' Get onsets selected files
 #'
 #' @param recording `Recording` object.
+#' @param tactus optional name of the beat column to ensure it is turned into integer.
 #'
 #' @return list of data.frames
 #' @export
@@ -54,7 +55,7 @@ get_recording <- function(stem, fps, folder_in = "Original", path = "~/movements
 #' @examples
 #' r <- get_sample_recording()
 #' o <- get_onsets_selected_data(r)
-get_onsets_selected_data <- function(recording) {
+get_onsets_selected_data <- function(recording, tactus = "Matra") {
 
   # Identify onset files
   is_onsets_selected_file <- grepl(
@@ -67,8 +68,8 @@ get_onsets_selected_data <- function(recording) {
   for (fil in onsets_selected_files) {
     df <- utils::read.csv(fil)
     # specify colClasses?
-    if ("Matra" %in% colnames(df)) {
-      df[["Matra"]] <- suppressWarnings(as.integer(df[["Matra"]]))
+    if (tactus %in% colnames(df)) {
+      df[[tactus]] <- suppressWarnings(as.integer(df[[tactus]]))
     }
     output_onsets_selected[[basename(fil)]] <- df
   }
@@ -480,8 +481,13 @@ apply_filter <- function(view, data_points, sig_filter, param_str = "", folder_o
 
     # Apply filter
   df_filt <- df_selected
+  se_dfr <- get_start_end(df_filt[-c(1:2)])
   for (cn in colnames(df_filt)[-c(1:2)]) {
-    df_filt[[cn]] <- signal::filter(sig_filter, df_selected[[cn]])
+    start_pos <- se_dfr[cn, 'Start']
+    end_pos <- se_dfr[cn, 'End']
+    if (!is.na(start_pos) && !is.na(end_pos)) {
+      df_filt[[cn]][start_pos:end_pos] <- signal::filter(sig_filter, df_selected[[cn]][start_pos:end_pos])
+    }
   }
 
   # Save version
@@ -672,4 +678,18 @@ get_feature_data <- function(recording, vid, direct, inst, interpolate_data = FA
   class(l) <- c("FilteredView", "ProcessedView", "RawView", "View")
 
   invisible(l)
+}
+
+
+# Find the start and end row of each view data column for filtering
+get_start_end <- function(dfr) {
+  is_not_na_dfr <- !is.na(dfr)
+  start_pos <- apply(is_not_na_dfr, 2, which.max)
+  end_pos <- apply(is_not_na_dfr, 2, function(x) nrow(dfr) + 1 - which.max(rev(x)))
+
+  is_col_all_na <- colSums(is.na(dfr)) == nrow(dfr)
+  start_pos[is_col_all_na] <- NA
+  end_pos[is_col_all_na] <- NA
+
+  data.frame(Start = start_pos, End = end_pos)
 }

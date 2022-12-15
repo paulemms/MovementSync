@@ -4,12 +4,14 @@
 \alias{plot_influence_diagram}
 \title{Plot influence diagram from a GrangerTest object}
 \usage{
-plot_influence_diagram(obj, splicing_df = splicing_df, lev_sig = 0.05)
+plot_influence_diagram(obj, splicing_df, two_arrows = FALSE, lev_sig = 0.05)
 }
 \arguments{
 \item{obj}{GrangerTest object}
 
 \item{splicing_df}{Splicing data.frame object}
+
+\item{two_arrows}{plot influence arrows both ways? (Default is FALSE).}
 
 \item{lev_sig}{significance level}
 }
@@ -17,7 +19,11 @@ plot_influence_diagram(obj, splicing_df = splicing_df, lev_sig = 0.05)
 ggplot object
 }
 \description{
-Arrows show causality direction.
+Arrows show causality (influencing) direction.
+}
+\details{
+If \code{two_arrows} is FALSE and one
+of the p-values is signficant then -log10(p_value) difference is plotted i.e
 }
 \examples{
 r1 <- get_sample_recording()
@@ -28,6 +34,7 @@ sv <- get_spliced_view(jv_sub, splicing_df)
 g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 3/25)
 
 plot_influence_diagram(g, splicing_df)
+plot_influence_diagram(g, splicing_df, two_arrows = TRUE)
 
 d1 <- get_duration_annotation_data(r1)
 plot_influence_diagram(g, splicing_df) +

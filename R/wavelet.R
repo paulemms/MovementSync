@@ -293,7 +293,7 @@ plot_wt_energy <- function(obj, view) {
                     WT_Energy = power_sum / max(power_sum, na.rm = TRUE))
 
   ggplot2::ggplot(dfr) +
-    ggplot2::geom_line(ggplot2::aes(x = x, y = WT_Energy)) +
+    ggplot2::geom_line(ggplot2::aes(x = .data$x, y = .data$WT_Energy)) +
     ggplot2::labs(title = "WT Energy Time Series", subtitle = paste(view$recording$stem, "-", obj$subtitle)) +
     ggplot2::xlab("Time / min:sec") +
     ggplot2::ylab("WT Energy") +
@@ -332,7 +332,7 @@ plot_cwt_energy <- function(obj, view) {
                     WT_Energy = power_sum / max(power_sum, na.rm = TRUE))
 
   ggplot2::ggplot(dfr) +
-    ggplot2::geom_line(ggplot2::aes(x = x, y = WT_Energy)) +
+    ggplot2::geom_line(ggplot2::aes(x = .data$x, y = .data$WT_Energy)) +
     ggplot2::labs(title = "CWT Energy Time Series", subtitle = paste(view$recording$stem, "-", obj$subtitle)) +
     ggplot2::xlab("Time / min:sec") +
     ggplot2::ylab("CWT Energy") +
@@ -545,9 +545,9 @@ plot_roll_resultant_length <- function(obj, window_duration = 1, smooth = FALSE,
 
   g <- autoplot(rollz) +
     ggplot2::labs(title = "Relative Phase Analysis", subtitle = obj$subtitle) +
-    ggplot2::geom_hline(ggplot2::aes(yintercept = Value, colour = Sync, linetype = Sync),
+    ggplot2::geom_hline(ggplot2::aes(yintercept = .data$Value, colour = .data$Sync, linetype = .data$Sync),
                         linewidth = 1, alpha = 0.9, data = ref_line_df, show.legend = FALSE) +
-    ggplot2::geom_text(ggplot2::aes(Inf, Value, label = Sync, hjust = 'inward'),
+    ggplot2::geom_text(ggplot2::aes(Inf, .data$Value, label = .data$Sync, hjust = 'inward'),
                        vjust = -0.5, data = ref_line_df) +
     ggplot2::scale_colour_brewer(palette = 'Reds', direction = -1) +
     ggplot2::xlab("Time / min:sec") + ggplot2::ylab("Rolling Mean Resultant Length")  +
