@@ -277,6 +277,7 @@ pull_segment_spliceview <- function(sv, FUN, element, ...) {
 #'
 #' @param sv `SplicedView` object
 #' @param column name of data column on which to calculate average power.
+#' @param colour name of colour on plots (default is 'black').
 #' @param show_plot show a plot? (Default is FALSE).
 #' @param ... passed to [analyze_wavelet()].
 #'
@@ -295,9 +296,10 @@ pull_segment_spliceview <- function(sv, FUN, element, ...) {
 #' jv <- get_joined_view(fv_list)
 #' sv_duration_smile <- get_spliced_view(jv, splicing_df = splicing_smile_df)
 #' ave_power_smile <- ave_power_spliceview(sv_duration_smile,
-#'   column = "Nose_x_Central_Sitar")
+#'   column = "Nose_x_Central_Sitar", show_plot=TRUE)
 #' head(ave_power_smile)
-ave_power_spliceview <- function(sv, column, show_plot = FALSE, ...) {
+ave_power_spliceview <- function(sv, column, colour = 'black', show_plot = FALSE, ...) {
+  stopifnot("SplicedView" %in% class(sv))
 
   wavelet_list <- apply_segment_spliceview(sv, FUN = analyze_wavelet, column = column, ...)
   output_mat <- sapply(wavelet_list$output, function(x) x$Power.avg)
@@ -312,16 +314,20 @@ ave_power_spliceview <- function(sv, column, show_plot = FALSE, ...) {
     subtitle <- c(sv$recording$stem, sv$vid, sv$direct, sv$inst)
     subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-    dfr <- tidyr::pivot_longer(output_dfr, cols = -.data$Period,
-                               names_to = 'Segment', values_to= 'Value')
-    g <- ggplot2::ggplot(dfr) +
-      ggplot2::geom_line(ggplot2::aes(x = .data$Period, y = .data$Value)) +
+    z <- zoo::zoo(output_dfr[-1], order.by = output_dfr[[1]])
+
+    if (ncol(z) > 20) {
+      warning("Too many segments - only showing first 20")
+      z <- z[, 1:20]
+    }
+
+    g <- autoplot(z, facets = ~ Series, col = I(colour)) +
       ggplot2::labs(title = "Average Power on Segments",
                     subtitle = paste(subtitle, ':', column)) +
-      ggplot2::xlab("Period / min:sec") +
-      ggplot2::ylab("Average Power") +
-      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
-      ggplot2::facet_wrap(~.data$Segment)
+      ggplot2::coord_trans(x = "log2") +
+      ggplot2::xlab("Period / sec") +
+      ggplot2::ylab("Average Power")
+
     print(g)
   }
 
@@ -333,6 +339,7 @@ ave_power_spliceview <- function(sv, column, show_plot = FALSE, ...) {
 #'
 #' @param sv `SplicedView` object
 #' @param columns column names in the data of each `SplicedView` object.
+#' @param colour name of colour on plots (default is 'black').
 #' @param show_plot show a plot (default is FALSE).
 #' @param ... passed to [analyze_coherency()].
 #'
@@ -353,7 +360,7 @@ ave_power_spliceview <- function(sv, column, show_plot = FALSE, ...) {
 #' ave_cross_power_smile <- ave_cross_power_spliceview(
 #'   sv_duration_smile, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"), show_plot = TRUE)
 #' head(ave_cross_power_smile)
-ave_cross_power_spliceview <- function(sv, columns, show_plot = FALSE, ...) {
+ave_cross_power_spliceview <- function(sv, columns, colour = 'black', show_plot = FALSE, ...) {
 
   coherency_list <- apply_segment_spliceview(sv, FUN = analyze_coherency, columns = columns, ...)
   output_mat <- sapply(coherency_list$output, function(x) x$Power.xy.avg)
@@ -368,16 +375,20 @@ ave_cross_power_spliceview <- function(sv, columns, show_plot = FALSE, ...) {
     subtitle <- c(sv$recording$stem, sv$vid, sv$direct, sv$inst)
     subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-    dfr <- tidyr::pivot_longer(output_dfr, cols = -.data$Period,
-                               names_to = 'Segment', values_to= 'Value')
-    g <- ggplot2::ggplot(dfr) +
-      ggplot2::geom_line(ggplot2::aes(x = .data$Period, y = .data$Value)) +
+    z <- zoo::zoo(output_dfr[-1], order.by = output_dfr[[1]])
+
+    if (ncol(z) > 20) {
+      warning("Too many segments - only showing first 20")
+      z <- z[, 1:20]
+    }
+
+    g <- autoplot(z, facets = ~ Series, col = I(colour)) +
       ggplot2::labs(title = "Average Cross Power on Segments",
-                    subtitle = paste(subtitle, ':', paste0(columns, collapse = ", "))) +
-      ggplot2::xlab("Period / min:sec") +
-      ggplot2::ylab("Average Cross Power") +
-      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S')) +
-      ggplot2::facet_wrap(~Segment)
+                    subtitle = paste(subtitle, ':', paste(columns, collapse = ", "))) +
+      ggplot2::coord_trans(x = "log2") +
+      ggplot2::xlab("Period / sec") +
+      ggplot2::ylab("Average Cross Power")
+
     print(g)
 
   }

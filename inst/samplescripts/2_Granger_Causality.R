@@ -100,7 +100,7 @@ gi <- get_granger_interactions(sv_tier, c("Nose_x_Central_Sitar", "Nose_x_Centra
 plot(gi, mfrow = c(2, 3)) # overloaded plot command
 
 # further arguments are passed through to igraph - see ?igraph.plotting
-plot(gi, edge.width = 2, edge.label.cex = 1.5)
+plot(gi, edge.width = 1, edge.label.cex = 3)
 
 # Now use a recording with three instruments
 r3 <- get_recording("NIRP1_MAK_Jaun", fps = 25)

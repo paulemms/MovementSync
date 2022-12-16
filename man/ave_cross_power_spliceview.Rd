@@ -4,12 +4,20 @@
 \alias{ave_cross_power_spliceview}
 \title{Get the average cross power on each segment in a SplicedView}
 \usage{
-ave_cross_power_spliceview(sv, columns, show_plot = FALSE, ...)
+ave_cross_power_spliceview(
+  sv,
+  columns,
+  colour = "black",
+  show_plot = FALSE,
+  ...
+)
 }
 \arguments{
 \item{sv}{\code{SplicedView} object}
 
 \item{columns}{column names in the data of each \code{SplicedView} object.}
+
+\item{colour}{name of colour on plots (default is 'black').}
 
 \item{show_plot}{show a plot (default is FALSE).}
 

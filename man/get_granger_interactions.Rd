@@ -33,6 +33,7 @@ GrangerInteraction object
 Get Granger Causality interactions
 }
 \examples{
+\dontrun{
 r <- get_sample_recording()
 fv_list <- get_filtered_views(r, "Nose", n = 41, p = 3)
 jv_sub <- get_joined_view(fv_list)
@@ -41,11 +42,13 @@ splicing_df <- splice_time(l)
 sv <- get_spliced_view(jv_sub, splicing_df)
 get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"), lag = 1/25)
 }
+}
 \seealso{
 Other Granger Causality: 
 \code{\link{autoplot.GrangerTime}()},
 \code{\link{granger_test}()},
 \code{\link{map_to_granger_test}()},
+\code{\link{ms_condgrangertest2}()},
 \code{\link{ms_condgrangertest}()},
 \code{\link{ms_grangertest1}()},
 \code{\link{ms_grangertest2}()},

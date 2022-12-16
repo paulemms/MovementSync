@@ -36,6 +36,7 @@ Other Granger Causality:
 \code{\link{autoplot.GrangerTime}()},
 \code{\link{get_granger_interactions}()},
 \code{\link{granger_test}()},
+\code{\link{ms_condgrangertest2}()},
 \code{\link{ms_condgrangertest}()},
 \code{\link{ms_grangertest1}()},
 \code{\link{ms_grangertest2}()},

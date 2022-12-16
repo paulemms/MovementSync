@@ -24,8 +24,8 @@
 #' jv_sub <- get_joined_view(fv_list)
 #' splicing_df <- splice_time(jv_sub, win_size = 5, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
-#' granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla")
-#' granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", "Nose_y_Central_Tabla")
+#' granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1/25)
+#' granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", "Nose_y_Central_Tabla", lag = 1/25)
 
 granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_grangertest2,
                          cond_granger_fn = ms_condgrangertest) {
@@ -34,7 +34,9 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
   stopifnot(var1 %in% colnames(df), var2 %in% colnames(df),
             (var3 == "") || (var3 %in% colnames(df)) )
 
+  # Calculate frame lag
   order <- round(lag * obj$recording$fps)
+
   if (var3 == "") {
     df <- dplyr::select(df, .data$Frame, .data$Segment, !!var1, !!var2)
   } else {
@@ -91,19 +93,12 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
 #' @family Granger Causality
 #'
 #' @examples
-#' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' r1 <- get_sample_recording()
 #' fv_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p = 3)
 #' jv_sub <- get_joined_view(fv_list)
 #' splicing_df <- splice_time(jv_sub, win_size = 3, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 3/25) # small order
-#' autoplot(g, splicing_df)
-#'
-#' # larger window, larger lag
-#' splicing_df <- splice_time(jv_sub, win_size = 10, step_size = 1)
-#' sv <- get_spliced_view(jv_sub, splicing_df)
-#' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1)
 #' autoplot(g, splicing_df)
 
 autoplot.GrangerTime <- function(object, splicing_df, lev_sig = 0.05, ...) {
@@ -138,14 +133,15 @@ autoplot.GrangerTime <- function(object, splicing_df, lev_sig = 0.05, ...) {
 #'
 #' Arrows show causality (influencing) direction.
 #'
-#' If `two_arrows` is FALSE and one
+#' By default `two_arrows` is TRUE and an influencing arrow is drawn for each
+#' significant p-value. If `two_arrows` is FALSE and one
 #' of the p-values is signficant then -log10(p_value) difference is plotted i.e
 #  an insignificant p-value may be used in the difference.
 #'
 #' @param obj GrangerTest object
 #' @param splicing_df Splicing data.frame object
 #' @param lev_sig significance level
-#' @param two_arrows plot influence arrows both ways? (Default is FALSE).
+#' @param two_arrows plot influence arrows both ways? (Default is TRUE).
 #'
 #' @return ggplot object
 #' @export
@@ -167,7 +163,7 @@ autoplot.GrangerTime <- function(object, splicing_df, lev_sig = 0.05, ...) {
 #' autolayer(d1, expr = (Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60,
 #'           fill_col = "Tier")
 
-plot_influence_diagram <- function(obj, splicing_df, two_arrows = FALSE, lev_sig = 0.05) {
+plot_influence_diagram <- function(obj, splicing_df, two_arrows = TRUE, lev_sig = 0.05) {
   stopifnot(class(obj) == 'GrangerTime', "Splice" %in% class(splicing_df))
 
   df <- obj$df
@@ -272,6 +268,7 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #' @family Granger Causality
 #'
 #' @examples
+#' \dontrun{
 #' r <- get_sample_recording()
 #' fv_list <- get_filtered_views(r, "Nose", n = 41, p = 3)
 #' jv_sub <- get_joined_view(fv_list)
@@ -279,6 +276,7 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"), lag = 1/25)
+#' }
 
 get_granger_interactions <- function(sv, columns, cond_column = "", sig_level = 0.05, lag = 1,
                                      granger_fn = ms_grangertest2) {
@@ -464,6 +462,7 @@ ms_grangertest1 <- function(x, y, order = 1, na.action = stats::na.omit, ...) {
 #' data(ChickEgg, package = "lmtest")
 #' ms_grangertest2(ChickEgg, order = 3)
 
+
 ms_grangertest2 <- function(x, y, order = 1, na.action = stats::na.omit, ...) {
 
   ## either x is a 2-column time series
@@ -511,8 +510,8 @@ ms_grangertest2 <- function(x, y, order = 1, na.action = stats::na.omit, ...) {
 #' Test for Conditional Granger Causality
 #'
 #' Faster implementation of the vector version of  [lmtest::grangertest()] with
-#' conditioning on a third variable. The function assumes time series always
-#' have the same start date and periodicity, which is true for the data in this
+#' conditioning on the *history* of a third variable. The function assumes time
+#' series always have the same start date and periodicity, which is true for the data in this
 #' package.
 #'
 #' @param x response vector of observations.
@@ -547,6 +546,81 @@ ms_condgrangertest <- function(x, y, z, order = 1, na.action = stats::na.omit, .
   ## compute lagged observations
   x1 <- c(rep(NA, order), as.vector(x))
   y1 <- c(rep(NA, order), as.vector(y))
+  z1 <- c(rep(NA, order), as.vector(z))
+  lagX <- stats::embed(x1, order + 1)
+  lagY <- stats::embed(y1, order + 1)
+  lagZ <- stats::embed(z1, order + 1)
+
+  # Apply na.action
+  numcolX <- ncol(lagX)
+  numcolY <- ncol(lagY)
+  numcolZ <- ncol(lagZ)
+  lag_temp <- na.action(cbind(lagY, lagX, lagZ))
+
+  y <- as.vector(lag_temp[,1])
+  lagY <- as.matrix(lag_temp[,2:numcolY,drop=FALSE]) # skip y
+  lagX <- as.matrix(lag_temp[,(numcolY + 2):(numcolY + numcolX),drop=FALSE]) # skip x
+  lagZ <- as.matrix(lag_temp[,(numcolY + numcolX + 2):ncol(lag_temp),drop=FALSE]) # skip z
+
+  ## fit full model
+  fm <- stats::lm(y ~ lagY + lagX + lagZ)
+
+  ## compare models with waldtest with lagX removed
+  rval <- lmtest::waldtest(fm, 2, ...)
+
+  ## adapt annotation
+  model_1 <- paste0("Model 1: ", ynam, " ~ ", "Lags(", ynam, ", 1:", order,
+                    ") + Lags(", xnam, ", 1:", order, ") + Lags(", znam, ", 1:", order, ")")
+  model_2 <- paste0("Model 2: ", ynam, " ~ ", "Lags(", ynam, ", 1:", order,
+                    ") + Lags(", znam, ", 1:", order, ")")
+  attr(rval, "heading") <- paste0(
+    "Conditional Granger causality test\n",
+    model_1, "\n", model_2, "\n"
+    )
+
+  return(rval)
+}
+
+
+#' Test for Conditional Granger Causality
+#'
+#' Faster implementation of the vector version of  [lmtest::grangertest()] with
+#' conditioning on the present value of a third variable. The function assumes
+#' time series always have the same start date and periodicity, which is true
+#' for the data in this package.
+#'
+#' @param x response vector of observations.
+#' @param y explanatory vector of observations.
+#' @param z conditioning vector of observations
+#' @param order number of lags (in frames).
+#' @param na.action a function for eliminating NAs after aligning the series x and y.
+#' @param ... passed to [lmtest::waldtest()].
+#'
+#' @return Anova object
+#' @export
+#' @family Granger Causality
+#'
+#' @examples
+#' data(wages, package = "lmtest")
+#' diff_wages <- diff(wages)
+#'
+#' # Granger tests
+#' lmtest::grangertest(diff_wages[, 'w'], diff_wages[, 'CPI'], order = 3)
+#' ms_grangertest1(diff_wages[, 'w'], diff_wages[, 'CPI'], order = 3)
+#' ms_grangertest2(diff_wages[, 'w'], diff_wages[, 'CPI'], order = 3)
+#'
+#' ms_condgrangertest2(diff_wages[, 'w'], diff_wages[, 'CPI'], diff_wages[, 'u'], order = 3)
+
+ms_condgrangertest2 <- function(x, y, z, order = 1, na.action = stats::na.omit, ...) {
+
+  xnam <- deparse(substitute(x))
+  ynam <- deparse(substitute(y))
+  znam <- deparse(substitute(z))
+  stopifnot((NCOL(x) == 1), (NCOL(y) == 1), (NCOL(z) == 1))
+
+  ## compute lagged observations
+  x1 <- c(rep(NA, order), as.vector(x))
+  y1 <- c(rep(NA, order), as.vector(y))
   lagX <- stats::embed(x1, order + 1)
   lagY <- stats::embed(y1, order + 1)
   z <- as.vector(z)
@@ -569,15 +643,12 @@ ms_condgrangertest <- function(x, y, z, order = 1, na.action = stats::na.omit, .
 
   ## adapt annotation
   model_1 <- paste0("Model 1: ", ynam, " ~ ", "Lags(", ynam, ", 1:", order, ") + Lags(", xnam, ", 1:", order,
-        ") + ", znam)
+                    ") + ", znam)
   model_2 <- paste0("Model 2: ", ynam, " ~ ", "Lags(", ynam, ", 1:", order, ") + ", znam)
   attr(rval, "heading") <- paste0(
     "Conditional Granger causality test\n",
     model_1, "\n", model_2, "\n"
-    )
+  )
 
   return(rval)
 }
-
-
-

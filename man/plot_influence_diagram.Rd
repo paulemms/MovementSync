@@ -4,14 +4,14 @@
 \alias{plot_influence_diagram}
 \title{Plot influence diagram from a GrangerTest object}
 \usage{
-plot_influence_diagram(obj, splicing_df, two_arrows = FALSE, lev_sig = 0.05)
+plot_influence_diagram(obj, splicing_df, two_arrows = TRUE, lev_sig = 0.05)
 }
 \arguments{
 \item{obj}{GrangerTest object}
 
 \item{splicing_df}{Splicing data.frame object}
 
-\item{two_arrows}{plot influence arrows both ways? (Default is FALSE).}
+\item{two_arrows}{plot influence arrows both ways? (Default is TRUE).}
 
 \item{lev_sig}{significance level}
 }
@@ -22,7 +22,8 @@ ggplot object
 Arrows show causality (influencing) direction.
 }
 \details{
-If \code{two_arrows} is FALSE and one
+By default \code{two_arrows} is TRUE and an influencing arrow is drawn for each
+significant p-value. If \code{two_arrows} is FALSE and one
 of the p-values is signficant then -log10(p_value) difference is plotted i.e
 }
 \examples{
@@ -47,6 +48,7 @@ Other Granger Causality:
 \code{\link{get_granger_interactions}()},
 \code{\link{granger_test}()},
 \code{\link{map_to_granger_test}()},
+\code{\link{ms_condgrangertest2}()},
 \code{\link{ms_condgrangertest}()},
 \code{\link{ms_grangertest1}()},
 \code{\link{ms_grangertest2}()},

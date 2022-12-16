@@ -34,6 +34,7 @@ Other Granger Causality:
 \code{\link{get_granger_interactions}()},
 \code{\link{granger_test}()},
 \code{\link{map_to_granger_test}()},
+\code{\link{ms_condgrangertest2}()},
 \code{\link{ms_condgrangertest}()},
 \code{\link{ms_grangertest2}()},
 \code{\link{plot.GrangerInteraction}()},

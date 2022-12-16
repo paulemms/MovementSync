@@ -38,6 +38,7 @@ plot_power_spectrum(w2, fv2)
 
 # Plot normalised wavelet energy as a function of time
 plot_wt_energy(w1, fv2)
+plot_wt_energy(w2, fv2)
 
 # Average power for two series: Nose_x, Nose_y
 maximum.level <- 1.001*max(w1$Power.avg, w2$Power.avg)

@@ -53,7 +53,7 @@
 
 \item{...}{passed to geom.}
 
-\item{expr}{logical expression for filtering.}
+\item{expr}{unquoted R expression for filtering data (default is Tier =='FORM').}
 
 \item{fill_column}{data column used for fill.}
 

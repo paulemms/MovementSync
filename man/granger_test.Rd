@@ -45,14 +45,15 @@ fv_list <- lapply(pv_list, apply_filter_sgolay, data_points = "Nose", n = 41, p 
 jv_sub <- get_joined_view(fv_list)
 splicing_df <- splice_time(jv_sub, win_size = 5, step_size = 0.5)
 sv <- get_spliced_view(jv_sub, splicing_df)
-granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla")
-granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", "Nose_y_Central_Tabla")
+granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1/25)
+granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", "Nose_y_Central_Tabla", lag = 1/25)
 }
 \seealso{
 Other Granger Causality: 
 \code{\link{autoplot.GrangerTime}()},
 \code{\link{get_granger_interactions}()},
 \code{\link{map_to_granger_test}()},
+\code{\link{ms_condgrangertest2}()},
 \code{\link{ms_condgrangertest}()},
 \code{\link{ms_grangertest1}()},
 \code{\link{ms_grangertest2}()},

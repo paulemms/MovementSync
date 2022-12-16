@@ -4,14 +4,25 @@
 \alias{splice_time.Metre}
 \title{Generate spliced timeline using a Metre object}
 \usage{
-\method{splice_time}{Metre}(x, window_duration, rhythms = NULL, ...)
+\method{splice_time}{Metre}(
+  x,
+  window_duration = NULL,
+  window_proportion = NULL,
+  tactus = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{\code{Metre} object.}
 
-\item{window_duration}{duration of window around metre.}
+\item{window_duration}{duration of window around beat
+(may lead to overlapping windows if large).}
 
-\item{rhythms}{vector of Metres to subset on.}
+\item{window_proportion}{sets the window duration around beat based on a
+proportion (0, 0.5] of the gap to the previous and following cycles. The first
+and last beats in each Metre are removed.}
+
+\item{tactus}{vector of Metres to subset on.}
 
 \item{...}{ignored.}
 }
@@ -25,6 +36,8 @@ Generate spliced timeline using a Metre object
 r <- get_sample_recording()
 m <- get_metre_data(r)
 splicing_df <- splice_time(m, window_duration = 1)
+head(splicing_df)
+splicing_df <- splice_time(m, window_proportion = 0.25)
 head(splicing_df)
 }
 \seealso{

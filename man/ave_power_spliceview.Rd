@@ -4,12 +4,14 @@
 \alias{ave_power_spliceview}
 \title{Get the average power on each segment in a SplicedView}
 \usage{
-ave_power_spliceview(sv, column, show_plot = FALSE, ...)
+ave_power_spliceview(sv, column, colour = "black", show_plot = FALSE, ...)
 }
 \arguments{
 \item{sv}{\code{SplicedView} object}
 
 \item{column}{name of data column on which to calculate average power.}
+
+\item{colour}{name of colour on plots (default is 'black').}
 
 \item{show_plot}{show a plot? (Default is FALSE).}
 
@@ -32,7 +34,7 @@ fv_list <- get_filtered_views(r, data_points = "Nose", n = 41, p = 3)
 jv <- get_joined_view(fv_list)
 sv_duration_smile <- get_spliced_view(jv, splicing_df = splicing_smile_df)
 ave_power_smile <- ave_power_spliceview(sv_duration_smile,
-  column = "Nose_x_Central_Sitar")
+  column = "Nose_x_Central_Sitar", show_plot=TRUE)
 head(ave_power_smile)
 }
 \seealso{

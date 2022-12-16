@@ -59,8 +59,12 @@ splice_time.OnsetsDifference <- function(x, window_duration, metres = NULL, make
 #' Generate spliced timeline using a Metre object
 #'
 #' @param x `Metre` object.
-#' @param window_duration duration of window around metre.
-#' @param rhythms vector of Metres to subset on.
+#' @param window_duration duration of window around beat
+#' (may lead to overlapping windows if large).
+#' @param window_proportion sets the window duration around beat based on a
+#' proportion (0, 0.5] of the gap to the previous and following cycles. The first
+#' and last beats in each Metre are removed.
+#' @param tactus vector of Metres to subset on.
 #' @param ... ignored.
 #'
 #' @return a `Splice` object.
@@ -72,22 +76,50 @@ splice_time.OnsetsDifference <- function(x, window_duration, metres = NULL, make
 #' m <- get_metre_data(r)
 #' splicing_df <- splice_time(m, window_duration = 1)
 #' head(splicing_df)
-splice_time.Metre <- function(x, window_duration, rhythms = NULL, ...) {
-  if (is.null(rhythms)) rhythms <- names(x)
-  stopifnot(all(rhythms %in% names(x)))
+#' splicing_df <- splice_time(m, window_proportion = 0.25)
+#' head(splicing_df)
+splice_time.Metre <- function(x, window_duration = NULL, window_proportion = NULL,
+                              tactus = NULL, ...) {
+  if (is.null(tactus)) tactus <- names(x)
+  stopifnot(
+    all(tactus %in% names(x)),
+    (!is.null(window_duration) || !is.null(window_proportion)),
+    !(!is.null(window_duration) && !is.null(window_proportion))
+  )
 
   df_list <- list()
-  for (j in seq_along(rhythms)) {
-    df <- x[[j]]
-    df$Start <- df$Time - window_duration / 2
-    df$End <- df$Time + window_duration / 2
-    df <- df[-match(c("Time", "Notes"), colnames(df), nomatch = 0)]
-    colnames(df)[1] <- "Segment"
-    df$Segment <- paste(rhythms[j], 'Cycle', as.character(df$Segment), sep="_")
-    df_list[[j]] <- df
+  if (!is.null(window_duration)) {
+    for (j in seq_along(tactus)) {
+      df <- x[[j]]
+      df$Start <- df$Time - window_duration / 2
+      df$End <- df$Time + window_duration / 2
+      df <- df[-match(c("Time", "Notes", "Beats"), colnames(df), nomatch = 0)]
+      colnames(df)[1] <- "Segment"
+      df$Segment <- paste(tactus[j], 'Cycle', as.character(df$Segment), sep="_")
+      df_list[[j]] <- df
+    }
+
+  } else {
+    for (j in seq_along(tactus)) {
+      df <- x[[j]]
+      diff_time <- diff(df$Time)
+      diff_time1 <- c(diff_time[1], diff_time)
+      diff_time2 <- c(diff_time, diff_time[length(diff_time)])
+      df$Start <- df$Time - window_proportion * diff_time1
+      df$End <- df$Time + window_proportion * diff_time2
+      df <- df[-match(c("Time", "Notes", "Beats"), colnames(df), nomatch = 0)]
+      colnames(df)[1] <- "Segment"
+      df$Segment <- paste(tactus[j], 'Cycle', as.character(df$Segment), sep="_")
+      # Remove first and last beat
+      df <- df[-c(1, nrow(df)),, drop = FALSE]
+      df_list[[j]] <- df
+    }
   }
+
   output_df <- dplyr::bind_rows(df_list)
   output_df <- dplyr::arrange(output_df, .data$Start)
+  if (is_splice_overlapping(output_df)) warning("Splice has overlapping segments")
+
   class(output_df) <- c('Splice', 'data.frame')
 
   output_df
@@ -268,7 +300,11 @@ get_spliced_view <- function(v, splicing_df) {
 #' sv <- get_spliced_view(pv, splicing_df)
 #' v_list <- split(sv)
 split.SplicedView <- function(x, f, drop, ...) {
-  df_list <- split(x$df, x$df[['Segment']])
+
+  # Preserve the ordering in the data.frame when splitting
+  fct <- factor(x$df[['Segment']], levels = unique(x$df[['Segment']]))
+  df_list <- split(x$df, fct)
+
   v_list <- lapply(df_list, function(df) {
     new_dfr <- df[, colnames(df) != "Segment", drop = FALSE]
     l <- list(df = new_dfr, vid = x$vid, direct = x$direct,

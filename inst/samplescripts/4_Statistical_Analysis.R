@@ -117,10 +117,10 @@ plot_power_spectrum(wavelet_body_list$output$`Mutual head and body movement.10`,
                     wavelet_body_list$input$`Mutual head and body movement.10`)
 
 # Go straight to the average Power contained in a wavelet object on each segment
-ave_power_smile <- ave_power_spliceview(sv_duration_smile, column = "Nose_x_Central_Sitar")
-ave_power_body <- ave_power_spliceview(sv_duration_body, column = "Nose_x_Central_Sitar")
-plot.ts(ave_power_smile[, 2:11], ann = FALSE) # Specialised plots?
-plot.ts(ave_power_body[, 2:11], ann = FALSE)
+ave_power_smile <- ave_power_spliceview(sv_duration_smile, column = "Nose_x_Central_Sitar",
+                                        show_plot = TRUE)
+ave_power_body <- ave_power_spliceview(sv_duration_body, column = "Nose_x_Central_Sitar",
+                                       show_plot = TRUE)
 
 # Digging down on ave_power_segments for cross wavelet power ...
 
@@ -136,11 +136,11 @@ plot_cross_spectrum(cross_power_body_list$output$`Mutual head and body movement.
 
 # Go straight to average cross power ...
 ave_cross_power_smile <- ave_cross_power_spliceview(
-  sv_duration_smile, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"))
+  sv_duration_smile, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"),
+  show_plot = TRUE)
 ave_cross_power_body <- ave_cross_power_spliceview(
-  sv_duration_body, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"))
-plot.ts(ave_cross_power_smile[, 1:10], ann = FALSE)
-plot.ts(ave_cross_power_body[, 1:10], ann = FALSE)
+  sv_duration_body, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"),
+  show_plot = TRUE)
 
 # Supply parameter to pull out information from each wavelet/cross wavelet object
 # see ?analyze.wavelet

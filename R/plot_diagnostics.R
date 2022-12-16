@@ -57,12 +57,8 @@ plot.OnsetsSelected <- function(x, instrument = 'Inst', tactus = 'Matra', ...) {
 plot.Metre <- function(x, ...) {
   zoo_list <- lapply(x, function(x) zoo::zoo(c(NA, diff(x$Time)), order.by = x$Time))
   z <- do.call(merge, zoo_list)
-  if (is.null(ncol(z))) {
-    plot(z, yax.flip = TRUE, xlab = "Time / s", ylab = "", main = "Metre Object - Cycle Length", ...)
-  } else {
-    plot(z, yax.flip = TRUE, xlab = "Time / s", main = "Metre Object - Cycle Length", ...)
-
-  }
+  ylab <- if (is.null(ncol(z))) "" else NULL
+  plot(z, yax.flip = TRUE, xlab = "Time / s", ylab = ylab, main = "Metre Object - Cycle Length", ...)
 }
 
 
