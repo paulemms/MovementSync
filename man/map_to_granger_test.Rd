@@ -31,3 +31,15 @@ g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1/25
 d <- get_duration_annotation_data(r)
 map_to_granger_test(d, g, "Influence T>S", "Influence S>T")
 }
+\seealso{
+Other Granger Causality: 
+\code{\link{autoplot.GrangerTime}()},
+\code{\link{get_granger_interactions}()},
+\code{\link{granger_test}()},
+\code{\link{ms_condgrangertest}()},
+\code{\link{ms_grangertest1}()},
+\code{\link{ms_grangertest2}()},
+\code{\link{plot.GrangerInteraction}()},
+\code{\link{plot_influence_diagram}()}
+}
+\concept{Granger Causality}

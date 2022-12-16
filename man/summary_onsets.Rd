@@ -12,7 +12,8 @@ summary_onsets(
   expr = NULL,
   show_plot = FALSE,
   filter_pair = NULL,
-  na_omit = TRUE
+  na_omit = TRUE,
+  time_breaks = NULL
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ summary_onsets(
 \item{filter_pair}{regular expression to filter instrument pair names.}
 
 \item{na_omit}{omit NAs (Default is TRUE).}
+
+\item{time_breaks}{suggests the number of major time tick marks (default is NULL).}
 }
 \value{
 a summary data frame of onset difference statistics.

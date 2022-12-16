@@ -401,6 +401,7 @@ sample_ave_cross_power_spliceview <- function(sv, num_samples, replace = TRUE, .
     Period = period_value[period_sample],
     Average_Cross_Power = output_mat[cbind(period_sample, segment_sample)]
   )
+  class(sampled_cross_power) <- c("SampledAverageCrossPowerSpliceView", "data.frame")
 
   sampled_cross_power
 }
@@ -421,6 +422,7 @@ sample_ave_power_spliceview <- function(sv, num_samples, replace = TRUE, ...) {
     Period = period_value[period_sample],
     Average_Power = output_mat[cbind(period_sample, segment_sample)]
   )
+  class(sampled_power) <- c("SampledAveragePowerSpliceView", "data.frame")
 
   sampled_power
 }
@@ -779,13 +781,14 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
 #' Summary of difference in onsets
 #'
 #' @param onset_obj `OnsetsSelected` object.
-#' @param instruments character vector of instrument names.
 #' @param splicing_dfr `Splice` object
+#' @param instruments character vector of instrument names.
 #' @param expr R expression to subset onsetsSelected
 #' @param recording `Recording` object.
 #' @param show_plot show a plot? (Default is FALSE).
 #' @param filter_pair regular expression to filter instrument pair names.
 #' @param na_omit omit NAs (Default is TRUE).
+#' @param time_breaks suggests the number of major time tick marks (default is NULL).
 #'
 #' @return a summary data frame of onset difference statistics.
 #' @export
@@ -799,7 +802,9 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
 #' summary_onsets(o1, r1, instruments = c('Inst', 'Tabla'),
 #'   splicing_dfr = splice_dfr, show_plot = TRUE)
 summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NULL, expr = NULL,
-                           show_plot = FALSE, filter_pair = NULL, na_omit = TRUE) {
+                           show_plot = FALSE, filter_pair = NULL, na_omit = TRUE, time_breaks = NULL) {
+
+  breaks <- if (is.null(time_breaks)) ggplot2::waiver() else scales::pretty_breaks(time_breaks)
 
   dfr <- difference_onsets(onset_obj, instruments = instruments, splicing_dfr = splicing_dfr, expr = expr)
   if (nrow(dfr) == 0) stop('No data from splice to summarise')
@@ -835,6 +840,7 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
 
     g <- ggplot2::ggplot(long_dfr) +
       ggplot2::geom_col(ggplot2::aes(x = .data$Value, y = .data$Instrument_Pair, fill = .data$Statistic)) +
+      ggplot2::scale_x_continuous(breaks = breaks) +
       ggplot2::theme(legend.position = "none") +
       ggplot2::facet_grid(Segment ~ Statistic_f,
                           labeller = ggplot2::labeller(Statistic_f = ggplot2::label_wrap_gen(12),

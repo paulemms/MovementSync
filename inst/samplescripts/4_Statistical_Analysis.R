@@ -15,6 +15,7 @@ autoplot(jv1)
 d1 <- get_duration_annotation_data(r1)
 autoplot(d1)
 autoplot(d1) + theme(axis.text.x = element_text(size = 8)) # resize x-labels
+autoplot(d1, horizontal = TRUE)
 
 # Mutual look and smile
 splicing_smile_df <- splice_time(
@@ -270,7 +271,7 @@ ggpairs(po5, columns = 2:5, aes(colour = Metre)) # only one Metre in plot
 
 # Summary of difference in onsets (allows segmentation via splicing_dfr argument)
 summary_dfr <- summary_onsets(o5, r5, instruments = instruments,
-                              show_plot = TRUE, filter_pair = 'T')
+                              show_plot = TRUE, filter_pair = 'T') # note the filter
 
 # Splice the processed onsets for summarisation on segments
 d5 <- get_duration_annotation_data(r5)

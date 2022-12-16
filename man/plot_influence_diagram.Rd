@@ -38,6 +38,18 @@ plot_influence_diagram(g, splicing_df, two_arrows = TRUE)
 
 d1 <- get_duration_annotation_data(r1)
 plot_influence_diagram(g, splicing_df) +
-autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60',
+autolayer(d1, expr = (Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60,
           fill_col = "Tier")
 }
+\seealso{
+Other Granger Causality: 
+\code{\link{autoplot.GrangerTime}()},
+\code{\link{get_granger_interactions}()},
+\code{\link{granger_test}()},
+\code{\link{map_to_granger_test}()},
+\code{\link{ms_condgrangertest}()},
+\code{\link{ms_grangertest1}()},
+\code{\link{ms_grangertest2}()},
+\code{\link{plot.GrangerInteraction}()}
+}
+\concept{Granger Causality}

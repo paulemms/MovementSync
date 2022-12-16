@@ -7,11 +7,12 @@
 #' @param columns names of columns in input data.
 #' @param maxpts maximum number of points to plot
 #' @param time_limits tuple to restrict the timeline.
-#' @param time_breaks suggests the number of major time tick marks (default is NULL).
+#' @param time_breaks suggests the number of major time tick marks (Default is NULL).
 #' @param ... passed to [zoo::plot.zoo()].
 #' @param segments only include these segments in a SplicedView plot.
 #' @param instrument instrument column name.
 #' @param tactus beat column name.
+#' @param horizontal make the barchart horizontal? (Default is FALSE).
 #'
 #' @return a ggplot object.
 #' @importFrom ggplot2 autoplot
@@ -36,14 +37,28 @@ NULL
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.Duration <- function(object, ...) {
-  ggplot2::ggplot(object) +
-    ggplot2::geom_col(ggplot2::aes(x = .data$Tier, y = .data$Duration, fill = .data$In),
-                      position = "stack") +
-    ggplot2::labs(title = "Duration Object") +
-    ggplot2::scale_fill_viridis_b() +
-    ggplot2::ylab("Duration / min:sec") +
-    ggplot2::scale_y_time(labels = function(l) strftime(l, '%M:%S'))
+autoplot.Duration <- function(object, horizontal = FALSE, ...) {
+
+  if (horizontal) {
+    ggplot2::ggplot(object) +
+      ggplot2::geom_col(ggplot2::aes(x = .data$Duration, y = .data$Tier, fill = .data$In),
+                        position = "stack") +
+      ggplot2::labs(title = "Duration Object") +
+      ggplot2::scale_fill_viridis_b() +
+      ggplot2::xlab("Duration / min:sec") +
+      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+
+  } else {
+    ggplot2::ggplot(object) +
+      ggplot2::geom_col(ggplot2::aes(x = .data$Tier, y = .data$Duration, fill = .data$In),
+                        position = "stack") +
+      ggplot2::labs(title = "Duration Object") +
+      ggplot2::scale_fill_viridis_b() +
+      ggplot2::ylab("Duration / min:sec") +
+      ggplot2::scale_y_time(labels = function(l) strftime(l, '%M:%S'))
+
+  }
+
 }
 
 
@@ -206,7 +221,7 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
 
 #' Autolayer methods
 #'
-#' Layers of annotation data to add to ggplots.
+#' Layers of annotation data to add to ggplots in `movementsync.
 #' @param object S3 object
 #' @param alpha aesthetic
 #' @param fill name of column for filling.
@@ -214,7 +229,7 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
 #' @param ... passed to geom.
 #' @param time_limits tuple of time limits.
 #' @param colour name of column for colouring.
-#' @param expr logical expression for filtering.
+#' @param expr unquoted R expression for filtering data (default is Tier =='FORM').
 #' @param fill_column data column used for fill.
 #' @param geom 'rect' or 'vline'.
 #' @param vline_column column name for position of vertical lines.
@@ -226,6 +241,8 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
 #' @export
 #' @examples
 #' \dontrun{
+#' # Needs full data installed
+#'
 #' r <- get_recording("NIR_ABh_Puriya", fps = 25)
 #' o <- get_onsets_selected_data(r)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
@@ -244,14 +261,13 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) +
 #'   autolayer(d)
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) +
-#'   autolayer(d, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
+#'   autolayer(d, expr = Tier == "FORM" & substr(Comments, 1, 1) == "J")
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) +
 #'   autolayer(d, geom = "vline", nudge_x = -60, size = 3, colour = "blue")
 #' }
 NULL
 
 
-#'
 #' @exportS3Method
 #' @rdname autolayer
 autolayer.OnsetsSelected <- function(object, time_limits = c(-Inf, Inf), colour = "Inst.Name",
@@ -292,11 +308,11 @@ autolayer.Metre <- function(object, time_limits = c(-Inf, Inf), colour = "hotpin
 
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.Duration <- function(object, time_limits = c(-Inf, Inf), expr = 'Tier == "FORM"',
+autolayer.Duration <- function(object, time_limits = c(-Inf, Inf), expr = .data$Tier == "FORM",
                                fill_column = "Comments", geom = "rect", vline_column = "In", ...) {
-  expr <- rlang::parse_expr(expr)
   df <- as.data.frame(object)
-  rects <- dplyr::filter(df, !!expr)
+  e <- substitute(expr)
+  rects <- dplyr::filter(df, !!e)
 
   # Subset based on limits
   rects <- dplyr::filter(rects, .data$Out >= time_limits[1] & .data$In <= time_limits[2])

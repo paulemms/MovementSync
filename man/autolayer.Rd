@@ -29,7 +29,7 @@
 \method{autolayer}{Duration}(
   object,
   time_limits = c(-Inf, Inf),
-  expr = "Tier == \\"FORM\\"",
+  expr = .data$Tier == "FORM",
   fill_column = "Comments",
   geom = "rect",
   vline_column = "In",
@@ -65,10 +65,12 @@
 ggplot geom object
 }
 \description{
-Layers of annotation data to add to ggplots.
+Layers of annotation data to add to ggplots in `movementsync.
 }
 \examples{
 \dontrun{
+# Needs full data installed
+
 r <- get_recording("NIR_ABh_Puriya", fps = 25)
 o <- get_onsets_selected_data(r)
 v <- get_raw_view(r, "Central", "", "Sitar")
@@ -87,7 +89,7 @@ v <- get_raw_view(r, "Central", "", "Sitar")
 autoplot(v, columns = c("LEar_x", "LEar_y")) +
   autolayer(d)
 autoplot(v, columns = c("LEar_x", "LEar_y")) +
-  autolayer(d, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
+  autolayer(d, expr = Tier == "FORM" & substr(Comments, 1, 1) == "J")
 autoplot(v, columns = c("LEar_x", "LEar_y")) +
   autolayer(d, geom = "vline", nudge_x = -60, size = 3, colour = "blue")
 }

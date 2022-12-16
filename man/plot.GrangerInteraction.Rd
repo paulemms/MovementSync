@@ -17,6 +17,9 @@
 
 \item{...}{passed through to \code{\link[=plot.igraph]{plot.igraph()}}}
 }
+\value{
+data.frame of P-Values
+}
 \description{
 Plot network diagram of Granger Causalities
 }
@@ -33,3 +36,15 @@ gi <- get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tab
 plot(gi)
 }
 }
+\seealso{
+Other Granger Causality: 
+\code{\link{autoplot.GrangerTime}()},
+\code{\link{get_granger_interactions}()},
+\code{\link{granger_test}()},
+\code{\link{map_to_granger_test}()},
+\code{\link{ms_condgrangertest}()},
+\code{\link{ms_grangertest1}()},
+\code{\link{ms_grangertest2}()},
+\code{\link{plot_influence_diagram}()}
+}
+\concept{Granger Causality}

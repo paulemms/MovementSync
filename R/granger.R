@@ -12,6 +12,7 @@
 #'
 #' @return GrangerTime object
 #' @export
+#' @family Granger Causality
 #'
 #' @examples
 #'
@@ -87,6 +88,7 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
 #'
 #' @return a `ggplot` object.
 #' @exportS3Method
+#' @family Granger Causality
 #'
 #' @examples
 #' r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
@@ -147,6 +149,7 @@ autoplot.GrangerTime <- function(object, splicing_df, lev_sig = 0.05, ...) {
 #'
 #' @return ggplot object
 #' @export
+#' @family Granger Causality
 #'
 #' @examples
 #' r1 <- get_sample_recording()
@@ -161,7 +164,7 @@ autoplot.GrangerTime <- function(object, splicing_df, lev_sig = 0.05, ...) {
 #'
 #' d1 <- get_duration_annotation_data(r1)
 #' plot_influence_diagram(g, splicing_df) +
-#' autolayer(d1, '(Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60',
+#' autolayer(d1, expr = (Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60,
 #'           fill_col = "Tier")
 
 plot_influence_diagram <- function(obj, splicing_df, two_arrows = FALSE, lev_sig = 0.05) {
@@ -232,6 +235,7 @@ plot_influence_diagram <- function(obj, splicing_df, two_arrows = FALSE, lev_sig
 #'
 #' @return modified Duration object
 #' @export
+#' @family Granger Causality
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -265,6 +269,7 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #'
 #' @return GrangerInteraction object
 #' @export
+#' @family Granger Causality
 #'
 #' @examples
 #' r <- get_sample_recording()
@@ -274,6 +279,7 @@ map_to_granger_test <- function(d, g, influence1, influence2) {
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
 #' get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"), lag = 1/25)
+
 get_granger_interactions <- function(sv, columns, cond_column = "", sig_level = 0.05, lag = 1,
                                      granger_fn = ms_grangertest2) {
   stopifnot(all(c("SplicedView", "JoinedView") %in% class(sv)))
@@ -306,7 +312,9 @@ get_granger_interactions <- function(sv, columns, cond_column = "", sig_level = 
 #' @param oma passed to [par()]
 #' @param ... passed through to [plot.igraph()]
 #'
+#' @return data.frame of P-Values
 #' @export
+#' @family Granger Causality
 #'
 #' @examples
 #' \dontrun{
@@ -384,6 +392,7 @@ plot.GrangerInteraction <- function(x, mfrow = NULL, mar = c(1, 1, 1, 1),
 #'
 #' @return Anova object
 #' @export
+#' @family Granger Causality
 #'
 #' @examples
 #' data(ChickEgg, package = "lmtest")
@@ -449,6 +458,7 @@ ms_grangertest1 <- function(x, y, order = 1, na.action = stats::na.omit, ...) {
 #'
 #' @return Anova object
 #' @export
+#' @family Granger Causality
 #'
 #' @examples
 #' data(ChickEgg, package = "lmtest")
@@ -514,6 +524,7 @@ ms_grangertest2 <- function(x, y, order = 1, na.action = stats::na.omit, ...) {
 #'
 #' @return Anova object
 #' @export
+#' @family Granger Causality
 #'
 #' @examples
 #' data(wages, package = "lmtest")

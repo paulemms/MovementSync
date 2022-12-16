@@ -41,3 +41,15 @@ splicing_df <- splice_time(l)
 sv <- get_spliced_view(jv_sub, splicing_df)
 get_granger_interactions(sv, c("Nose_x_Central_Sitar", "Nose_x_Central_Tabla"), lag = 1/25)
 }
+\seealso{
+Other Granger Causality: 
+\code{\link{autoplot.GrangerTime}()},
+\code{\link{granger_test}()},
+\code{\link{map_to_granger_test}()},
+\code{\link{ms_condgrangertest}()},
+\code{\link{ms_grangertest1}()},
+\code{\link{ms_grangertest2}()},
+\code{\link{plot.GrangerInteraction}()},
+\code{\link{plot_influence_diagram}()}
+}
+\concept{Granger Causality}

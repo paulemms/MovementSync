@@ -34,7 +34,8 @@ autoplot(rv1, columns = c("LEar_x", "LEar_y"), time_limits = c(15*60, 20*60), ma
 # Autolayering with OnsetSelected, Metre and Duration objects,
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(d1)
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(o1)
-autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(d1, 'Tier == "FORM" & substr(Comments, 1, 1) == "J"')
+autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
+  autolayer(d1, expr = Tier == "FORM" & substr(Comments, 1, 1) == "J")
 autoplot(rv1, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000), maxpts=5000) +
   autolayer(m1, time_limits = c(1000, 2000))
 
@@ -161,7 +162,7 @@ str(pv_view, 2) # shows underlying data structure
 fv_view <- get_filtered_views(r5, data_points = "Nose", n = 19, p = 4)
 
 autoplot(fv_view$V3_Ryuteki)
-autoplot(fv_view$V3_Ryuteki) + autolayer(d5, expr = 'Tier == "Section"')
+autoplot(fv_view$V3_Ryuteki) + autolayer(d5, expr = Tier == "Section")
 autoplot(fv_view$V3_Ryuteki) + autolayer(m5) +
   xlim_duration(d5, 'Tier == "Section" & Comments == "B"')
 autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", alpha = 0,

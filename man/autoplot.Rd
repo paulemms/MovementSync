@@ -9,7 +9,7 @@
 \alias{autoplot.SplicedView}
 \title{Diagnostic plots}
 \usage{
-\method{autoplot}{Duration}(object, ...)
+\method{autoplot}{Duration}(object, horizontal = FALSE, ...)
 
 \method{autoplot}{OnsetsSelected}(object, instrument = "Inst", tactus = "Matra", ...)
 
@@ -37,6 +37,8 @@
 \arguments{
 \item{object}{S3 object}
 
+\item{horizontal}{make the barchart horizontal? (Default is FALSE).}
+
 \item{...}{passed to \code{\link[zoo:plot.zoo]{zoo::plot.zoo()}}.}
 
 \item{instrument}{instrument column name.}
@@ -49,7 +51,7 @@
 
 \item{time_limits}{tuple to restrict the timeline.}
 
-\item{time_breaks}{suggests the number of major time tick marks (default is NULL).}
+\item{time_breaks}{suggests the number of major time tick marks (Default is NULL).}
 
 \item{segments}{only include these segments in a SplicedView plot.}
 }

@@ -29,3 +29,15 @@ which is true for the data in this package.
 data(ChickEgg, package = "lmtest")
 ms_grangertest2(ChickEgg, order = 3)
 }
+\seealso{
+Other Granger Causality: 
+\code{\link{autoplot.GrangerTime}()},
+\code{\link{get_granger_interactions}()},
+\code{\link{granger_test}()},
+\code{\link{map_to_granger_test}()},
+\code{\link{ms_condgrangertest}()},
+\code{\link{ms_grangertest1}()},
+\code{\link{plot.GrangerInteraction}()},
+\code{\link{plot_influence_diagram}()}
+}
+\concept{Granger Causality}
