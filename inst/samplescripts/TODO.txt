@@ -1,11 +1,9 @@
 # QUERY
 
 # TODO
-
+# OSF httr library get zip - get_osf_data(), warn if overwrite, OSFR for listing
+# Change harmonium to tabla in 4. script
 # Martin Word Doc 10122022 Section 4
-# Plot of segments average power facetted (options to show)
-# Sample from one splitview and plot average power distribution using sampling
-# Splicing for proportion of interval on metre objects
 # Martin Word Doc 10122022 Section 2
 # Martin Word Doc 10122022 Section 1
 # Martin Word Doc 10122022 Section 3
@@ -17,9 +15,11 @@
 # Single time series autoplot has z axis label see section 5.
 
 # DONE
+# Sample from one splitview and plot average power distribution using sampling
+# Added calculate cross power over splice, comparison functions, and mean comparison
+# Splicing for proportion of interval on metre objects
 # Ignored first and last beat for windowing - remove consecutive_tactus flag.
 # TRUE default for two arrows in influencing diagram.
-# Added option to window Metre on proportion gap.
 # Used history of Z in conditional Granger
 # Package checks (include documentation) - add man pages
 # Option for arrows both ways on influencing plots

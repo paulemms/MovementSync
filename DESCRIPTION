@@ -2,8 +2,12 @@ Package: movementsync
 Type: Package
 Title: Analysis and Visualisation of Musical Audio and Video Data
 Version: 0.1.0
-Authors@R: person("Tuomas", "Eerola", email = "tuomas.eerola@durham.ac.uk", role = c("aut", "cre"))
-Description: This package helps to analyse and visualise video and audio data from an ensemble of musical players.
+Authors@R: c(
+  person("Tuomas", "Eerola", email = "tuomas.eerola@durham.ac.uk", role = c("aut", "cre")),
+  person("Martin", "Clayton", email = "martin.clayton@durham.ac.uk", role = "aut"),
+  person("Paul", "Emms", email = "pwemms@gmail.com", role = "aut")
+  )
+Description: This package helps to analyse and visualise audio and video data from an ensemble of musical players.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

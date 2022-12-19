@@ -7,7 +7,8 @@
 ave_cross_power_spliceview(
   sv,
   columns,
-  colour = "black",
+  colour = "blue",
+  segments = NULL,
   show_plot = FALSE,
   ...
 )
@@ -17,7 +18,9 @@ ave_cross_power_spliceview(
 
 \item{columns}{column names in the data of each \code{SplicedView} object.}
 
-\item{colour}{name of colour on plots (default is 'black').}
+\item{colour}{name of colour on plots (default is 'blue').}
+
+\item{segments}{indices of segments to plot e.g. 1:10 (default plots up to first 10).}
 
 \item{show_plot}{show a plot (default is FALSE).}
 
@@ -47,8 +50,12 @@ head(ave_cross_power_smile)
 Other statistical and analysis functions: 
 \code{\link{apply_column_spliceview}()},
 \code{\link{apply_segment_spliceview}()},
+\code{\link{ave_cross_power_over_splices}()},
 \code{\link{ave_power_over_splices}()},
 \code{\link{ave_power_spliceview}()},
+\code{\link{calculate_ave_cross_power1}()},
+\code{\link{calculate_ave_power1}()},
+\code{\link{compare_ave_cross_power1}()},
 \code{\link{compare_ave_power1}()},
 \code{\link{compare_avg_cross_power2}()},
 \code{\link{compare_avg_power2}()},

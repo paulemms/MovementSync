@@ -35,9 +35,13 @@ x <- sample_offset_splice(splicing_df[1,], rv1, num_splices = 100)
 Other statistical and analysis functions: 
 \code{\link{apply_column_spliceview}()},
 \code{\link{apply_segment_spliceview}()},
+\code{\link{ave_cross_power_over_splices}()},
 \code{\link{ave_cross_power_spliceview}()},
 \code{\link{ave_power_over_splices}()},
 \code{\link{ave_power_spliceview}()},
+\code{\link{calculate_ave_cross_power1}()},
+\code{\link{calculate_ave_power1}()},
+\code{\link{compare_ave_cross_power1}()},
 \code{\link{compare_ave_power1}()},
 \code{\link{compare_avg_cross_power2}()},
 \code{\link{compare_avg_power2}()},

@@ -156,6 +156,194 @@ compare_ave_power1 <- function(jv, splicing_df, splice_name, num_segment_samples
 }
 
 
+#' Calculate average power distribution using a splicing table
+#'
+#' @param jv `JoinedView` object.
+#' @param splicing_df `Splice` object.
+#' @param splice_name Name to give randomly spliced segments.
+#' @param num_segment_samples number of segments to randomly sample.
+#' @param show_plot show the plot? (Default is TRUE).
+#' @param column name of data column on which to calculate average power.
+#'
+#' @export
+#' @return a data frame: containing average power on the spliced JoinedView.
+#' @family statistical and analysis functions
+#'
+#' @examples
+#' r <- get_sample_recording()
+#' fv_list <- get_filtered_views(r, data_points = 'Nose', n = 41, p = 3)
+#' jv <- get_joined_view(fv_list)
+#' splicing_df <- splice_time(list(a = c(0, 5), b = c(10, 15)))
+#' output_dfr <- calculate_ave_power1(jv, splicing_df, 'Splice', 10, 'Nose_x_Central_Tabla')
+calculate_ave_power1 <- function(jv, splicing_df, splice_name, num_segment_samples,
+                                 column, show_plot = TRUE) {
+  stopifnot(class(jv)[1] == "JoinedView",
+            class(splicing_df)[1] == "Splice")
+
+  sv_orig <- get_spliced_view(jv, splicing_df = splicing_df)
+  av_power_orig <- ave_power_spliceview(sv_orig, column = column)
+  segment_samples <- sample(2:ncol(av_power_orig), num_segment_samples, replace = TRUE)
+  period_samples <- sample(nrow(av_power_orig), num_segment_samples, replace = TRUE)
+  original_dfr <- cbind.data.frame(
+    Period = av_power_orig[period_samples, 'Period'],
+    Average_Power = av_power_orig[cbind(period_samples, segment_samples)]
+  )
+
+  if (show_plot) {
+
+    subtitle <- c(jv$recording$stem, jv$vid, jv$direct, jv$inst)
+    subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+    g <- ggplot2::ggplot(original_dfr, ggplot2::aes(x = .data$Period)) +
+      ggplot2::xlab("Period / sec") +
+      ggplot2::labs(title = "Average Power on Sampled Segments",
+                    subtitle = paste(subtitle, ':', column)) +
+      ggplot2::scale_x_continuous(trans='log2') +
+      ggplot2::geom_line(ggplot2::aes(y = .data$Average_Power))
+    print(g)
+  }
+
+  original_dfr
+}
+
+
+#' Compare average cross power distribution using a splicing table
+#'
+#' @param jv `JoinedView` object.
+#' @param splicing_df `Splice` object.
+#' @param splice_name Name to give randomly spliced segments.
+#' @param num_segment_samples number of segments to randomly sample.
+#' @param num_splice_samples number of randomly chosen splices.
+#' @param rejection_list list of splice objects that random splices must not overlap.
+#' @param show_plot show the plot? (Default  is TRUE).
+#' @param sampling_type either 'offset' or 'gap'.
+#' @param columns name of data columns on which to calculate cross average power.
+#'
+#' @export
+#' @return list of two data frames: one containing average cross power on the first
+#' splice and the other containing the average cross power on randomly generated splices.
+#' @family statistical and analysis functions
+#'
+#' @examples
+#' r <- get_sample_recording()
+#' fv_list <- get_filtered_views(r, data_points = 'Nose', n = 41, p = 3)
+#' jv <- get_joined_view(fv_list)
+#' splicing_df <- splice_time(list(a = c(0, 5), b = c(10, 15)))
+#' output_list <- compare_ave_cross_power1(jv, splicing_df, 'Random Splices', 5, 5,
+#' c('Nose_x_Central_Tabla', 'Nose_y_Central_Tabla'))
+compare_ave_cross_power1 <- function(jv, splicing_df, splice_name, num_segment_samples,
+                               num_splice_samples, columns, sampling_type = 'offset',
+                               rejection_list = list(), show_plot = TRUE) {
+  stopifnot(class(jv)[1] == "JoinedView",
+            class(splicing_df)[1] == "Splice",
+            sampling_type %in% c('offset', 'gap'),
+            is.list(rejection_list))
+
+  if (sampling_type == 'offset') {
+    splicing_list <- sample_offset_splice(splicing_df, jv, num_splices = num_splice_samples,
+                                          rejection_list = rejection_list)
+  } else if (sampling_type == 'gap') {
+    splicing_list <- sample_gap_splice(splicing_df, jv, num_splices = num_splice_samples,
+                                       rejection_list = rejection_list)
+  }
+
+  # Original splice
+  sv_orig <- get_spliced_view(jv, splicing_df = splicing_df)
+  av_cross_power_orig <- ave_cross_power_spliceview(sv_orig, columns = columns)
+  segment_samples <- sample(2:ncol(av_cross_power_orig), num_segment_samples, replace = TRUE)
+  period_samples <- sample(nrow(av_cross_power_orig), num_segment_samples, replace = TRUE)
+  original_dfr <- cbind.data.frame(
+    Period = av_cross_power_orig[period_samples, 'Period'],
+    Average_Cross_Power = av_cross_power_orig[cbind(period_samples, segment_samples)]
+  )
+
+  # Random splices
+  sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv, splicing_df = x))
+  df_list <- lapply(sv_list, ave_cross_power_spliceview, columns = columns)
+  ave_cross_power_df <- dplyr::bind_rows(df_list, .id = 'Sample')
+  ave_cross_power_data <- ave_cross_power_df[-c(1:2)]
+  segment_samples <- sample(ncol(ave_cross_power_df) - 2, num_segment_samples, replace = TRUE)
+  period_samples <- sample(nrow(ave_cross_power_df), num_segment_samples, replace = TRUE)
+  random_splice_dfr <- cbind.data.frame(
+    Period = ave_cross_power_df[period_samples, 'Period'],
+    Average_Cross_Power = ave_cross_power_data[cbind(period_samples, segment_samples)]
+  )
+
+  l <- list(original_dfr, random_splice_dfr)
+  names(l) <- c(splice_name, 'Sampled Splices')
+
+  if (show_plot) {
+    long_dfr <- dplyr::bind_rows(l, .id = 'Sampled_From')
+
+    subtitle <- c(jv$recording$stem, jv$vid, jv$direct, jv$inst)
+    subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+    g <- ggplot2::ggplot(long_dfr, ggplot2::aes(x = .data$Period, colour = .data$Sampled_From)) +
+      ggplot2::xlab("Period / sec") +
+      ggplot2::labs(title = "Comparison of Average Cross Power on Sampled Segments",
+                    subtitle = paste(subtitle, ':', paste0(columns, collapse = ", "))) +
+      ggplot2::scale_x_continuous(trans='log2') +
+      ggplot2::geom_line(ggplot2::aes(y = .data$Average_Cross_Power)) +
+      ggplot2::facet_wrap(~Sampled_From)
+    print(g)
+  }
+
+  l
+}
+
+
+#' Calculate average cross power distribution using a splicing table
+#'
+#' @param jv `JoinedView` object.
+#' @param splicing_df `Splice` object.
+#' @param splice_name Name to give randomly spliced segments.
+#' @param num_segment_samples number of segments to randomly sample.
+#' @param show_plot show the plot? (Default is TRUE).
+#' @param columns name of data columns on which to calculate average cross power.
+#'
+#' @export
+#' @return a data frame: containing average cross power on the spliced JoinedView.
+#' @family statistical and analysis functions
+#'
+#' @examples
+#' r <- get_sample_recording()
+#' fv_list <- get_filtered_views(r, data_points = 'Nose', n = 41, p = 3)
+#' jv <- get_joined_view(fv_list)
+#' splicing_df <- splice_time(list(a = c(0, 5), b = c(10, 15)))
+#' output_dfr <- calculate_ave_cross_power1(jv, splicing_df, 'Splice', 10,
+#'   c('Nose_x_Central_Tabla', 'Nose_y_Central_Tabla'))
+calculate_ave_cross_power1 <- function(jv, splicing_df, splice_name, num_segment_samples,
+                                 columns, show_plot = TRUE) {
+  stopifnot(class(jv)[1] == "JoinedView",
+            class(splicing_df)[1] == "Splice")
+
+  sv_orig <- get_spliced_view(jv, splicing_df = splicing_df)
+  av_cross_power_orig <- ave_cross_power_spliceview(sv_orig, columns = columns)
+  segment_samples <- sample(2:ncol(av_cross_power_orig), num_segment_samples, replace = TRUE)
+  period_samples <- sample(nrow(av_cross_power_orig), num_segment_samples, replace = TRUE)
+  original_dfr <- cbind.data.frame(
+    Period = av_cross_power_orig[period_samples, 'Period'],
+    Average_Cross_Power = av_cross_power_orig[cbind(period_samples, segment_samples)]
+  )
+
+  if (show_plot) {
+
+    subtitle <- c(jv$recording$stem, jv$vid, jv$direct, jv$inst)
+    subtitle <- paste(subtitle[subtitle != ""], collapse="_")
+
+    g <- ggplot2::ggplot(original_dfr, ggplot2::aes(x = .data$Period)) +
+      ggplot2::xlab("Period / sec") +
+      ggplot2::labs(title = "Average Cross Power on Sampled Segments",
+                    subtitle = paste(subtitle, ':', paste0(columns, collapse = ", "))) +
+      ggplot2::scale_x_continuous(trans='log2') +
+      ggplot2::geom_line(ggplot2::aes(y = .data$Average_Cross_Power))
+    print(g)
+  }
+
+  original_dfr
+}
+
+
 #' Calculate mean average power over splices using a splicing table
 #'
 #' Randomly generates splices from a splicing table and calculates average
@@ -244,6 +432,95 @@ ave_power_over_splices <- function(jv, splicing_df, num_splices, column, samplin
 }
 
 
+#' Calculate mean average cross power over splices using a splicing table
+#'
+#' Randomly generates splices from a splicing table and calculates average
+#' cross power for each segment and splice. Calculates the mean average cross power
+#' over the random splices for each segment and period. Compares with the
+#' average cross power for the original splice.
+#'
+#' @param jv `JoinedView` object.
+#' @param splicing_df `Splice` object.
+#' @param columns name of data columns on which to calculate average cross power.
+#' @param sampling_type either 'offset' or 'gap'.
+#' @param include_original include the original splice in output? (Default is TRUE).
+#' @param rejection_list list of splice objects that random splices must not overlap.
+#' @param show_plot show a plot? (Default is TRUE).
+#' @param num_splices number of randomly chosen splices.
+#'
+#' @return data.frame of splice segments and their average cross power.
+#' @export
+#' @family statistical and analysis functions
+#'
+#' @examples
+#' r <- get_sample_recording()
+#' fv_list <- get_filtered_views(r, data_points = "Nose", n = 41, p = 3)
+#' jv <- get_joined_view(fv_list)
+#'
+#' d <- get_duration_annotation_data(r)
+#' splicing_tabla_solo_df <- splice_time(d,
+#'   expr = "Tier == 'INTERACTION' & Comments == 'Mutual look and smile'")
+#'
+#' # Only do the first splice for sample data
+#' mean_ave_cross_power_df <- ave_cross_power_over_splices(jv,
+#'   splicing_tabla_solo_df[1,], num_splices = 10,
+#'   columns = c('Nose_x_Central_Sitar', 'Nose_y_Central_Sitar'), show_plot = TRUE)
+ave_cross_power_over_splices <- function(jv, splicing_df, num_splices, columns, sampling_type = 'offset',
+                                   rejection_list = list(), include_original = TRUE,
+                                   show_plot = TRUE) {
+
+  stopifnot(class(jv)[1] == "JoinedView",
+            sampling_type %in% c('offset', 'gap'),
+            is.list(rejection_list))
+
+  if (sampling_type == 'offset') {
+    splicing_list <- sample_offset_splice(splicing_df, jv, num_splices = num_splices,
+                                          rejection_list = rejection_list)
+  } else if (sampling_type == 'gap') {
+    splicing_list <- sample_gap_splice(splicing_df, jv, num_splices = num_splices,
+                                       rejection_list = rejection_list)
+  } else stop()
+  if (include_original) splicing_list$Original <- splicing_df
+
+  sv_list <- lapply(splicing_list, function(x) get_spliced_view(jv, splicing_df = x))
+  df_list <- lapply(sv_list, ave_cross_power_spliceview, columns = columns)
+  ave_cross_power_df <- dplyr::bind_rows(df_list, .id = 'Sample')
+
+  sample_ave_cross_power <- ave_cross_power_df
+  sample_ave_cross_power <- dplyr::filter(sample_ave_cross_power, .data$Sample != 'Original')
+  sample_ave_cross_power <- dplyr::group_by(sample_ave_cross_power, .data$Period)
+  sample_ave_cross_power <- dplyr::summarise(sample_ave_cross_power, dplyr::across(!.data$Sample, mean, na.rm = TRUE))
+
+  original_ave_cross_power <- ave_cross_power_df
+  original_ave_cross_power <- dplyr::filter(original_ave_cross_power, .data$Sample == 'Original')
+
+  ave_cross_power_df <- dplyr::bind_rows(
+    'Random Splices' = sample_ave_cross_power,
+    'Original Splice' = original_ave_cross_power,
+    .id = 'Sample')
+
+  long_ave_cross_power_df <- tidyr::pivot_longer(ave_cross_power_df, cols = !c(.data$Sample, .data$Period),
+                                           names_to = 'Segment', values_to = 'Average_Cross_Power')
+
+  if (show_plot) {
+
+    subtitle <- paste(jv$recording$stem, paste0(columns, collapse = ", "), sep = ' - ')
+
+    g <- ggplot2::ggplot(long_ave_cross_power_df) +
+      ggplot2::geom_line(ggplot2::aes(x = .data$Period, y = .data$Average_Cross_Power, colour = .data$Sample)) +
+      ggplot2::labs(title = "Mean Average Cross Power Over Random Splices", subtitle = subtitle) +
+      ggplot2::xlab("Period / sec") +
+      ggplot2::ylab("Mean Average Cross Power") +
+      ggplot2::scale_x_continuous(trans='log2') +
+      ggplot2::facet_wrap(~.data$Segment)
+    print(g)
+
+  }
+
+  as.data.frame(long_ave_cross_power_df)
+}
+
+
 #' Apply function to SplicedView and pull out element from output
 #'
 #' @param sv `SplicedView` object.
@@ -277,7 +554,8 @@ pull_segment_spliceview <- function(sv, FUN, element, ...) {
 #'
 #' @param sv `SplicedView` object
 #' @param column name of data column on which to calculate average power.
-#' @param colour name of colour on plots (default is 'black').
+#' @param colour name of colour on plots (default is 'blue').
+#' @param segments indices of segments to plot e.g. 1:10 (default plots up to first 10).
 #' @param show_plot show a plot? (Default is FALSE).
 #' @param ... passed to [analyze_wavelet()].
 #'
@@ -298,7 +576,8 @@ pull_segment_spliceview <- function(sv, FUN, element, ...) {
 #' ave_power_smile <- ave_power_spliceview(sv_duration_smile,
 #'   column = "Nose_x_Central_Sitar", show_plot=TRUE)
 #' head(ave_power_smile)
-ave_power_spliceview <- function(sv, column, colour = 'black', show_plot = FALSE, ...) {
+ave_power_spliceview <- function(sv, column, colour = 'blue', segments = NULL,
+                                 show_plot = FALSE, ...) {
   stopifnot("SplicedView" %in% class(sv))
 
   wavelet_list <- apply_segment_spliceview(sv, FUN = analyze_wavelet, column = column, ...)
@@ -316,9 +595,13 @@ ave_power_spliceview <- function(sv, column, colour = 'black', show_plot = FALSE
 
     z <- zoo::zoo(output_dfr[-1], order.by = output_dfr[[1]])
 
-    if (ncol(z) > 20) {
-      warning("Too many segments - only showing first 20")
-      z <- z[, 1:20]
+    if (is.null(segments) && ncol(z) > 10) {
+      warning("Too many segments - only showing first 10")
+      z <- z[, 1:10]
+    } else if (!is.null(segments)) {
+      if (length(setdiff(segments, seq_len(ncol(z)))) > 0)
+        warning("Some segments not in SplicedView")
+      z <- z[, intersect(seq_len(ncol(z)), segments)]
     }
 
     g <- autoplot(z, facets = ~ Series, col = I(colour)) +
@@ -339,8 +622,9 @@ ave_power_spliceview <- function(sv, column, colour = 'black', show_plot = FALSE
 #'
 #' @param sv `SplicedView` object
 #' @param columns column names in the data of each `SplicedView` object.
-#' @param colour name of colour on plots (default is 'black').
+#' @param colour name of colour on plots (default is 'blue').
 #' @param show_plot show a plot (default is FALSE).
+#' @param segments indices of segments to plot e.g. 1:10 (default plots up to first 10).
 #' @param ... passed to [analyze_coherency()].
 #'
 #' @export
@@ -360,7 +644,8 @@ ave_power_spliceview <- function(sv, column, colour = 'black', show_plot = FALSE
 #' ave_cross_power_smile <- ave_cross_power_spliceview(
 #'   sv_duration_smile, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"), show_plot = TRUE)
 #' head(ave_cross_power_smile)
-ave_cross_power_spliceview <- function(sv, columns, colour = 'black', show_plot = FALSE, ...) {
+ave_cross_power_spliceview <- function(sv, columns, colour = 'blue', segments = NULL,
+                                       show_plot = FALSE, ...) {
 
   coherency_list <- apply_segment_spliceview(sv, FUN = analyze_coherency, columns = columns, ...)
   output_mat <- sapply(coherency_list$output, function(x) x$Power.xy.avg)
@@ -377,9 +662,13 @@ ave_cross_power_spliceview <- function(sv, columns, colour = 'black', show_plot 
 
     z <- zoo::zoo(output_dfr[-1], order.by = output_dfr[[1]])
 
-    if (ncol(z) > 20) {
-      warning("Too many segments - only showing first 20")
-      z <- z[, 1:20]
+    if (is.null(segments) && ncol(z) > 10) {
+      warning("Too many segments - only showing first 10")
+      z <- z[, 1:10]
+    } else if (!is.null(segments)) {
+      if (length(setdiff(segments, seq_len(ncol(z)))) > 0)
+        warning("Some segments not in SplicedView")
+      z <- z[, intersect(seq_len(ncol(z)), segments)]
     }
 
     g <- autoplot(z, facets = ~ Series, col = I(colour)) +
@@ -731,6 +1020,8 @@ sample_gap_splice <- function(splicing_dfr, v, num_splices, rejection_list = lis
 
 #' Get onset differences
 #'
+#' Calculates the difference in onset times for each instrument pair in
+#' milli-seconds.
 #' @param onset_obj `OnsetsSelected` object.
 #' @param instruments character vector of instrument names.
 #' @param expr R expression to subset onsets (not required).
@@ -783,6 +1074,10 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
   } else {
     output_dfr$Segment <- if (!is.null(expr)) expr else 'All'
   }
+
+  # Convert differences to ms
+  pair_cols <- apply(instrument_combn, 2, paste, collapse = "-")
+  output_dfr[pair_cols] <- output_dfr[pair_cols] * 1000
 
   class(output_dfr) <- c('OnsetsDifference', 'data.frame')
   output_dfr
@@ -851,12 +1146,13 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
 
     g <- ggplot2::ggplot(long_dfr) +
       ggplot2::geom_col(ggplot2::aes(x = .data$Value, y = .data$Instrument_Pair, fill = .data$Statistic)) +
+      ggplot2::xlab('Value / number or ms') +
       ggplot2::scale_x_continuous(breaks = breaks) +
       ggplot2::theme(legend.position = "none") +
       ggplot2::facet_grid(Segment ~ Statistic_f,
                           labeller = ggplot2::labeller(Statistic_f = ggplot2::label_wrap_gen(12),
                                                        Segment = ggplot2::label_wrap_gen(12)), scales = 'free_x') +
-      ggplot2::ggtitle("Summary of Onset Statistics for Instrument Pairs",
+      ggplot2::ggtitle("Summary of Onset Difference Statistic for Instrument Pairs",
                        subtitle = recording$stem)
     print(g)
   }

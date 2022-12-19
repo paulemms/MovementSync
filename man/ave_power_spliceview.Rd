@@ -4,14 +4,23 @@
 \alias{ave_power_spliceview}
 \title{Get the average power on each segment in a SplicedView}
 \usage{
-ave_power_spliceview(sv, column, colour = "black", show_plot = FALSE, ...)
+ave_power_spliceview(
+  sv,
+  column,
+  colour = "blue",
+  segments = NULL,
+  show_plot = FALSE,
+  ...
+)
 }
 \arguments{
 \item{sv}{\code{SplicedView} object}
 
 \item{column}{name of data column on which to calculate average power.}
 
-\item{colour}{name of colour on plots (default is 'black').}
+\item{colour}{name of colour on plots (default is 'blue').}
+
+\item{segments}{indices of segments to plot e.g. 1:10 (default plots up to first 10).}
 
 \item{show_plot}{show a plot? (Default is FALSE).}
 
@@ -41,8 +50,12 @@ head(ave_power_smile)
 Other statistical and analysis functions: 
 \code{\link{apply_column_spliceview}()},
 \code{\link{apply_segment_spliceview}()},
+\code{\link{ave_cross_power_over_splices}()},
 \code{\link{ave_cross_power_spliceview}()},
 \code{\link{ave_power_over_splices}()},
+\code{\link{calculate_ave_cross_power1}()},
+\code{\link{calculate_ave_power1}()},
+\code{\link{compare_ave_cross_power1}()},
 \code{\link{compare_ave_power1}()},
 \code{\link{compare_avg_cross_power2}()},
 \code{\link{compare_avg_power2}()},

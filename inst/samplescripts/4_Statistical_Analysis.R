@@ -2,9 +2,7 @@
 
 rm(list=ls())
 library(movementsync)
-library(ggplot2)
 library(GGally)
-library(zoo)
 
 r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
 fv1_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p = 3)
@@ -118,7 +116,7 @@ plot_power_spectrum(wavelet_body_list$output$`Mutual head and body movement.10`,
 
 # Go straight to the average Power contained in a wavelet object on each segment
 ave_power_smile <- ave_power_spliceview(sv_duration_smile, column = "Nose_x_Central_Sitar",
-                                        show_plot = TRUE)
+                                        segments = 1:5, show_plot = TRUE)
 ave_power_body <- ave_power_spliceview(sv_duration_body, column = "Nose_x_Central_Sitar",
                                        show_plot = TRUE)
 
@@ -137,7 +135,7 @@ plot_cross_spectrum(cross_power_body_list$output$`Mutual head and body movement.
 # Go straight to average cross power ...
 ave_cross_power_smile <- ave_cross_power_spliceview(
   sv_duration_smile, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"),
-  show_plot = TRUE)
+  colour = 'black', show_plot = TRUE)
 ave_cross_power_body <- ave_cross_power_spliceview(
   sv_duration_body, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"),
   show_plot = TRUE)
@@ -152,7 +150,7 @@ head(power_list$output$`Mutual head and body movement`)
 angle_list <- pull_segment_spliceview(
   sv_duration_smile, FUN = analyze_coherency,
   columns = c("Nose_x_Central_Sitar", "Nose_x_Central_Sitar"), element = 'Angle')
-head(angle_list$output$`Mutual head and body movement.10`) # 0s - need a longer time segmentation?
+head(angle_list$output$`Mutual look and smile.10`)
 
 ##################################################################################
 #
@@ -165,17 +163,23 @@ splicing_tabla_solo_df
 # Make the segments the same length - offset sampling has better coverage with short clipped segments
 splicing_tabla_solo_df <- clip_splice(splicing_tabla_solo_df, duration = 40)
 
+# Sample the distribution of average power over the segments formed from splicing table
+sample_dfr <- calculate_ave_power1(jv1, splicing_tabla_solo_df, "Tabla Solo",
+                                   num_segment_samples = 100, column = 'Nose_x_Central_Sitar',
+                                   show_plot = TRUE)
+head(sample_dfr)
+
 # Apply a function over segments for an original splice and 'equivalent' randomly generated splices
 # Then sample from original segments and compare against random selected segments
 # from equivalent splices
 sample4_list <- compare_ave_power1(
-  jv1, splicing_tabla_solo_df, 'Harmonium Solos', num_segment_samples = 100,
+  jv1, splicing_tabla_solo_df, 'Tabla Solos', num_segment_samples = 100,
   num_splice_samples = 10, sampling_type = 'offset', column = 'Nose_x_Central_Sitar')
 
 # Summary stats/tests
-max(sample4_list$`Harmonium Solos`$Average_Power, na.rm = TRUE)
+max(sample4_list$`Tabla Solos`$Average_Power, na.rm = TRUE)
 max(sample4_list$`Sampled Splices`$Average_Power, na.rm = TRUE)
-ks.test(sample4_list$`Harmonium Solos`$Average_Power,
+ks.test(sample4_list$`Tabla Solos`$Average_Power,
         sample4_list$`Sampled Splices`$Average_Power)
 
 # Drilling down into calculation ...
@@ -234,6 +238,19 @@ visualise_sample_splices(splicing_tabla_solo_df, splicing3_list, jv1, avoid_spli
 visualise_sample_splices(splicing_tabla_solo_df, splicing3_list, jv1, avoid_splice_dfr = avoid_splice_dfr,
                          unstack = TRUE)
 
+# Do a similar thing for the average cross power
+sample_dfr <- calculate_ave_cross_power1(jv1, splicing_tabla_solo_df, "Tabla Solo",
+                                   num_segment_samples = 100,
+                                   columns = c('Nose_x_Central_Sitar', 'Nose_y_Central_Sitar'),
+                                   show_plot = TRUE)
+head(sample_dfr)
+
+# Cross power on each segment in each splice takes a while so restrict number
+sample5_list <- compare_ave_cross_power1(
+  jv1, splicing_tabla_solo_df, 'Tabla Solos', num_segment_samples = 100,
+  num_splice_samples = 2, sampling_type = 'offset',
+  columns = c('Nose_x_Central_Sitar', 'Nose_y_Central_Sitar'),)
+
 ################################################################################
 #
 # 3. Onsets difference and summary statistics
@@ -267,11 +284,15 @@ ggpairs(po1, columns = 2:4, aes(colour = Metre))
 po2 <- difference_onsets(o2, instruments = c('Inst', 'Tabla'))
 ggpairs(po2, columns = 2:4, aes(colour = Metre))
 po5 <- difference_onsets(o5, instruments = instruments)
-ggpairs(po5, columns = 2:5, aes(colour = Metre)) # only one Metre in plot
+ggpairs(po5, columns = 2:5) # only one Metre in plot
 
 # Summary of difference in onsets (allows segmentation via splicing_dfr argument)
 summary_dfr <- summary_onsets(o5, r5, instruments = instruments,
                               show_plot = TRUE, filter_pair = 'T') # note the filter
+# Reduce number of x-labels
+summary_dfr <- summary_onsets(o5, r5, instruments = instruments,
+                              show_plot = TRUE, filter_pair = 'T', time_breaks = 3)
+
 
 # Splice the processed onsets for summarisation on segments
 d5 <- get_duration_annotation_data(r5)
@@ -310,6 +331,13 @@ po1_beat3 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'), expr = 'Mat
 splicing_po1_beat3_dfr <- splice_time(po1_beat3, window_duration = 0.4)
 is_splice_overlapping(splicing_po1_beat3_dfr)
 head(splicing_po1_beat3_dfr)
+
+# More complex expression filter
+po1_beat_V3on <- difference_onsets(o1, instruments = c('Inst', 'Tabla'),
+                  expr = 'Tala == "Vilambit teental" & Matra == 3 & Half.beat == "On"')
+splicing_po1_beat3_V3on_dfr <- splice_time(po1_beat_V3on, window_duration = 0.4)
+is_splice_overlapping(splicing_po1_beat3_V3on_dfr)
+head(splicing_po1_beat3_V3on_dfr)
 
 # Splice based on Metre object
 m1 <- get_metre_data(r1)

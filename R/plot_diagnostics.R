@@ -93,9 +93,8 @@ plot.View <- function(x, columns=NULL, maxpts = 1000, ...) {
 
   title <- c(x$recording$stem, x$vid, x$direct, x$inst)
   title <- paste(title[title != ""], collapse="_")
-  if (is.null(ncol(z))) {
-    plot(z, xlab = "Time / s", ylab = columns[-1], main = paste(class(x)[1], "Object for", title), ...)
-  } else {
-    plot(z, xlab = "Time / s", main = paste(class(x)[1], "for", title), ...)
-  }
+  ylab <- if (is.null(ncol(z))) columns[-1] else NULL
+  plot(z, xlab = "Time / s", ylab = ylab,
+       main = paste(class(x)[1], "Object for", title), ...)
+
 }

@@ -19,7 +19,8 @@ difference_onsets(onset_obj, instruments, expr = NULL, splicing_dfr = NULL)
 \code{OnsetsDifference} object.
 }
 \description{
-Get onset differences
+Calculates the difference in onset times for each instrument pair in
+milli-seconds.
 }
 \examples{
 r1 <- get_sample_recording()
@@ -31,9 +32,13 @@ head(difference_onsets(o1, instruments = c('Inst', 'Tabla'), expr = 'Matra == 3'
 Other statistical and analysis functions: 
 \code{\link{apply_column_spliceview}()},
 \code{\link{apply_segment_spliceview}()},
+\code{\link{ave_cross_power_over_splices}()},
 \code{\link{ave_cross_power_spliceview}()},
 \code{\link{ave_power_over_splices}()},
 \code{\link{ave_power_spliceview}()},
+\code{\link{calculate_ave_cross_power1}()},
+\code{\link{calculate_ave_power1}()},
+\code{\link{compare_ave_cross_power1}()},
 \code{\link{compare_ave_power1}()},
 \code{\link{compare_avg_cross_power2}()},
 \code{\link{compare_avg_power2}()},
