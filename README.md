@@ -26,11 +26,11 @@ library(movementsync)
 packageVersion("movementsync")
 ```
 
-From a fresh install of the package, you can get the `Original` set of
+From a fresh install of the package, you can get the original set of
 five recordings from OSF using the following function:
 
 ``` r
-get_osf_recording()
+get_osf_recordings()
 ```
 
 The R scripts in the [inst/samplescripts](inst/samplescripts) directory
