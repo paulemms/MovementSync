@@ -26,5 +26,12 @@ library(movementsync)
 packageVersion("movementsync")
 ```
 
-There are R scripts in the [inst/samplescripts](inst/samplescripts)
-directory that walk-through the package functionality.
+From a fresh install of the package, you can get the `Original` set of
+five recordings from OSF using the following function:
+
+``` r
+get_osf_recording()
+```
+
+The R scripts in the [inst/samplescripts](inst/samplescripts) directory
+walk-through the package functionality using these recordings.

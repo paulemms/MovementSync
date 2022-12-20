@@ -10,16 +10,16 @@ list_osf_recordings()
 open_movementsync_data()
 
 # Download the five Original recordings for the numbered walk-throughs
-# get_osf_recording()
+# get_osf_recordings()
 
 # Download a particular recording
-# get_osf_recording("NIR_ABh_Puriya")
+# get_osf_recordings("NIR_ABh_Puriya")
 
 # Download a particular recording and force local overwrite
-# get_osf_recording("NIR_ABh_Puriya", overwrite = TRUE)
+# get_osf_recordings("NIR_ABh_Puriya", overwrite = TRUE)
 
-# Get the locally available downloaded recordings
-list_local_recordings()
+# Open the locally available downloaded recordings
+open_local_recordings()
 
 # Load the meta data for one recording from the local data
 r <- get_recording("NIR_ABh_Puriya", fps = 25)

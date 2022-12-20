@@ -16,24 +16,20 @@ get_sample_recording <- function(stem = "NIR_ABh_Puriya") {
 }
 
 
-#' List downloaded recordings
+#' Show downloaded recordings
 #'
 #' @param folder_in input folder relative to recording home (default is 'Original').
 #' @param path recording home folder.
 #'
-#' @return character vector of stem names
 #' @export
 #'
 #' @examples
-#' list_local_recordings()
-list_local_recordings <- function(folder_in = "Original", path = "~/movementsync") {
+#' open_local_recordings()
+open_local_recordings <- function(folder_in = "Original", path = "~/movementsync") {
   data_path <- file.path(path, folder_in)
   if (!dir.exists(data_path)) stop("No available recordings")
 
-  data_files <- list.files(data_path, pattern = ".*\\.csv")
-  stem_names <- unique(sapply(strsplit(data_files, split = "_"),
-                        function(x) paste(x[1], x[2], x[3], sep = "_")))
-  stem_names
+  utils::browseURL(data_path)
 }
 
 
