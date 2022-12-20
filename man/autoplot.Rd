@@ -21,6 +21,7 @@
   maxpts = 1000,
   time_limits = c(-Inf, Inf),
   time_breaks = NULL,
+  expr = NULL,
   ...
 )
 
@@ -49,9 +50,11 @@
 
 \item{maxpts}{maximum number of points to plot}
 
-\item{time_limits}{tuple to restrict the timeline.}
+\item{time_limits}{tuple to restrict the timeline or a duration object.}
 
 \item{time_breaks}{suggests the number of major time tick marks (Default is NULL).}
+
+\item{expr}{an R expression that sets the time scale using a duration object (Default is NULL).}
 
 \item{segments}{only include these segments in a SplicedView plot.}
 }

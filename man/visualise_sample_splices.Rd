@@ -9,7 +9,7 @@ visualise_sample_splices(
   splicing_list,
   jv,
   overlay = TRUE,
-  avoid_splice_dfr = data.frame(),
+  avoid_splice_list = list(),
   unstack = FALSE
 )
 }
@@ -22,7 +22,7 @@ visualise_sample_splices(
 
 \item{overlay}{overlay the segments for a density plot?}
 
-\item{avoid_splice_dfr}{list of \verb{Splice objects} that determine times not to sample.}
+\item{avoid_splice_list}{list of \verb{Splice objects} that determine times not to sample.}
 
 \item{unstack}{overlay segments on top of each other? (default is FALSE).}
 }

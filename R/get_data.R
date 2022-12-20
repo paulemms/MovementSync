@@ -16,6 +16,27 @@ get_sample_recording <- function(stem = "NIR_ABh_Puriya") {
 }
 
 
+#' List downloaded recordings
+#'
+#' @param folder_in input folder relative to recording home (default is 'Original').
+#' @param path recording home folder.
+#'
+#' @return character vector of stem names
+#' @export
+#'
+#' @examples
+#' list_local_recordings()
+list_local_recordings <- function(folder_in = "Original", path = "~/movementsync") {
+  data_path <- file.path(path, folder_in)
+  if (!dir.exists(data_path)) stop("No available recordings")
+
+  data_files <- list.files(data_path, pattern = ".*\\.csv")
+  stem_names <- unique(sapply(strsplit(data_files, split = "_"),
+                        function(x) paste(x[1], x[2], x[3], sep = "_")))
+  stem_names
+}
+
+
 #' Get a meta-data recording object
 #'
 #' @param stem recording identifier.
@@ -104,7 +125,11 @@ get_metre_data <- function(recording) {
 
   output_metre <- list()
   for (fil in metre_files) {
-    output_metre[[basename(fil)]] <- utils::read.csv(fil)
+    dfr <- utils::read.csv(fil)
+    if ('Beats' %in% colnames(dfr)) {
+      dfr$Tempo_Hz <- c(1 / (diff(dfr$Time) / utils::head(dfr$Beats, -1)), NA)
+    }
+    output_metre[[basename(fil)]] <- dfr
   }
   names(output_metre) <- sub(".*_Metre(_|)(.*)\\.csv", "\\2", names(output_metre))
 
@@ -243,7 +268,7 @@ get_raw_view <- function(recording, vid, direct, inst,
 #' fv1 <- apply_filter_sgolay(pov, c("Head"), n=19, p=4)
 #' }
 get_raw_optflow_view <- function(recording, vid, direct, inst,
-                         folder_out = "Raw", save_output = TRUE) {
+                         folder_out = "Raw", save_output = FALSE) {
   fn_cpts <- c(recording$stem, 'OptFlow', vid, direct, inst)
   fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
   data_file_name <- file.path(recording$data_path, fn)

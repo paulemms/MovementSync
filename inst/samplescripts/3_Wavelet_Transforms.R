@@ -1,6 +1,8 @@
 # Tests Wavelet functionality in the package
 
 rm(list=ls())
+gc()
+if (dev.cur() > 1) dev.off()
 library(movementsync)
 
 r1 <- get_recording("NIR_ABh_Puriya", fps = 25)
@@ -102,3 +104,4 @@ plot_cwt_energy(co2, jv_sub) +
 
 # Reset graphical parameters
 par(old_par)
+

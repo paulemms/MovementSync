@@ -486,19 +486,25 @@ plot_phase_difference <- function(obj, view,  ...) {
 
 # helper to generate a time axis in min/sec for wavelet plots
 make_time_axis <- function(df, fps, num_tlabels = 10) {
+
   min_time <- min(df$Time, na.rm = TRUE)
   max_time <- max(df$Time, na.rm = TRUE)
 
-  mf <- max(df$Frame, na.rm = TRUE)
-  labels_at <- seq(0, mf, by = mf / num_tlabels)
+  min_frame <- min(df$Frame, na.rm = TRUE)
+  max_frame <- max(df$Frame, na.rm = TRUE)
+  labels_at <- seq(0, (max_frame - min_frame), by = (max_frame - min_frame) / num_tlabels)
   labels_sec <- labels_at / fps + min_time
 
-  labels_to <- paste0(
-    formatC(labels_sec %/% 60, width=2, flag = 0),
-    ":",
-    formatC(floor(labels_sec %% 60), width = 2, flag = 0))
-  time_lab <- "Time / min:sec"
-
+  if (max_time - min_time < 60) {
+    labels_to <- labels_sec
+    time_lab <- "Time / sec"
+  } else {
+    labels_to <- paste0(
+      formatC(labels_sec %/% 60, width=2, flag = 0),
+      ":",
+      formatC(floor(labels_sec %% 60), width = 2, flag = 0))
+    time_lab <- "Time / min:sec"
+  }
   list(at = labels_at + 1, labels = labels_to, time_lab = time_lab)
 }
 

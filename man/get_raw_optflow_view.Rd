@@ -10,7 +10,7 @@ get_raw_optflow_view(
   direct,
   inst,
   folder_out = "Raw",
-  save_output = TRUE
+  save_output = FALSE
 )
 }
 \arguments{

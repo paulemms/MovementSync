@@ -1,6 +1,8 @@
 # Test the statistical analysis functions
 
 rm(list=ls())
+gc()
+if (dev.cur() > 1) dev.off()
 library(movementsync)
 library(GGally)
 
@@ -21,7 +23,7 @@ splicing_smile_df <- splice_time(
 )
 splicing_smile_df
 sv_duration_smile <- get_spliced_view(jv1, splicing_df = splicing_smile_df)
-autoplot(sv_duration_smile)
+autoplot(sv_duration_smile ,time_breaks = 3)
 
 # Mutual head and body movement
 splicing_body_df <- splice_time(
@@ -29,7 +31,7 @@ splicing_body_df <- splice_time(
 )
 splicing_body_df
 sv_duration_body <- get_spliced_view(jv1, splicing_df = splicing_body_df)
-autoplot(sv_duration_body)
+autoplot(sv_duration_body, time_breaks = 3)
 
 ################################################################################
 #
@@ -88,7 +90,8 @@ view_body_list <- split(sv_duration_body)
 segment_10_view <- view_smile_list$`Mutual look and smile.10`
 autoplot(segment_10_view)
 
-# Calculate power spectrum for this segment
+# Calculate power spectrum for this segment (1.5s clip so no time variation)
+autoplot(sv_duration_smile, segments = 'Mutual look and smile.10')
 w <- analyze_wavelet(segment_10_view, column = "Nose_x_Central_Sitar")
 plot_power_spectrum(w, segment_10_view)
 plot_average_power(w, segment_10_view)
@@ -223,10 +226,10 @@ splicing2_list <- sample_offset_splice(splicing_tabla_solo_df, jv1, num_splices 
                                 rejection_list = list(avoid_splice_dfr))
 
 # Distribution of new segments faceted by original segment
-visualise_sample_splices(splicing_tabla_solo_df, splicing2_list, jv1, avoid_splice_dfr = avoid_splice_dfr)
+visualise_sample_splices(splicing_tabla_solo_df, splicing2_list, jv1, avoid_splice_list = list(avoid_splice_dfr))
 
 # Sample segments faceted by original segment
-visualise_sample_splices(splicing_tabla_solo_df, splicing2_list, jv1, avoid_splice_dfr = avoid_splice_dfr,
+visualise_sample_splices(splicing_tabla_solo_df, splicing2_list, jv1, avoid_splice_list = list(avoid_splice_dfr),
                          unstack = TRUE)
 
 # Sample using a Poisson process to count gaps but maintain segment durations
@@ -234,8 +237,8 @@ splicing3_list <- sample_gap_splice(splicing_tabla_solo_df, jv1, num_splices = 1
                                     rejection_list = list(avoid_splice_dfr))
 
 # Visualise samples
-visualise_sample_splices(splicing_tabla_solo_df, splicing3_list, jv1, avoid_splice_dfr = avoid_splice_dfr)
-visualise_sample_splices(splicing_tabla_solo_df, splicing3_list, jv1, avoid_splice_dfr = avoid_splice_dfr,
+visualise_sample_splices(splicing_tabla_solo_df, splicing3_list, jv1, avoid_splice_list = list(avoid_splice_dfr))
+visualise_sample_splices(splicing_tabla_solo_df, splicing3_list, jv1, avoid_splice_list = list(avoid_splice_dfr),
                          unstack = TRUE)
 
 # Do a similar thing for the average cross power
@@ -367,7 +370,6 @@ sample5_list <- compare_avg_power2(
 
 ave_power_tabla_solo <- ave_power_spliceview(sv_tabla_solo, column = "Nose_x_Central_Sitar",
                                              show_plot = TRUE)
-
 
 
 

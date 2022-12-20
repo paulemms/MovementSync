@@ -22,7 +22,10 @@
   object,
   time_limits = c(-Inf, Inf),
   colour = "hotpink",
-  alpha = 0.4,
+  alpha = 0.5,
+  tempo = FALSE,
+  view = NULL,
+  columns = NULL,
   ...
 )
 
@@ -53,6 +56,12 @@
 
 \item{...}{passed to geom.}
 
+\item{tempo}{do we plot tempo with a Metre layer? (Default is FALSE).}
+
+\item{view}{view object for a tempo Metre layer (Default is NULL).}
+
+\item{columns}{columns for view for a tempo Metre layer (Default is NULL).}
+
 \item{expr}{unquoted R expression for filtering data (default is Tier =='FORM').}
 
 \item{fill_column}{data column used for fill.}
@@ -77,8 +86,11 @@ v <- get_raw_view(r, "Central", "", "Sitar")
 autoplot(v, columns = c("LEar_x", "LEar_y"), maxpts=5000) + autolayer(o)
 
 m <- get_metre_data(r)
-autoplot(v, columns = c("LEar_x", "LEar_y"), maxpts=5000) +
-ggplot2::xlim(1000, 2000) + autolayer(m)
+autoplot(v, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000)) +
+  autolayer(m, time_limits = c(1000, 2000))
+autoplot(v, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000)) +
+  autolayer(m, tempo = TRUE, time_limits = c(1000, 2000), view = v,
+            columns = c("LEar_x", "LEar_y"))
 
 d <- get_duration_annotation_data(r)
 autoplot(m)

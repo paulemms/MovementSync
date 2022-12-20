@@ -1,6 +1,7 @@
 # Test we can do Granger Tests
 
 rm(list=ls())
+if (dev.cur() > 1) dev.off()
 library(movementsync)
 
 # Get recording meta data

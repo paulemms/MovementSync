@@ -884,7 +884,7 @@ compare_avg_cross_power2 <- function(sv1, sv2, name1, name2, num_samples,
 #' # Only first segment relevant for sample data
 #' x <- sample_offset_splice(splicing_df[1,], rv1, num_splices = 100)
 sample_offset_splice <- function(splicing_dfr, v, num_splices, rejection_list = list()) {
-  stopifnot(is.data.frame(splicing_dfr), "View" %in% class(v),
+  stopifnot("Splice" %in% class(splicing_dfr), "View" %in% class(v),
             num_splices > 0, is.list(rejection_list))
 
   # Discard random splices that appear in the rejection list - includes the original splice
@@ -961,7 +961,7 @@ sample_offset_splice <- function(splicing_dfr, v, num_splices, rejection_list = 
 #' x <- sample_gap_splice(splicing_df[1,], rv1, num_splices = 10)
 sample_gap_splice <- function(splicing_dfr, v, num_splices, rejection_list = list()) {
 
-  stopifnot(is.data.frame(splicing_dfr), "View" %in% class(v),
+  stopifnot("Splice" %in% class(splicing_dfr), "View" %in% class(v),
             num_splices > 0, is.list(rejection_list))
 
   # Discard random splices that appear in the rejection list - includes the original splice
@@ -1037,6 +1037,8 @@ sample_gap_splice <- function(splicing_dfr, v, num_splices, rejection_list = lis
 #' head(difference_onsets(o1, instruments = c('Inst', 'Tabla')))
 #' head(difference_onsets(o1, instruments = c('Inst', 'Tabla'), expr = 'Matra == 3'))
 difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr = NULL) {
+  stopifnot("OnsetsSelected" %in% class(onset_obj),
+            is.null(splicing_dfr) || "Splice" %in% class(splicing_dfr))
 
   dfr_list <- onset_obj[sapply(onset_obj, is.data.frame)]
   dfr <- dplyr::bind_rows(dfr_list, .id = 'Metre')
@@ -1110,6 +1112,10 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
 summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NULL, expr = NULL,
                            show_plot = FALSE, filter_pair = NULL, na_omit = TRUE, time_breaks = NULL) {
 
+  stopifnot("OnsetsSelected" %in% class(onset_obj),
+            "Recording" %in% class(recording),
+            is.null(splicing_dfr) || "Splice" %in% class(splicing_dfr))
+
   breaks <- if (is.null(time_breaks)) ggplot2::waiver() else scales::pretty_breaks(time_breaks)
 
   dfr <- difference_onsets(onset_obj, instruments = instruments, splicing_dfr = splicing_dfr, expr = expr)
@@ -1167,7 +1173,7 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
 #' @param splicing_list a list of `Splice` objects.
 #' @param jv `JoinedView` object.
 #' @param overlay overlay the segments for a density plot?
-#' @param avoid_splice_dfr list of `Splice objects` that determine times not to sample.
+#' @param avoid_splice_list list of `Splice objects` that determine times not to sample.
 #' @param unstack overlay segments on top of each other? (default is FALSE).
 #'
 #' @return a `ggplot` object.
@@ -1183,8 +1189,9 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
 #' visualise_sample_splices(splicing_df, splicing_list, jv)
 
 visualise_sample_splices <- function(splicing_df, splicing_list, jv, overlay = TRUE,
-                                     avoid_splice_dfr = data.frame(), unstack = FALSE) {
-  stopifnot(is.list(splicing_list), 'View' %in% class(jv))
+                                     avoid_splice_list = list(), unstack = FALSE) {
+  stopifnot("Splice" %in% class(splicing_df),
+            is.list(splicing_list), 'View' %in% class(jv))
 
   subtitle <- c(jv$recording$stem, jv$vid, jv$direct, jv$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
@@ -1213,7 +1220,8 @@ visualise_sample_splices <- function(splicing_df, splicing_list, jv, overlay = T
     ggplot2::xlab("Time / min:sec") +
     ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
 
-  if (nrow(avoid_splice_dfr) > 0) {
+  if (length(avoid_splice_list) > 0) {
+    avoid_splice_dfr <-do.call(merge_splice, c(avoid_splice_list, operation = 'union'))
     if (unstack) avoid_splice_dfr <- avoid_splice_dfr[-1] else avoid_splice_dfr$Segment <- NA
     g <- g + ggplot2::geom_rect(data = avoid_splice_dfr,
                        ggplot2::aes(xmin = .data$Start, xmax = .data$End, ymin = 0, ymax = Inf), alpha = 0.5)

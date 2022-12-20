@@ -257,7 +257,8 @@ splice_time.View <- function(x, win_size, step_size, ...) {
 #' splicing_df <- splice_time(l)
 #' sv <- get_spliced_view(rv, splicing_df)
 get_spliced_view <- function(v, splicing_df) {
-  stopifnot("View" %in% class(v), class(splicing_df[['Segment']]) == "character")
+  stopifnot("View" %in% class(v), "Splice" %in% class(splicing_df),
+            class(splicing_df[['Segment']]) == "character")
   df <- v$df
   fps <- v$recording$fps
 
@@ -513,9 +514,10 @@ merge_splice <- function(..., operation) {
   l <- list(...)
 
   # Checks
-  stopifnot(length(l) > 1, operation %in% c('union', 'intersection'))
+  stopifnot(operation %in% c('union', 'intersection'))
   stopifnot(all(sapply(l, function(x) class(x)[1] == 'Splice')))
   stopifnot(all(sapply(l, Negate(is_splice_overlapping))))
+  if (length(l) == 1) return(l[[1]])
 
   overlap <- switch(operation, 'union' = 1, 'intersection' = length(l))
   segment_name <- switch(operation, 'union' = paste(names(l), collapse = " | "),

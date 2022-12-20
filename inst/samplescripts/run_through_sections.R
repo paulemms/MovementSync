@@ -1,4 +1,4 @@
-# Sources all the specification section scripts contained in the package
+# Sources all the specification section scripts contained in the *installed* package
 rm(list = ls())
 
 section_dir <- system.file('samplescripts', package = 'movementsync')

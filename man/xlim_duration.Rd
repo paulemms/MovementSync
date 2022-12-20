@@ -4,7 +4,7 @@
 \alias{xlim_duration}
 \title{Get a ggplot2 xlim object based on duration data}
 \usage{
-xlim_duration(object, expr = "Tier == \\"Form\\"")
+xlim_duration(object, expr = .data$Tier == "Form")
 }
 \arguments{
 \item{object}{Duration object.}
@@ -24,7 +24,7 @@ autoplot(m) + autolayer(d)
 v <- get_raw_view(r, "Central", "", "Sitar")
 autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d)
 autoplot(v, columns = c("LEar_x", "LEar_y")) +
-xlim_duration(d, 'Tier == "Form" & substr(Comments, 1, 1) == "J"') +
-autolayer(d, 'Tier == "Form" & substr(Comments, 1, 1) == "J"')
+xlim_duration(d, expr = Tier == "FORM" & substr(Comments, 1, 1) == "J") +
+autolayer(d, expr = Tier == "FORM" & substr(Comments, 1, 1) == "J")
 }
 }

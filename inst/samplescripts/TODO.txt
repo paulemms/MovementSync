@@ -1,20 +1,21 @@
 # QUERY
 
 # TODO
-# OSF httr library get zip - get_osf_data(), warn if overwrite, OSFR for listing
-# Change harmonium to tabla in 4. script
-# Martin Word Doc 10122022 Section 4
-# Martin Word Doc 10122022 Section 2
-# Martin Word Doc 10122022 Section 1
-# Martin Word Doc 10122022 Section 3
-# Update the show_plot type graphs to have similar features to other plots - see ave_power_spliceview
+# Martin Word document and email 20122022
 # See Martin email on modification of Metre object for Tempo
+# OSF httr library get zip - get_osf_data(), warn if overwrite, OSFR for listing
+# Update the show_plot type graphs to have similar features to other plots - see ave_power_spliceview
 # Check splice data.frames really are Splice objects in functions
 # Order onsetselected data
 # Generalise autolayer to accept parameters or expr - done for splice_time.Duration - others?
 # Single time series autoplot has z axis label see section 5.
 
 # DONE
+# Martin Word Doc 10122022 Section 4
+# Martin Word Doc 10122022 Section 2
+# Martin Word Doc 10122022 Section 1
+# Martin Word Doc 10122022 Section 3
+# Changed harmonium to tabla in 4. script
 # Sample from one splitview and plot average power distribution using sampling
 # Added calculate cross power over splice, comparison functions, and mean comparison
 # Splicing for proportion of interval on metre objects

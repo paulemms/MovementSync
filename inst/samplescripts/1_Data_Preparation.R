@@ -1,6 +1,8 @@
 # Test we can load all the data and provide diagnostic plots
 
 rm(list = ls())
+gc()
+if (dev.cur() > 1) dev.off()
 library(movementsync)
 
 ################################################################################
@@ -41,7 +43,7 @@ autoplot(rv1, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000), maxp
 
 # Set time-scale using Duration object
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
-  xlim_duration(d1, 'Tier == "FORM" & Comments == "Alap"')
+  xlim_duration(d1, expr = Tier == "FORM" & Comments == "Alap")
 
 # Processed data
 pv1 <- get_processed_view(rv1)
@@ -164,7 +166,7 @@ fv_view <- get_filtered_views(r5, data_points = "Nose", n = 19, p = 4)
 autoplot(fv_view$V3_Ryuteki)
 autoplot(fv_view$V3_Ryuteki) + autolayer(d5, expr = Tier == "Section")
 autoplot(fv_view$V3_Ryuteki) + autolayer(m5) +
-  xlim_duration(d5, 'Tier == "Section" & Comments == "B"')
+  xlim_duration(d5, expr = Tier == "Section" & Comments == "B")
 autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", alpha = 0,
                                          instrument_cols = instruments)
 
@@ -234,3 +236,4 @@ velocity_dp(sub_1min_fv1)
 
 # Plot Sitar motiongram for first minute
 motion_gram(sub_1min_fv1)
+
