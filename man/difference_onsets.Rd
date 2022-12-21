@@ -11,9 +11,9 @@ difference_onsets(onset_obj, instruments, expr = NULL, splicing_dfr = NULL)
 
 \item{instruments}{character vector of instrument names.}
 
-\item{expr}{R expression to subset onsets (not required).}
+\item{expr}{R expression to subset onsets (Default is NULL).}
 
-\item{splicing_dfr}{\code{Splice} object (not required).}
+\item{splicing_dfr}{\code{Splice} object (Default is NULL).}
 }
 \value{
 \code{OnsetsDifference} object.
@@ -26,26 +26,10 @@ milli-seconds.
 r1 <- get_sample_recording()
 o1 <- get_onsets_selected_data(r1)
 head(difference_onsets(o1, instruments = c('Inst', 'Tabla')))
-head(difference_onsets(o1, instruments = c('Inst', 'Tabla'), expr = 'Matra == 3'))
+head(difference_onsets(o1, instruments = c('Inst', 'Tabla'), expr = Matra == 3))
 }
 \seealso{
-Other statistical and analysis functions: 
-\code{\link{apply_column_spliceview}()},
-\code{\link{apply_segment_spliceview}()},
-\code{\link{ave_cross_power_over_splices}()},
-\code{\link{ave_cross_power_spliceview}()},
-\code{\link{ave_power_over_splices}()},
-\code{\link{ave_power_spliceview}()},
-\code{\link{calculate_ave_cross_power1}()},
-\code{\link{calculate_ave_power1}()},
-\code{\link{compare_ave_cross_power1}()},
-\code{\link{compare_ave_power1}()},
-\code{\link{compare_avg_cross_power2}()},
-\code{\link{compare_avg_power2}()},
-\code{\link{pull_segment_spliceview}()},
-\code{\link{sample_gap_splice}()},
-\code{\link{sample_offset_splice}()},
-\code{\link{summary_onsets}()},
-\code{\link{visualise_sample_splices}()}
+Other asynchrony analysis functions: 
+\code{\link{summary_onsets}()}
 }
-\concept{statistical and analysis functions}
+\concept{asynchrony analysis functions}

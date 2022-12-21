@@ -8,6 +8,7 @@ get_osf_recordings(
   stems = c("NIR_ABh_Puriya", "NIRP1_VS_Hams", "NIRP1_MAK_Jaun", "Gagaku_5_Juha",
     "NIR_DBh_Malhar"),
   to_dir = "~/movementsync/Original",
+  node = "https://osf.io/w2s3a",
   overwrite = FALSE
 )
 }
@@ -16,6 +17,8 @@ get_osf_recordings(
 recordings needed for the walk-throughs).}
 
 \item{to_dir}{directory to copy to (default is "~/movementsync/Original").}
+
+\item{node}{OSF node for movementsync.}
 
 \item{overwrite}{overwriting existing dataset files?}
 }

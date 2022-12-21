@@ -1,4 +1,5 @@
-# Get the data from OSF
+# Get the dataset of five recordings from from OSF and install them
+# into a folder on your local machine (by default ~/movementsync/Original)
 
 rm(list=ls())
 library(movementsync)
@@ -9,7 +10,7 @@ list_osf_recordings()
 # Open the data home page at OSF
 open_movementsync_data()
 
-# Download the five Original recordings for the numbered walk-throughs
+# Download the five recordings for the numbered walk-throughs
 # get_osf_recordings()
 
 # Download a particular recording
@@ -24,3 +25,5 @@ open_local_recordings()
 # Load the meta data for one recording from the local data
 r <- get_recording("NIR_ABh_Puriya", fps = 25)
 summary(r)
+
+# The Recording object is used by other functions in movementsync to load data.

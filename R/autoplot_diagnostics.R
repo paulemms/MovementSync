@@ -267,9 +267,9 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
 #' m <- get_metre_data(r)
 #' autoplot(v, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000)) +
 #'   autolayer(m, time_limits = c(1000, 2000))
-#' autoplot(v, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000)) +
+#' autoplot(v, columns = c("LEar_x", "LEar_y", "LEar_d"), time_limits = c(1000, 2000), maxpts = Inf) +
 #'   autolayer(m, tempo = TRUE, time_limits = c(1000, 2000), view = v,
-#'             columns = c("LEar_x", "LEar_y"))
+#'             columns = c("LEar_x", "LEar_y", "LEar_d"), colour = 'orange')
 #'
 #' d <- get_duration_annotation_data(r)
 #' autoplot(m)
@@ -315,7 +315,7 @@ autolayer.OnsetsSelected <- function(object, time_limits = c(-Inf, Inf), colour 
 
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.Metre <- function(object, time_limits = c(-Inf, Inf), colour = "hotpink", alpha = 0.5,
+autolayer.Metre <- function(object, time_limits = c(-Inf, Inf), colour = "hotpink", alpha = 0.9,
                             tempo = FALSE, view = NULL, columns = NULL, ...) {
   if (tempo) {
     is_tempo_available <- all(sapply(object, function(r) "Tempo_Hz" %in% colnames(r)))
@@ -326,7 +326,8 @@ autolayer.Metre <- function(object, time_limits = c(-Inf, Inf), colour = "hotpin
     dfr <- dplyr::bind_rows(l)
     dfr <- dplyr::filter(dfr, .data$Time >= time_limits[1] & .data$Time <= time_limits[2])
 
-    view_df <- view$df[columns]
+    view_df <- view$df[view$df$Time >= time_limits[1] & view$df$Time <= time_limits[2], columns, drop = FALSE]
+
     max_view <- apply(view_df, 2, max, na.rm = TRUE)
     min_view <- apply(view_df, 2, min, na.rm = TRUE)
     max_tempo <- max(dfr$Tempo_Hz, na.rm = TRUE)
@@ -337,8 +338,21 @@ autolayer.Metre <- function(object, time_limits = c(-Inf, Inf), colour = "hotpin
     scaled_dfr <- data.frame(Time = dfr$Time, scale_view)
     long_dfr <- tidyr::pivot_longer(scaled_dfr, columns, names_to = 'Series', values_to = 'Value')
 
-    ggplot2::geom_line(ggplot2::aes(x = .data$Time, y = .data$Value),
-                       colour = colour, alpha = alpha, data = long_dfr, ...)
+    min_idx <- which.min(dfr$Tempo_Hz)
+    max_idx <- which.max(dfr$Tempo_Hz)
+    text_dfr <- scaled_dfr[c(min_idx, max_idx), ,drop = FALSE]
+    text_dfr$Tempo <- paste0(round(c(dfr$Tempo_Hz[min_idx], dfr$Tempo_Hz[max_idx]), 2), ' Hz')
+    long_text_dfr <- tidyr::pivot_longer(text_dfr, columns, names_to = 'Series',
+                                         values_to = 'Value')
+
+    c(
+      ggplot2::geom_line(ggplot2::aes(x = .data$Time, y = .data$Value),
+        colour = colour, data = long_dfr, ...),
+      ggplot2::geom_label(data = long_text_dfr, alpha = alpha,
+        ggplot2::aes(x = .data$Time, y = .data$Value, label = .data$Tempo)
+      )
+    )
+
   } else {
     x <- unlist(lapply(object, function(y) y[["Time"]]))
 

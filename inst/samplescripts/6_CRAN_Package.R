@@ -1,23 +1,15 @@
-# Test CRAN packaging
+# Load sample data (inc. 3D test version)
 
 rm(list=ls())
 gc()
 if (dev.cur() > 1) dev.off()
 library(movementsync)
 
-# Load sample data from package: only 1 min of video/feature data
+# Load sample data from package: only 1 min of video data
 r1 <- get_sample_recording() # defaults to NIR_ABh_Puriya
 summary(r1)
-
-# Load feature data (by default it is not made continuous)
-fd <- get_feature_data(r1, "Central" ,"", "Sitar")
-pv_list <- get_processed_views(r1)
-pv_list$Feature <- fd
-jv <- get_joined_view(pv_list)
-get_data_points(jv)
-jv_sub <- subset(jv, data_points = c('LEar', 'Pitch', 'Smooth'))
-autoplot(jv_sub, columns = 'Pitch_Feature')
-autoplot(jv_sub)
+rv <- get_raw_view(r1, "Central", "", "Sitar")
+autoplot(rv)
 
 # Load sample data from package: Test data contains z-cordinates in view data
 r2 <- get_sample_recording("Test")

@@ -33,7 +33,7 @@ summary_onsets(
 
 \item{na_omit}{omit NAs (Default is TRUE).}
 
-\item{time_breaks}{suggests the number of major time tick marks (default is NULL).}
+\item{time_breaks}{suggests the number of major time tick marks (Default is NULL).}
 }
 \value{
 a summary data frame of onset difference statistics.
@@ -50,23 +50,7 @@ summary_onsets(o1, r1, instruments = c('Inst', 'Tabla'),
   splicing_dfr = splice_dfr, show_plot = TRUE)
 }
 \seealso{
-Other statistical and analysis functions: 
-\code{\link{apply_column_spliceview}()},
-\code{\link{apply_segment_spliceview}()},
-\code{\link{ave_cross_power_over_splices}()},
-\code{\link{ave_cross_power_spliceview}()},
-\code{\link{ave_power_over_splices}()},
-\code{\link{ave_power_spliceview}()},
-\code{\link{calculate_ave_cross_power1}()},
-\code{\link{calculate_ave_power1}()},
-\code{\link{compare_ave_cross_power1}()},
-\code{\link{compare_ave_power1}()},
-\code{\link{compare_avg_cross_power2}()},
-\code{\link{compare_avg_power2}()},
-\code{\link{difference_onsets}()},
-\code{\link{pull_segment_spliceview}()},
-\code{\link{sample_gap_splice}()},
-\code{\link{sample_offset_splice}()},
-\code{\link{visualise_sample_splices}()}
+Other asynchrony analysis functions: 
+\code{\link{difference_onsets}()}
 }
-\concept{statistical and analysis functions}
+\concept{asynchrony analysis functions}

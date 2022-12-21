@@ -1024,19 +1024,25 @@ sample_gap_splice <- function(splicing_dfr, v, num_splices, rejection_list = lis
 #' milli-seconds.
 #' @param onset_obj `OnsetsSelected` object.
 #' @param instruments character vector of instrument names.
-#' @param expr R expression to subset onsets (not required).
-#' @param splicing_dfr `Splice` object (not required).
+#' @param expr R expression to subset onsets (Default is NULL).
+#' @param splicing_dfr `Splice` object (Default is NULL).
 #'
 #' @return `OnsetsDifference` object.
 #' @export
-#' @family statistical and analysis functions
+#' @family asynchrony analysis functions
 #'
 #' @examples
 #' r1 <- get_sample_recording()
 #' o1 <- get_onsets_selected_data(r1)
 #' head(difference_onsets(o1, instruments = c('Inst', 'Tabla')))
-#' head(difference_onsets(o1, instruments = c('Inst', 'Tabla'), expr = 'Matra == 3'))
+#' head(difference_onsets(o1, instruments = c('Inst', 'Tabla'), expr = Matra == 3))
 difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr = NULL) {
+  e <- substitute(expr)
+  difference_onsets_q(onset_obj, instruments, expr = e, splicing_dfr)
+}
+
+# version of difference_onsets that requires a quoted expression
+difference_onsets_q <- function(onset_obj, instruments, expr = NULL, splicing_dfr = NULL) {
   stopifnot("OnsetsSelected" %in% class(onset_obj),
             is.null(splicing_dfr) || "Splice" %in% class(splicing_dfr))
 
@@ -1044,8 +1050,7 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
   dfr <- dplyr::bind_rows(dfr_list, .id = 'Metre')
 
   if (!is.null(expr)) {
-    parsed_expr <- rlang::parse_expr(expr)
-    dfr <- dplyr::filter(dfr, !!parsed_expr)
+    dfr <- dplyr::filter(dfr, !!expr)
   }
 
   dfr <- dfr[, c('Metre', instruments), drop=FALSE]
@@ -1067,14 +1072,15 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
     for (r in seq_len(nrow(splicing_dfr))) {
       a <- splicing_dfr$Start[r]
       b <- splicing_dfr$End[r]
-      segment <-  if (is.null(expr)) splicing_dfr$Segment[r] else paste(expr, splicing_dfr$Segment[r], sep = " & ")
+
+      segment <-  if (is.null(expr)) splicing_dfr$Segment[r] else paste(deparse(expr), splicing_dfr$Segment[r], sep = " & ")
       segment_list[[segment]] <- output_dfr[
         !is.na(output_dfr$Ref_Beat_Time) & output_dfr$Ref_Beat_Time >= a &
           output_dfr$Ref_Beat_Time <= b, ,drop=FALSE]
     }
     output_dfr <- dplyr::bind_rows(segment_list, .id = 'Segment')
   } else {
-    output_dfr$Segment <- if (!is.null(expr)) expr else 'All'
+    output_dfr$Segment <- if (!is.null(expr)) deparse(expr) else 'All'
   }
 
   # Convert differences to ms
@@ -1084,7 +1090,6 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
   class(output_dfr) <- c('OnsetsDifference', 'data.frame')
   output_dfr
 }
-
 
 #' Summary of difference in onsets
 #'
@@ -1096,11 +1101,11 @@ difference_onsets <- function(onset_obj, instruments, expr = NULL, splicing_dfr 
 #' @param show_plot show a plot? (Default is FALSE).
 #' @param filter_pair regular expression to filter instrument pair names.
 #' @param na_omit omit NAs (Default is TRUE).
-#' @param time_breaks suggests the number of major time tick marks (default is NULL).
+#' @param time_breaks suggests the number of major time tick marks (Default is NULL).
 #'
 #' @return a summary data frame of onset difference statistics.
 #' @export
-#' @family statistical and analysis functions
+#' @family asynchrony analysis functions
 #'
 #' @examples
 #' r1 <- get_sample_recording()
@@ -1118,7 +1123,8 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
 
   breaks <- if (is.null(time_breaks)) ggplot2::waiver() else scales::pretty_breaks(time_breaks)
 
-  dfr <- difference_onsets(onset_obj, instruments = instruments, splicing_dfr = splicing_dfr, expr = expr)
+  e <- substitute(expr)
+  dfr <- difference_onsets_q(onset_obj, instruments = instruments, splicing_dfr = splicing_dfr, expr = e)
   if (nrow(dfr) == 0) stop('No data from splice to summarise')
 
   long_dfr <- tidyr::pivot_longer(dfr, cols = -c(.data$Metre, .data$Ref_Beat_Time, .data$Segment),

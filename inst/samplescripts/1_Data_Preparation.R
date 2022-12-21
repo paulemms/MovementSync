@@ -1,4 +1,5 @@
-# Test we can load all the data and provide diagnostic plots
+# Introduces dataset (5 performances) and data types; functions for loading and
+# pre-processing movement and annotation data; data visualisation and exploration.
 
 rm(list = ls())
 gc()
@@ -39,7 +40,14 @@ autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(o1)
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
   autolayer(d1, expr = Tier == "FORM" & substr(Comments, 1, 1) == "J")
 autoplot(rv1, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000), maxpts=5000) +
-  autolayer(m1, time_limits = c(1000, 2000))
+  autolayer(m1, time_limits = c(1000, 2000), alpha = 0.5)
+# Showing tempo layer on facets
+autoplot(rv1, columns = "LEar_d", time_limits = c(1000, 2000), maxpts = Inf) +
+  autolayer(m1, tempo = TRUE, time_limits = c(1000, 2000), view = rv1,
+            columns = "LEar_d")
+autoplot(rv1, columns = c("LEar_d", "Nose_d"), time_limits = c(1000, 2000), maxpts = Inf) +
+  autolayer(m1, tempo = TRUE, time_limits = c(1000, 2000), view = rv1,
+            columns = c("LEar_d", "Nose_d"), colour = 'orange')
 
 # Set time-scale using Duration object
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
@@ -71,6 +79,45 @@ autoplot(fv1)
 fv2 <- apply_filter(pv1, c("Nose", "RWrist", "LWrist"), signal::MedianFilter(n = 3))
 autoplot(fv2)
 
+# Load feature data (by default it is not made continuous)
+fd <- get_feature_data(r1, "Central" ,"", "Sitar")
+autoplot(fd)
+
+# Load all raw pose video data, process and filter it for one data point in one go
+fv_list <- get_filtered_views(r1, data_points = 'Nose', n = 19, p = 4)
+
+# Add the feature data to the list
+fv_list$Feature <- fd
+
+# Join all the video data together
+jv <- get_joined_view(fv_list)
+get_data_points(jv)
+
+# Shows the feature data as part of the JoinedView ready for analysis
+autoplot(jv, columns = 'Pitch_Feature')
+autoplot(jv)
+
+# Motiongram
+
+# Look at Left and Right Elbow of Sitar player
+fv3 <- apply_filter_sgolay(pv1, data_points = c("LElbow", "RElbow"), n = 41, p = 3)
+
+# Position of Elbows for the first 100s
+sub_fv3 <- subset(fv3, Time >= 0 & Time <= 100, by = 10)
+plot_history_xy(sub_fv3)
+
+# Use 1 minute of data and plot distribution of body over time
+dp <- c("LWrist", "RWrist", "LElbow", "RElbow", "LEye", "REye", "Neck", "MidHip")
+fv_body <- apply_filter_sgolay(pv1, data_point = dp, n = 41, p = 4)
+sub_1min_fv_body <- subset(fv_body, Time >= 0 & Time <= 60)
+distribution_dp(sub_1min_fv_body)
+
+# Plot the absolute velocity of body
+velocity_dp(sub_1min_fv_body)
+
+# Plot Sitar motiongram for first minute
+motion_gram(sub_1min_fv_body)
+
 ################################################################################
 ### Recording 2
 ################################################################################
@@ -90,7 +137,7 @@ autoplot(rv2_SideL_Tabla)
 rv2_SideR_Tabla <- get_raw_view(r2, "SideR", "", "Tabla")
 autoplot(rv2_SideL_Tabla)
 
-# OptFlow data has no camera in filename so lo ad separately
+# OptFlow data has no camera in filename so load separately
 rv2_OptFlow_Guitar <- get_raw_optflow_view(r2, "", "", "Guitar")
 rv2_OptFlow_Tabla <- get_raw_optflow_view(r2, "", "", "Tabla")
 pv2_OptFlow_Guitar <- get_processed_view(rv2_OptFlow_Guitar)
@@ -99,6 +146,43 @@ fv2_OptFlow_Guitar <- apply_filter_sgolay(pv2_OptFlow_Guitar, "Head", n = 19, p 
 fv2_OptFlow_Tabla <- apply_filter_sgolay(pv2_OptFlow_Tabla, "Head", n = 19, p = 4)
 autoplot(fv2_OptFlow_Guitar) # linear drift removed
 autoplot(fv2_OptFlow_Tabla)
+
+# Spectograms
+
+# Use the Tabla player in recording NIR_DBh_Malhar_2Gats for analysis
+pv_list <- get_processed_views(r2)
+
+# Focus on RWrist on 10s window at 20 minutes
+sub_pv <- subset(pv_list$SideL_Tabla, Time >= 60*20 & Time <= 60*20+10, columns = "RWrist_x")
+
+# Estimate the spectral density of data points using spectrum in the stats package
+spec <- spectral_density(sub_pv, columns = "RWrist_x", spans = c(3, 3))
+autoplot(spec, period_range = c(0, 10))
+
+# Specgram on processed data (colour) using signal::specgram function
+sub_full_pv <- subset(pv_list$SideL_Tabla, Time <= 1700, columns = c("RWrist_x", "RWrist_y"))
+specgram_plot(sub_full_pv)
+
+# Specgram on filtered data (colour)
+fv_tabla <- apply_filter_sgolay(pv_list$SideL_Tabla, data_points = "RWrist", n = 11, p = 3)
+sub_full_fv <- subset(fv_tabla, Time <= 1700)
+specgram_plot(sub_full_fv)
+
+# Specgram on filtered data (bw)
+specgram_plot(sub_full_fv, window = 200) +
+  ggplot2::scale_fill_gradient(low = "white", high = "black")
+
+# Filtered specgram with In time duration annotation data
+specgram_plot(sub_full_fv) + autolayer(d2, geom = "vline", nudge_x = -10, size = 3)
+
+# Unfiltered specgram with Out time duration annotation data
+specgram_plot(sub_full_pv) + autolayer(d2, geom = "vline", nudge_x = -10, size = 3, vline_column = "Out")
+
+# BW palette
+specgram_plot(sub_full_pv, window = 200) +
+  ggplot2::scale_fill_gradient(low = "white", high = "black") +
+  autolayer(d2, geom = "vline", nudge_x = -10, size = 3, colour = "cyan")
+
 
 ################################################################################
 ###  Recording 3
@@ -170,70 +254,11 @@ autoplot(fv_view$V3_Ryuteki) + autolayer(m5) +
 autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", alpha = 0,
                                          instrument_cols = instruments)
 
-################################################################################
-###  Data analysis
-################################################################################
-
 # To compare data from different cameras use a JoinedView
 two_cameras <- fv_view[c('V4_2_Biwa', 'V2_M_Taiko')]
 jv <- get_joined_view(two_cameras)
 autoplot(jv, time_breaks = 3)
 
-# Spectograms
 
-# Use the Tabla player in recording NIR_DBh_Malhar_2Gats for analysis
-pv_list <- get_processed_views(r2)
 
-# Focus on RWrist on 10s window at 20 minutes
-sub_pv <- subset(pv_list$SideL_Tabla, Time >= 60*20 & Time <= 60*20+10, columns = "RWrist_x")
-
-# Estimate the spectral density of data points using spectrum in the stats package
-spec <- spectral_density(sub_pv, columns = "RWrist_x", spans = c(3, 3))
-autoplot(spec, period_range = c(0, 10))
-
-# Specgram on processed data (colour) using signal::specgram function
-sub_full_pv <- subset(pv_list$SideL_Tabla, Time <= 1700, columns = c("RWrist_x", "RWrist_y"))
-specgram_plot(sub_full_pv)
-
-# Specgram on filtered data (colour)
-fv_tabla <- apply_filter_sgolay(pv_list$SideL_Tabla, data_points = "RWrist", n = 11, p = 3)
-sub_full_fv <- subset(fv_tabla, Time <= 1700)
-specgram_plot(sub_full_fv)
-
-# Specgram on filtered data (bw)
-specgram_plot(sub_full_fv, window = 200) +
-  ggplot2::scale_fill_gradient(low = "white", high = "black")
-
-# Filtered specgram with In time duration annotation data
-specgram_plot(sub_full_fv) + autolayer(d2, geom = "vline", nudge_x = -10, size = 3)
-
-# Unfiltered specgram with Out time duration annotation data
-specgram_plot(sub_full_pv) + autolayer(d2, geom = "vline", nudge_x = -10, size = 3, vline_column = "Out")
-
-# BW palette
-specgram_plot(sub_full_pv, window = 200) +
-  ggplot2::scale_fill_gradient(low = "white", high = "black") +
-  autolayer(d2, geom = "vline", nudge_x = -10, size = 3, colour = "cyan")
-
-# Motiongram
-
-# Use first recording and look at Left and Right Elbow of Sitar player
-pv1 <- get_processed_view(rv1)
-fv1 <- apply_filter_sgolay(pv1, data_points = c("LElbow", "RElbow"), n = 41, p = 3)
-
-# Position of Elbows for the first 100s
-sub_fv1 <- subset(fv1, Time >= 0 & Time <= 100, by = 10)
-plot_history_xy(sub_fv1)
-
-# Use 1 minute of data and plot distribution of body over time
-dp <- c("LWrist", "RWrist", "LElbow", "RElbow", "LEye", "REye", "Neck", "MidHip")
-fv_body <- apply_filter_sgolay(pv1, data_point = dp, n = 41, p = 4)
-sub_1min_fv1 <- subset(fv_body, Time >= 0 & Time <= 60)
-distribution_dp(sub_1min_fv1)
-
-# Plot the absolute velocity of body
-velocity_dp(sub_1min_fv1)
-
-# Plot Sitar motiongram for first minute
-motion_gram(sub_1min_fv1)
 

@@ -4,7 +4,10 @@
 \alias{list_osf_recordings}
 \title{List available recordings for movementsync from OSF}
 \usage{
-list_osf_recordings()
+list_osf_recordings(node = "https://osf.io/w2s3a")
+}
+\arguments{
+\item{node}{OSF node for movementsync.}
 }
 \value{
 character vector of stem names

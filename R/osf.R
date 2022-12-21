@@ -1,8 +1,9 @@
 # functions to get recordings from OSF
 
-get_osf_node <- function() "https://osf.io/w2s3a"
 
 #' List available recordings for movementsync from OSF
+#'
+#' @param node OSF node for movementsync.
 #'
 #' @return character vector of stem names
 #' @export
@@ -11,8 +12,7 @@ get_osf_node <- function() "https://osf.io/w2s3a"
 #' \dontrun{
 #' list_osf_recordings()
 #' }
-list_osf_recordings <- function() {
-  node <- get_osf_node()
+list_osf_recordings <- function(node = "https://osf.io/w2s3a") {
   movementsync_project <- osfr::osf_retrieve_node(node)
   movementsync_files <- osfr::osf_ls_files(movementsync_project)
   file_names <- basename(movementsync_files$name)
@@ -25,9 +25,10 @@ list_osf_recordings <- function() {
 
 #' Opens movementsync data home page at OSF
 #'
+#' @param node OSF node for movementsync.
+#'
 #' @export
-open_movementsync_data <- function() {
-  node <- get_osf_node()
+open_movementsync_data <- function(node = "https://osf.io/w2s3a") {
   movementsync_project <- osfr::osf_retrieve_node(node)
   osfr::osf_open(movementsync_project)
 }
@@ -39,6 +40,7 @@ open_movementsync_data <- function() {
 #' recordings needed for the walk-throughs).
 #' @param to_dir directory to copy to (default is "~/movementsync/Original").
 #' @param overwrite overwriting existing dataset files?
+#' @param node OSF node for movementsync.
 #'
 #' @return invisible vector of downloaded CSV file names.
 #' @export
@@ -49,10 +51,9 @@ open_movementsync_data <- function() {
 #' }
 get_osf_recordings <- function(
     stems = c('NIR_ABh_Puriya', "NIRP1_VS_Hams", "NIRP1_MAK_Jaun", "Gagaku_5_Juha", "NIR_DBh_Malhar"),
-    to_dir = "~/movementsync/Original", overwrite = FALSE) {
+    to_dir = "~/movementsync/Original", node = "https://osf.io/w2s3a", overwrite = FALSE) {
 
   # Find the zip to download
-  node <- get_osf_node()
   movementsync_project <- osfr::osf_retrieve_node(node)
   movementsync_files <- osfr::osf_ls_files(movementsync_project)
   zip_files <- paste0(stems, '.zip')

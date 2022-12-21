@@ -1,4 +1,6 @@
-# Tests Wavelet functionality in the package
+# Introduces functions for wavelet and cross-wavelet analysis based on
+# WaveletComp package, with some additional functions and visualisations
+# (wavelet energy vs time plots and relative phase analysis).
 
 rm(list=ls())
 gc()

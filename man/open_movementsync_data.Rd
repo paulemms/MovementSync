@@ -4,7 +4,10 @@
 \alias{open_movementsync_data}
 \title{Opens movementsync data home page at OSF}
 \usage{
-open_movementsync_data()
+open_movementsync_data(node = "https://osf.io/w2s3a")
+}
+\arguments{
+\item{node}{OSF node for movementsync.}
 }
 \description{
 Opens movementsync data home page at OSF

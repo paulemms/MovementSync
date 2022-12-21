@@ -1,4 +1,6 @@
-# Test we can do Granger Tests
+# Introduces functions for granger causality and conditional granger causality
+# analysis, including windowed analysis with p-values and arrows
+# (influence diagrams), and summary network diagrams.
 
 rm(list=ls())
 gc()

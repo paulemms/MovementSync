@@ -22,7 +22,7 @@
   object,
   time_limits = c(-Inf, Inf),
   colour = "hotpink",
-  alpha = 0.5,
+  alpha = 0.9,
   tempo = FALSE,
   view = NULL,
   columns = NULL,
@@ -88,9 +88,9 @@ autoplot(v, columns = c("LEar_x", "LEar_y"), maxpts=5000) + autolayer(o)
 m <- get_metre_data(r)
 autoplot(v, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000)) +
   autolayer(m, time_limits = c(1000, 2000))
-autoplot(v, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000)) +
+autoplot(v, columns = c("LEar_x", "LEar_y", "LEar_d"), time_limits = c(1000, 2000), maxpts = Inf) +
   autolayer(m, tempo = TRUE, time_limits = c(1000, 2000), view = v,
-            columns = c("LEar_x", "LEar_y"))
+            columns = c("LEar_x", "LEar_y", "LEar_d"), colour = 'orange')
 
 d <- get_duration_annotation_data(r)
 autoplot(m)

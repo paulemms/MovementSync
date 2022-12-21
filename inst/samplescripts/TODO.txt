@@ -1,6 +1,7 @@
 # QUERY
 
 # TODO
+# Add secondary axis for temp - put it on displacement for example
 # Fix xlim_duration plots
 # Martin Word document and email 20122022
 # See Martin email on modification of Metre object for Tempo
@@ -11,9 +12,11 @@
 # Generalise autolayer to accept parameters or expr - done for splice_time.Duration - others?
 
 # DONE
+# Changed OSF node function to a parameter.
 # Fixed visualise_sample_splices to take a list of rejection splices.
 # Did fresh R, RStudio, movementsync (it loaded dependencies), movementsync data, ran all scripts ok on old 16Gb machine.
-# Fixed single time series autoplot has z axis label see section 5.
+# Fixed single time series autoplot has z axis label see section 1.
+# Added gc(), dev.off() at start of scripts.
 # Martin Word Doc 10122022 Section 4
 # Martin Word Doc 10122022 Section 2
 # Martin Word Doc 10122022 Section 1

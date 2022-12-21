@@ -59,11 +59,9 @@ Other statistical and analysis functions:
 \code{\link{compare_ave_power1}()},
 \code{\link{compare_avg_cross_power2}()},
 \code{\link{compare_avg_power2}()},
-\code{\link{difference_onsets}()},
 \code{\link{pull_segment_spliceview}()},
 \code{\link{sample_gap_splice}()},
 \code{\link{sample_offset_splice}()},
-\code{\link{summary_onsets}()},
 \code{\link{visualise_sample_splices}()}
 }
 \concept{statistical and analysis functions}
