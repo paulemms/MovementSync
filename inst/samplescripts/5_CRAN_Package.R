@@ -16,6 +16,7 @@ pv_list$Feature <- fd
 jv <- get_joined_view(pv_list)
 get_data_points(jv)
 jv_sub <- subset(jv, data_points = c('LEar', 'Pitch', 'Smooth'))
+autoplot(jv_sub, columns = 'Pitch_Feature')
 autoplot(jv_sub)
 
 # Load sample data from package: Test data contains z-cordinates in view data

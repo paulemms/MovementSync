@@ -26,12 +26,20 @@ library(movementsync)
 packageVersion("movementsync")
 ```
 
-From a fresh install of the package, you can get the original set of
-five recordings from OSF using the following function:
+You can get the original set of five recordings from
+[OSF](https://osf.io/w2s3a) using the following function:
 
 ``` r
 get_osf_recordings()
 ```
 
+This function will download five zip files containing the data and
+extract the contents to a folder in your home directory.
+
 The R scripts in the [inst/samplescripts](inst/samplescripts) directory
-walk-through the package functionality using these recordings.
+walk-through the package functionality using these recordings. These
+scripts are installed as part of the package. You can see them by typing
+
+``` r
+open_walk_throughs()
+```

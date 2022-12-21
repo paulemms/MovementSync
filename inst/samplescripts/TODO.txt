@@ -1,6 +1,7 @@
 # QUERY
 
 # TODO
+# Fix xlim_duration plots
 # Martin Word document and email 20122022
 # See Martin email on modification of Metre object for Tempo
 # OSF httr library get zip - get_osf_data(), warn if overwrite, OSFR for listing
@@ -8,9 +9,11 @@
 # Check splice data.frames really are Splice objects in functions
 # Order onsetselected data
 # Generalise autolayer to accept parameters or expr - done for splice_time.Duration - others?
-# Single time series autoplot has z axis label see section 5.
 
 # DONE
+# Fixed visualise_sample_splices to take a list of rejection splices.
+# Did fresh R, RStudio, movementsync (it loaded dependencies), movementsync data, ran all scripts ok on old 16Gb machine.
+# Fixed single time series autoplot has z axis label see section 5.
 # Martin Word Doc 10122022 Section 4
 # Martin Word Doc 10122022 Section 2
 # Martin Word Doc 10122022 Section 1

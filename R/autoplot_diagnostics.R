@@ -145,9 +145,15 @@ autoplot.View <- function(object, columns=NULL, maxpts=1000, time_limits = c(-In
   subtitle <- c(object$recording$stem, object$vid, object$direct, object$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")
 
-  g_wrap <- if (is.null(ncol(z))) NULL else ggplot2::facet_wrap(Series ~ ., scales="free_y")
+  if (is.null(ncol(z))) {
+    g_wrap <- NULL
+    ylab <- ggplot2::ylab(columns[-1])
+  } else {
+    g_wrap <- ggplot2::facet_wrap(Series ~ ., scales="free_y")
+    ylab <- NULL
+  }
 
-  autoplot(z) + g_wrap +
+  autoplot(z) + g_wrap + ylab +
     ggplot2::labs(title = class(object)[1], subtitle = subtitle) +
     ggplot2::xlab("Time / min:sec") +
     ggplot2::scale_x_time(breaks = breaks, labels = function(l) strftime(l, '%M:%S'))

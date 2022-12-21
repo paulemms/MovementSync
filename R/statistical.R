@@ -1191,7 +1191,8 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
 visualise_sample_splices <- function(splicing_df, splicing_list, jv, overlay = TRUE,
                                      avoid_splice_list = list(), unstack = FALSE) {
   stopifnot("Splice" %in% class(splicing_df),
-            is.list(splicing_list), 'View' %in% class(jv))
+            is.list(splicing_list), 'View' %in% class(jv),
+            is.list(avoid_splice_list))
 
   subtitle <- c(jv$recording$stem, jv$vid, jv$direct, jv$inst)
   subtitle <- paste(subtitle[subtitle != ""], collapse="_")

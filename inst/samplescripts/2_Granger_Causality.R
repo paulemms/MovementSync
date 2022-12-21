@@ -1,6 +1,7 @@
 # Test we can do Granger Tests
 
 rm(list=ls())
+gc()
 if (dev.cur() > 1) dev.off()
 library(movementsync)
 

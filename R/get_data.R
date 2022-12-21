@@ -33,6 +33,15 @@ open_local_recordings <- function(folder_in = "Original", path = "~/movementsync
 }
 
 
+#' Open local sample scripts folder
+#'
+#' @export
+open_walk_throughs <- function() {
+  script_path <- system.file('samplescripts', package = 'movementsync')
+  utils::browseURL(script_path)
+}
+
+
 #' Get a meta-data recording object
 #'
 #' @param stem recording identifier.
