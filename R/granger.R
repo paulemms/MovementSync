@@ -98,7 +98,7 @@ granger_test <- function(obj, var1, var2, var3 = "", lag = 1, granger_fn = ms_gr
 #' jv_sub <- get_joined_view(fv_list)
 #' splicing_df <- splice_time(jv_sub, win_size = 3, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
-#' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 3/25) # small order
+#' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1/25)
 #' autoplot(g, splicing_df)
 
 autoplot.GrangerTime <- function(object, splicing_df, lev_sig = 0.05, ...) {
@@ -153,7 +153,7 @@ autoplot.GrangerTime <- function(object, splicing_df, lev_sig = 0.05, ...) {
 #' jv_sub <- get_joined_view(fv_list)
 #' splicing_df <- splice_time(jv_sub, win_size = 3, step_size = 0.5)
 #' sv <- get_spliced_view(jv_sub, splicing_df)
-#' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 3/25)
+#' g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1/25)
 #'
 #' plot_influence_diagram(g, splicing_df)
 #' plot_influence_diagram(g, splicing_df, two_arrows = TRUE)

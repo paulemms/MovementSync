@@ -27,7 +27,7 @@ fv_list <- get_filtered_views(r1, data_points = "Nose", n = 41, p = 3)
 jv_sub <- get_joined_view(fv_list)
 splicing_df <- splice_time(jv_sub, win_size = 3, step_size = 0.5)
 sv <- get_spliced_view(jv_sub, splicing_df)
-g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 3/25) # small order
+g <- granger_test(sv, "Nose_x_Central_Sitar", "Nose_x_Central_Tabla", lag = 1/25)
 autoplot(g, splicing_df)
 }
 \seealso{

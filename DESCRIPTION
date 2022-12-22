@@ -26,7 +26,6 @@ Imports:
     hms,
     gridExtra,
     ggplot2,
-    GGally
 RoxygenNote: 7.2.3
 Roxygen: list(markdown = TRUE)
 Suggests: 

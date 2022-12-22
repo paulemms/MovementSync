@@ -62,6 +62,8 @@ get_recording <- function(stem, fps, folder_in = "Original", path = "~/movements
 
   data_path <- file.path(path, folder_in)
   data_files <- list.files(data_path, pattern = paste0("^", stem, ".*\\.csv") )
+  stopifnot(length(data_files) > 0)
+
   l <- list(data_home = path, data_path = data_path, data_files = data_files, stem = stem,
             fps = fps)
   class(l) <- "Recording"

@@ -4,10 +4,12 @@
 \alias{plot.Metre}
 \title{Plot a Metre S3 object}
 \usage{
-\method{plot}{Metre}(x, ...)
+\method{plot}{Metre}(x, tempo = FALSE, ...)
 }
 \arguments{
 \item{x}{S3 object.}
+
+\item{tempo}{plot the tempo rather than cycle length in Metre plot? (Default is FALSE).}
 
 \item{...}{ignored.}
 }
@@ -17,5 +19,5 @@ Plot a Metre S3 object
 \examples{
 r <- get_sample_recording()
 m <- get_metre_data(r)
-plot(m)
+plot(m, tempo = TRUE)
 }

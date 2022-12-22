@@ -30,7 +30,8 @@ You can get the original set of five recordings from
 [OSF](https://osf.io/w2s3a) using the following function:
 
 ``` r
-get_osf_recordings()
+get_osf_recordings(c("NIR_ABh_Puriya", "NIRP1_VS_Hams", "NIRP1_MAK_Jaun",
+                     "Gagaku_5_Juha", "NIR_DBh_Malhar"), node = "https://osf.io/w2s3a")
 ```
 
 This function will download five zip files containing movement data and

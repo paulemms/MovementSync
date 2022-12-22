@@ -254,8 +254,8 @@ autoplot(fv_view$V3_Ryuteki)
 autoplot(fv_view$V3_Ryuteki) + autolayer(d5, filter_expr = Tier == "Section")
 autoplot(fv_view$V3_Ryuteki, time_limits = d5, time_expr = Tier == "Section" & Comments == "B") +
   autolayer(m5, time_limits = d5, time_expr = Tier == "Section" & Comments == "B")
-autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", alpha = 0,
-                                         instrument_cols = instruments)
+autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = NULL, alpha = 0,
+                                         instrument_cols = instruments[c(6,8)])
 
 # To compare data from different cameras use a JoinedView
 two_cameras <- fv_view[c('V4_2_Biwa', 'V2_M_Taiko')]

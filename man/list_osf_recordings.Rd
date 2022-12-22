@@ -4,7 +4,7 @@
 \alias{list_osf_recordings}
 \title{List available recordings for movementsync from OSF}
 \usage{
-list_osf_recordings(node = "https://osf.io/w2s3a")
+list_osf_recordings(node)
 }
 \arguments{
 \item{node}{OSF node for movementsync.}

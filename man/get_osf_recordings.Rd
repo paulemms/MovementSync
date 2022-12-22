@@ -5,20 +5,18 @@
 \title{Get movementsync recording from OSF}
 \usage{
 get_osf_recordings(
-  stems = c("NIR_ABh_Puriya", "NIRP1_VS_Hams", "NIRP1_MAK_Jaun", "Gagaku_5_Juha",
-    "NIR_DBh_Malhar"),
+  stems,
+  node,
   to_dir = "~/movementsync/Original",
-  node = "https://osf.io/w2s3a",
   overwrite = FALSE
 )
 }
 \arguments{
-\item{stems}{zip file stem(s) (default is stems for all the
-recordings needed for the walk-throughs).}
-
-\item{to_dir}{directory to copy to (default is "~/movementsync/Original").}
+\item{stems}{vector of zip file stem(s).}
 
 \item{node}{OSF node for movementsync.}
+
+\item{to_dir}{directory to copy to (default is "~/movementsync/Original").}
 
 \item{overwrite}{overwriting existing dataset files?}
 }

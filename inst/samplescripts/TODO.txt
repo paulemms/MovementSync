@@ -1,5 +1,4 @@
 # QUERY
-# Force the user to enter c('NIR_ABh_Puriya', "NIRP1_VS_Hams", "NIRP1_MAK_Jaun", "Gagaku_5_Juha", "NIR_DBh_Malhar"? and node?
 
 # TODO
 # Add secondary axis for temp - put it on displacement for example - added text labels as workaround
@@ -8,6 +7,7 @@
 # Martin Word document and email 20122022
 
 # DONE
+# Force the user to enter c('NIR_ABh_Puriya', "NIRP1_VS_Hams", "NIRP1_MAK_Jaun", "Gagaku_5_Juha", "NIR_DBh_Malhar") to get data and the node address at OSF
 # Ordered onsetselected facets in autoplot
 # OSF httr library get zip - get_osf_data(), warn if overwrite, OSFR for listing
 # Fixed xlim_duration plots - created option to use Duration object as time_limits

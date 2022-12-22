@@ -310,16 +310,18 @@ autolayer.OnsetsSelected <- function(object, time_limits = c(-Inf, Inf), colour 
   df <- dplyr::group_by(df, .data$Metre, .data$Inst.Name)
   rects <- suppressWarnings(dplyr::summarise(df, Inst_Min=min(.data$Inst, na.rm=TRUE),
                                              Inst_Max=max(.data$Inst, na.rm=TRUE)))
-
   # Subset based on limits
   rects <- dplyr::filter(rects, .data$Inst_Max >= time_limits[1] & .data$Inst_Min <= time_limits[2])
   rects$Inst_Min <- ifelse(rects$Inst_Min < time_limits[1], time_limits[1], rects$Inst_Min)
   rects$Inst_Max <- ifelse(rects$Inst_Max > time_limits[2], time_limits[2], rects$Inst_Max)
+  rects <- dplyr::arrange(rects, .data$Inst_Min)
+  if (!is.null(fill)) rects[[fill]] <- factor(rects[[fill]], levels = unique(rects[[fill]]))
+  fill_sym <- if (is.null(fill)) NULL else ggplot2::sym(fill)
 
   ggplot2::geom_rect(
     data = rects,
     ggplot2::aes(xmin = .data$Inst_Min, xmax = .data$Inst_Max, ymin = -Inf, ymax = Inf,
-                 colour = !!ggplot2::sym(colour), fill = !!ggplot2::sym(fill)),
+                 colour = !!ggplot2::sym(colour), fill = !!fill_sym),
     alpha = alpha)
 }
 

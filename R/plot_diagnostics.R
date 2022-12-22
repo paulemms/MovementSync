@@ -47,6 +47,7 @@ plot.OnsetsSelected <- function(x, instrument = 'Inst', tactus = 'Matra', ...) {
 #' Plot a Metre S3 object
 #'
 #' @param x S3 object.
+#' @param tempo plot the tempo rather than cycle length in Metre plot? (Default is FALSE).
 #' @param ... ignored.
 #'
 #' @examples
@@ -54,11 +55,18 @@ plot.OnsetsSelected <- function(x, instrument = 'Inst', tactus = 'Matra', ...) {
 #' m <- get_metre_data(r)
 #' plot(m)
 #' @exportS3Method
-plot.Metre <- function(x, ...) {
-  zoo_list <- lapply(x, function(x) zoo::zoo(c(diff(x$Time), NA), order.by = x$Time))
-  z <- do.call(merge, zoo_list)
-  ylab <- if (is.null(ncol(z))) "" else NULL
-  plot(z, yax.flip = TRUE, xlab = "Time / s", ylab = ylab, main = "Metre Object - Cycle Length", ...)
+plot.Metre <- function(x, tempo = FALSE, ...) {
+  if (tempo) {
+    zoo_list <- lapply(x, function(y) zoo::zoo(y$Tempo_Hz, order.by = y$Time))
+    z <- do.call(merge, zoo_list)
+    ylab <- if (is.null(ncol(z))) "" else NULL
+    plot(z, yax.flip = TRUE, xlab = "Time / s", ylab = ylab, main = "Metre Object - Tempo / s", ...)
+  } else {
+    zoo_list <- lapply(x, function(y) zoo::zoo(c(diff(y$Time), NA), order.by = y$Time))
+    z <- do.call(merge, zoo_list)
+    ylab <- if (is.null(ncol(z))) "" else NULL
+    plot(z, yax.flip = TRUE, xlab = "Time / s", ylab = ylab, main = "Metre Object - Cycle Length / s", ...)
+  }
 }
 
 
