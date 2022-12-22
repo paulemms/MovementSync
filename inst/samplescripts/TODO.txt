@@ -3,7 +3,7 @@
 
 # TODO
 # Add secondary axis for temp - put it on displacement for example - added text labels as workaround
-# Fix wavelet plots when the segment is very short
+# Fix wavelet time axis for plots when the segment is very short
 # Add ggpairs refined plots
 # Order onsetselected data
 # Martin Word document and email 20122022
