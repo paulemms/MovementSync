@@ -77,12 +77,14 @@ autoplot.OnsetsSelected <- function(object, instrument = 'Inst', tactus = 'Matra
   df <- df[!is.na(df[instrument]),,drop=FALSE]
   min_x <- min(df$Tactus, na.rm = TRUE)
   max_x <- max(df$Tactus, na.rm = TRUE)
+  df <- dplyr::arrange(df, .data[[instrument]])
+  df$Metre_f <- factor(df$Metre, levels = unique(df$Metre))
 
-  g <- if (length(unique(df$Metre)) == 1) ggplot2::theme(legend.position = 'none') else
-    ggplot2::facet_wrap(~.data$Metre)
+  g <- if (length(unique(df$Metre_f)) == 1) ggplot2::theme(legend.position = 'none') else
+    ggplot2::facet_wrap(~.data$Metre_f)
 
   ggplot2::ggplot(df) +
-    ggplot2::geom_bar(ggplot2::aes(x = .data$Tactus, fill = .data$Metre), stat = "count", ...) +
+    ggplot2::geom_bar(ggplot2::aes(x = .data$Tactus, fill = .data$Metre_f), stat = "count", ...) +
     ggplot2::scale_x_continuous(breaks = min_x:max_x, labels=as.character(min_x:max_x)) +
     ggplot2::ylab("Onset Count") +
     ggplot2::labs(title = paste("OnsetsSelected Object:", instrument)) +
