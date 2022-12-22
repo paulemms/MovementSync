@@ -19,6 +19,8 @@ autoplot(o1)
 m1 <- get_metre_data(r1)
 summary(m1)
 autoplot(m1)
+summary(m1, tempo = TRUE)
+autoplot(m1, tempo = TRUE)
 
 d1 <- get_duration_annotation_data(r1)
 summary(d1)
@@ -38,7 +40,7 @@ autoplot(rv1, columns = c("LEar_x", "LEar_y"), time_limits = c(15*60, 20*60), ma
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(d1)
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) + autolayer(o1)
 autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
-  autolayer(d1, expr = Tier == "FORM" & substr(Comments, 1, 1) == "J")
+  autolayer(d1, filter_expr = Tier == "FORM" & substr(Comments, 1, 1) == "J")
 autoplot(rv1, columns = c("LEar_x", "LEar_y"), time_limits = c(1000, 2000), maxpts=5000) +
   autolayer(m1, time_limits = c(1000, 2000), alpha = 0.5)
 # Showing tempo layer on facets
@@ -50,8 +52,8 @@ autoplot(rv1, columns = c("LEar_d", "Nose_d"), time_limits = c(1000, 2000), maxp
             columns = c("LEar_d", "Nose_d"), colour = 'orange')
 
 # Set time-scale using Duration object
-autoplot(rv1, columns = c("LEar_x", "LEar_y")) +
-  xlim_duration(d1, expr = Tier == "FORM" & Comments == "Alap")
+autoplot(rv1, columns = c("LEar_x", "LEar_y"), time_limits = d1,
+         time_expr = Tier == "FORM" & Comments == "Jor")
 
 # Processed data
 pv1 <- get_processed_view(rv1)
@@ -240,17 +242,18 @@ d5 <- get_duration_annotation_data(r5)
 # 8 views - automation
 rv_view <- get_raw_views(r5)
 names(rv_view)
-autoplot(rv_view$V1_M_Taiko)
+autoplot(rv_view$V1_M_Taiko) # Use maxpts = Inf to prevent sampling of rows
 pv_view <- lapply(rv_view, get_processed_view)
 str(pv_view, 2) # shows underlying data structure
 
 # 8 filtered views
 fv_view <- get_filtered_views(r5, data_points = "Nose", n = 19, p = 4)
 
+# Layers using annotation and Metre objects
 autoplot(fv_view$V3_Ryuteki)
-autoplot(fv_view$V3_Ryuteki) + autolayer(d5, expr = Tier == "Section")
-autoplot(fv_view$V3_Ryuteki) + autolayer(m5) +
-  xlim_duration(d5, expr = Tier == "Section" & Comments == "B")
+autoplot(fv_view$V3_Ryuteki) + autolayer(d5, filter_expr = Tier == "Section")
+autoplot(fv_view$V3_Ryuteki, time_limits = d5, time_expr = Tier == "Section" & Comments == "B") +
+  autolayer(m5, time_limits = d5, time_expr = Tier == "Section" & Comments == "B")
 autoplot(fv_view$V3_Ryuteki) + autolayer(o5, colour = "Inst.Name", fill = "", alpha = 0,
                                          instrument_cols = instruments)
 

@@ -5,19 +5,20 @@ rm(list=ls())
 library(movementsync)
 
 # List the recordings available at OSF
-list_osf_recordings()
+list_osf_recordings(node = "https://osf.io/w2s3a")
 
 # Open the data home page at OSF
-open_movementsync_data()
+open_movementsync_data(node = "https://osf.io/w2s3a")
 
 # Download the five recordings for the numbered walk-throughs
-# get_osf_recordings()
+# get_osf_recordings(c('NIR_ABh_Puriya', "NIRP1_VS_Hams", "NIRP1_MAK_Jaun",
+#   "Gagaku_5_Juha", "NIR_DBh_Malhar"), node = "https://osf.io/w2s3a")
 
 # Download a particular recording
-# get_osf_recordings("NIR_ABh_Puriya")
+# get_osf_recordings("NIR_ABh_Puriya", node = "https://osf.io/w2s3a")
 
 # Download a particular recording and force local overwrite
-# get_osf_recordings("NIR_ABh_Puriya", overwrite = TRUE)
+# get_osf_recordings("NIR_ABh_Puriya", node = "https://osf.io/w2s3a", overwrite = TRUE)
 
 # Open the locally available downloaded recordings
 open_local_recordings()

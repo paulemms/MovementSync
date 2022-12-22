@@ -1091,6 +1091,7 @@ difference_onsets_q <- function(onset_obj, instruments, expr = NULL, splicing_df
   output_dfr
 }
 
+
 #' Summary of difference in onsets
 #'
 #' @param onset_obj `OnsetsSelected` object.

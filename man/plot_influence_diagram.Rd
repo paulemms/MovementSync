@@ -39,7 +39,7 @@ plot_influence_diagram(g, splicing_df, two_arrows = TRUE)
 
 d1 <- get_duration_annotation_data(r1)
 plot_influence_diagram(g, splicing_df) +
-autolayer(d1, expr = (Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60,
+autolayer(d1, filter_expr = (Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60,
           fill_col = "Tier")
 }
 \seealso{

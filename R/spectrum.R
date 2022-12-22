@@ -97,11 +97,10 @@ autoplot.SpectralDensityView <- function(object, period_range = c(0, 10), colour
 
   ggplot2::ggplot(long_df, ggplot2::aes(x = .data$Period, y = .data$Density)) +
   ggplot2::geom_line(colour = colour) +
-  ggplot2::xlab('Period / min:sec') +
+  ggplot2::xlab('Period / sec') +
   ggplot2::ylab('Spectral Density') +
   ggplot2::labs(title = class(object)[1], subtitle = title) +
-  ggplot2::facet_grid(DataPoint ~ ., scales = "free") +
-  ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+  ggplot2::facet_grid(DataPoint ~ ., scales = "free")
 }
 
 

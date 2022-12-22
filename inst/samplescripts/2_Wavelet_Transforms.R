@@ -90,7 +90,7 @@ plot_roll_resultant_length(sp2, window_duration = 20, by = 5) +
 
 d1 <- get_duration_annotation_data(r1)
 plot_roll_resultant_length(sp2, window_duration = 20, by = 5) +
-  autolayer(d1, expr = Tier == "Influence S>T" & Comments == "appreciation" & Out <= 300) +
+  autolayer(d1, filter_expr = Tier == "Influence S>T" & Comments == "appreciation" & Out <= 300) +
   ggplot2::scale_fill_discrete(type = 'grey')
 
 # Get the cross spectrum for two musicians
@@ -101,7 +101,7 @@ co2 <- analyze_coherency(jv_sub, columns = c("Nose_x_Central_Sitar", "Nose_x_Cen
                          n.sim = 2)
 plot_cross_spectrum(co2, jv_sub)
 plot_cwt_energy(co2, jv_sub) +
-  autolayer(d1, expr = Tier == "Influence S>T" & Comments == "appreciation" & Out <= 300) +
+  autolayer(d1, filter_expr = Tier == "Influence S>T" & Comments == "appreciation" & Out <= 300) +
   ggplot2::scale_fill_discrete(type = 'cyan')
 
 # Reset graphical parameters

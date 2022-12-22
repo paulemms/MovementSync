@@ -1,6 +1,6 @@
 Package: movementsync
 Type: Package
-Title: Analysis and Visualisation of Musical Audio and Video Data
+Title: Analysis and Visualisation of Movement in Music Performance
 Version: 0.1.0
 Authors@R: c(
   person("Tuomas", "Eerola", email = "tuomas.eerola@durham.ac.uk", role = c("aut", "cre")),

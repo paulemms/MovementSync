@@ -13,7 +13,7 @@
 
 \method{autoplot}{OnsetsSelected}(object, instrument = "Inst", tactus = "Matra", ...)
 
-\method{autoplot}{Metre}(object, ...)
+\method{autoplot}{Metre}(object, tempo = FALSE, ...)
 
 \method{autoplot}{View}(
   object,
@@ -21,7 +21,7 @@
   maxpts = 1000,
   time_limits = c(-Inf, Inf),
   time_breaks = NULL,
-  expr = NULL,
+  time_expr = NULL,
   ...
 )
 
@@ -40,11 +40,13 @@
 
 \item{horizontal}{make the barchart horizontal? (Default is FALSE).}
 
-\item{...}{passed to \code{\link[zoo:plot.zoo]{zoo::plot.zoo()}}.}
+\item{...}{passed to the geom for the plot if possible.}
 
 \item{instrument}{instrument column name.}
 
 \item{tactus}{beat column name.}
+
+\item{tempo}{plot the tempo rather than cycle length in Metre plot? (Default is FALSE).}
 
 \item{columns}{names of columns in input data.}
 
@@ -54,7 +56,7 @@
 
 \item{time_breaks}{suggests the number of major time tick marks (Default is NULL).}
 
-\item{expr}{an R expression that sets the time scale using a duration object (Default is NULL).}
+\item{time_expr}{an R expression that sets the time scale using a duration object (Default is NULL).}
 
 \item{segments}{only include these segments in a SplicedView plot.}
 }
@@ -72,6 +74,7 @@ o <- get_onsets_selected_data(r)
 autoplot(o)
 m <- get_metre_data(r)
 autoplot(m)
+autoplot(m, tempo = TRUE)
 v <- get_raw_view(r, "Central", "", "Sitar")
 autoplot(v, columns = c("LEar_x", "LEar_y"), time_limits = c(20, 40))
 l <- list(a = c(0, 10), b = c(20, 30), c = c(30, 60))

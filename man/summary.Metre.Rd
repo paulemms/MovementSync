@@ -4,10 +4,12 @@
 \alias{summary.Metre}
 \title{Summarise Metre object}
 \usage{
-\method{summary}{Metre}(object, ...)
+\method{summary}{Metre}(object, tempo = FALSE, ...)
 }
 \arguments{
 \item{object}{\code{Metre} object.}
+
+\item{tempo}{summarise tempo? (Default is FALSE).}
 
 \item{...}{ignored.}
 }
@@ -15,7 +17,7 @@
 list of summaries.
 }
 \description{
-Summarises the cycle length for each Metre.
+Summarises the cycle length or temp for each Metre.
 }
 \examples{
 r <- get_sample_recording()

@@ -53,9 +53,10 @@ summary.OnsetsSelected <- function(object, ...) {
 
 #' Summarise Metre object
 #'
-#' Summarises the cycle length for each Metre.
+#' Summarises the cycle length or temp for each Metre.
 #'
 #' @param object `Metre` object.
+#' @param tempo summarise tempo? (Default is FALSE).
 #' @param ... ignored.
 #'
 #' @return list of summaries.
@@ -65,8 +66,12 @@ summary.OnsetsSelected <- function(object, ...) {
 #' r <- get_sample_recording()
 #' m <- get_metre_data(r)
 #' summary(m)
-summary.Metre <- function(object, ...) {
-  df_list <- lapply(object, function(x) if (is.data.frame(x)) diff(x$Time))
+summary.Metre <- function(object, tempo = FALSE, ...) {
+  if (tempo) {
+    df_list <- lapply(object, function(x) if (is.data.frame(x)) x$Tempo_Hz)
+  } else {
+    df_list <- lapply(object, function(x) if (is.data.frame(x)) diff(x$Time))
+  }
   lapply(df_list, summary)
 }
 

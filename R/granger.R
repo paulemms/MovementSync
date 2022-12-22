@@ -160,7 +160,7 @@ autoplot.GrangerTime <- function(object, splicing_df, lev_sig = 0.05, ...) {
 #'
 #' d1 <- get_duration_annotation_data(r1)
 #' plot_influence_diagram(g, splicing_df) +
-#' autolayer(d1, expr = (Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60,
+#' autolayer(d1, filter_expr = (Tier == "Influence S>T" | Tier == "Influence T>S") & Out <= 60,
 #'           fill_col = "Tier")
 
 plot_influence_diagram <- function(obj, splicing_df, two_arrows = TRUE, lev_sig = 0.05) {

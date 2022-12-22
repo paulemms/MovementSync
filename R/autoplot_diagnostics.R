@@ -8,12 +8,13 @@
 #' @param maxpts maximum number of points to plot
 #' @param time_limits tuple to restrict the timeline or a duration object.
 #' @param time_breaks suggests the number of major time tick marks (Default is NULL).
-#' @param ... passed to [zoo::plot.zoo()].
+#' @param ... passed to the geom for the plot if possible.
 #' @param segments only include these segments in a SplicedView plot.
 #' @param instrument instrument column name.
 #' @param tactus beat column name.
 #' @param horizontal make the barchart horizontal? (Default is FALSE).
-#' @param expr an R expression that sets the time scale using a duration object (Default is NULL).
+#' @param time_expr an R expression that sets the time scale using a duration object (Default is NULL).
+#' @param tempo plot the tempo rather than cycle length in Metre plot? (Default is FALSE).
 #'
 #' @return a ggplot object.
 #' @importFrom ggplot2 autoplot
@@ -27,6 +28,7 @@
 #' autoplot(o)
 #' m <- get_metre_data(r)
 #' autoplot(m)
+#' autoplot(m, tempo = TRUE)
 #' v <- get_raw_view(r, "Central", "", "Sitar")
 #' autoplot(v, columns = c("LEar_x", "LEar_y"), time_limits = c(20, 40))
 #' l <- list(a = c(0, 10), b = c(20, 30), c = c(30, 60))
@@ -43,7 +45,7 @@ autoplot.Duration <- function(object, horizontal = FALSE, ...) {
   if (horizontal) {
     ggplot2::ggplot(object) +
       ggplot2::geom_col(ggplot2::aes(x = .data$Duration, y = .data$Tier, fill = .data$In),
-                        position = "stack") +
+                        position = "stack", ...) +
       ggplot2::labs(title = "Duration Object") +
       ggplot2::scale_fill_viridis_b() +
       ggplot2::xlab("Duration / min:sec") +
@@ -52,7 +54,7 @@ autoplot.Duration <- function(object, horizontal = FALSE, ...) {
   } else {
     ggplot2::ggplot(object) +
       ggplot2::geom_col(ggplot2::aes(x = .data$Tier, y = .data$Duration, fill = .data$In),
-                        position = "stack") +
+                        position = "stack", ...) +
       ggplot2::labs(title = "Duration Object") +
       ggplot2::scale_fill_viridis_b() +
       ggplot2::ylab("Duration / min:sec") +
@@ -80,7 +82,7 @@ autoplot.OnsetsSelected <- function(object, instrument = 'Inst', tactus = 'Matra
     ggplot2::facet_wrap(~.data$Metre)
 
   ggplot2::ggplot(df) +
-    ggplot2::geom_bar(ggplot2::aes(x = .data$Tactus, fill = .data$Metre), stat = "count") +
+    ggplot2::geom_bar(ggplot2::aes(x = .data$Tactus, fill = .data$Metre), stat = "count", ...) +
     ggplot2::scale_x_continuous(breaks = min_x:max_x, labels=as.character(min_x:max_x)) +
     ggplot2::ylab("Onset Count") +
     ggplot2::labs(title = paste("OnsetsSelected Object:", instrument)) +
@@ -91,53 +93,58 @@ autoplot.OnsetsSelected <- function(object, instrument = 'Inst', tactus = 'Matra
 
 #' @exportS3Method
 #' @rdname autoplot
-autoplot.Metre <- function(object, ...) {
-  zoo_list <- lapply(object, function(x) zoo::zoo(c(diff(x$Time), NA), order.by = x$Time))
-  z <- do.call(merge, zoo_list)
+autoplot.Metre <- function(object, tempo = FALSE, ...) {
+  if (tempo) {
+    zoo_list <- lapply(object, function(x) zoo::zoo(x$Tempo_Hz, order.by = x$Time))
+    z <- do.call(merge, zoo_list)
 
-  g <- if (is.null(ncol(z))) NULL else ggplot2::facet_grid(Series ~ ., scales="free_y")
-  autoplot(z) + g +
-    ggplot2::labs(title = "Metre Object", subtitle = "Cycle Length") +
-    ggplot2::xlab("Time / min:sec") + ggplot2::ylab("Duration / sec") +
-    ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+    g <- if (is.null(ncol(z))) NULL else ggplot2::facet_grid(Series ~ ., scales="free_y")
 
+    autoplot(z) + g +
+      ggplot2::labs(title = "Metre Object", subtitle = "Tempo") +
+      ggplot2::xlab("Time / min:sec") + ggplot2::ylab("Tempo / Hz") +
+      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+
+  } else {
+    zoo_list <- lapply(object, function(x) zoo::zoo(c(diff(x$Time), NA), order.by = x$Time))
+    z <- do.call(merge, zoo_list)
+
+    g <- if (is.null(ncol(z))) NULL else ggplot2::facet_grid(Series ~ ., scales="free_y")
+
+    autoplot(z) + g +
+      ggplot2::labs(title = "Metre Object", subtitle = "Cycle Length") +
+      ggplot2::xlab("Time / min:sec") + ggplot2::ylab("Duration / sec") +
+      ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))
+  }
 }
 
 
 #' @exportS3Method
 #' @rdname autoplot
 autoplot.View <- function(object, columns=NULL, maxpts=1000, time_limits = c(-Inf, Inf),
-                          time_breaks = NULL, expr = NULL, ...) {
+                          time_breaks = NULL, time_expr = NULL, ...) {
 
   max_num_cols <- 9
   breaks <- if (is.null(time_breaks)) ggplot2::waiver() else scales::pretty_breaks(time_breaks)
 
-  # Restrict points and columns to plot
+  df <- object$df
+
+  # Restrict columns to plot
   columns <- if (is.null(columns)) {
-    if (ncol(object$df) > max_num_cols + 2)
+    if (ncol(df) > max_num_cols + 2)
       warning(paste("Only plotting first", max_num_cols, "data columns"))
-    seq_len(min(ncol(object$df), max_num_cols + 2))[-1]
+    seq_len(min(ncol(df), max_num_cols + 2))[-1]
   } else c("Time", columns)
-  sp <- if (nrow(object$df) > maxpts) {
+
+  df <- extract_segment_q(df, time_limits, expr = substitute(time_expr))
+
+  # Restrict rows to plot
+  sp <- if (nrow(df) > maxpts) {
     warning("Sampling rows for plotting")
-    sample(nrow(object$df), maxpts)
-  } else seq_len(nrow(object$df))
+    sample(nrow(df), maxpts)
+  } else seq_len(nrow(df))
 
-  df <- object$df[sp, columns, drop = FALSE]
-
-  if (class(time_limits) == "numeric") {
-    df <- df[df$Time >= time_limits[1] & df$Time <= time_limits[2],, drop = FALSE]
-  } else if (class(time_limits) == "Duration") {
-    e <- substitute(expr)
-    if (is.null(e)) stop('Need expr to determine time limits from Duration object')
-    rects <- dplyr::filter(time_limits, !!e)
-    time_limits <- c(-Inf, Inf)
-    time_limits[1] <- min(rects$In, na.rm = TRUE)
-    time_limits[2] <- max(rects$Out, na.rm = TRUE)
-    df <- df[df$Time >= time_limits[1] & df$Time <= time_limits[2],, drop = FALSE]
-  } else {
-    stop('Cannot restrict time using this object')
-  }
+  df <- df[sp, columns, drop = FALSE]
 
   zoo_list <- lapply(df[-1], function(x) zoo::zoo(x, order.by = df$Time))
   z <- do.call(merge, zoo_list)
@@ -153,7 +160,7 @@ autoplot.View <- function(object, columns=NULL, maxpts=1000, time_limits = c(-In
     ylab <- NULL
   }
 
-  autoplot(z) + g_wrap + ylab +
+  autoplot(z, ...) + g_wrap + ylab +
     ggplot2::labs(title = class(object)[1], subtitle = subtitle) +
     ggplot2::xlab("Time / min:sec") +
     ggplot2::scale_x_time(breaks = breaks, labels = function(l) strftime(l, '%M:%S'))
@@ -225,7 +232,7 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
   }
 
   ggplot2::ggplot(long_df, ggplot2::aes(x = .data$Time, y = .data$Value, col = .data$Series)) +
-    ggplot2::geom_point() + ggplot2::geom_line() +
+    ggplot2::geom_point(...) + ggplot2::geom_line() +
     ggplot2::labs(title = class(object)[1], subtitle = subtitle) +
     xlab + scale_x_time +
     ggplot2::facet_wrap(~Segment_f, scales = "free_x")
@@ -242,7 +249,8 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
 #' @param ... passed to geom.
 #' @param time_limits tuple of time limits.
 #' @param colour name of column for colouring.
-#' @param expr unquoted R expression for filtering data (default is Tier =='FORM').
+#' @param filter_expr R expression for filtering data (default is Tier =='FORM').
+#' @param time_expr R expression for setting time_limits (default is NULL).
 #' @param fill_column data column used for fill.
 #' @param geom 'rect' or 'vline'.
 #' @param vline_column column name for position of vertical lines.
@@ -280,7 +288,7 @@ autoplot.SplicedView <- function(object, columns=NULL, segments=NULL,
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) +
 #'   autolayer(d)
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) +
-#'   autolayer(d, expr = Tier == "FORM" & substr(Comments, 1, 1) == "J")
+#'   autolayer(d, filter_expr = Tier == "FORM" & substr(Comments, 1, 1) == "J")
 #' autoplot(v, columns = c("LEar_x", "LEar_y")) +
 #'   autolayer(d, geom = "vline", nudge_x = -60, size = 3, colour = "blue")
 #' }
@@ -298,7 +306,8 @@ autolayer.OnsetsSelected <- function(object, time_limits = c(-Inf, Inf), colour 
                               values_to = "Inst")
   }
   df <- dplyr::group_by(df, .data$Metre, .data$Inst.Name)
-  rects <- dplyr::summarise(df, Inst_Min=min(.data$Inst, na.rm=TRUE), Inst_Max=max(.data$Inst, na.rm=TRUE))
+  rects <- suppressWarnings(dplyr::summarise(df, Inst_Min=min(.data$Inst, na.rm=TRUE),
+                                             Inst_Max=max(.data$Inst, na.rm=TRUE)))
 
   # Subset based on limits
   rects <- dplyr::filter(rects, .data$Inst_Max >= time_limits[1] & .data$Inst_Min <= time_limits[2])
@@ -316,15 +325,16 @@ autolayer.OnsetsSelected <- function(object, time_limits = c(-Inf, Inf), colour 
 #' @exportS3Method
 #' @rdname autolayer
 autolayer.Metre <- function(object, time_limits = c(-Inf, Inf), colour = "hotpink", alpha = 0.9,
-                            tempo = FALSE, view = NULL, columns = NULL, ...) {
+                            tempo = FALSE, view = NULL, columns = NULL, time_expr = NULL, ...) {
+
+  dfr <- dplyr::bind_rows(unclass(object))
+  dfr <- extract_segment_q(dfr, time_limits, expr = substitute(time_expr))
+
   if (tempo) {
-    is_tempo_available <- all(sapply(object, function(r) "Tempo_Hz" %in% colnames(r)))
-    if (!is_tempo_available) stop("No tempo data for this recording")
+    if (!"Tempo_Hz" %in% colnames(dfr)) stop("No tempo data for this recording")
     if (is.null(view) || is.null(columns) || !"View" %in% class(view))
       stop("Need a view object and columns for a tempo layer")
-    l <- lapply(object, function(y) y[c("Time", "Tempo_Hz")])
-    dfr <- dplyr::bind_rows(l)
-    dfr <- dplyr::filter(dfr, .data$Time >= time_limits[1] & .data$Time <= time_limits[2])
+    dfr <- dfr[c("Time", "Tempo_Hz")]
 
     view_df <- view$df[view$df$Time >= time_limits[1] & view$df$Time <= time_limits[2], columns, drop = FALSE]
 
@@ -354,11 +364,7 @@ autolayer.Metre <- function(object, time_limits = c(-Inf, Inf), colour = "hotpin
     )
 
   } else {
-    x <- unlist(lapply(object, function(y) y[["Time"]]))
-
-    x[x < time_limits[1]] <- NA
-    x[x > time_limits[2]] <- NA
-
+    x <- dfr[["Time"]]
     ggplot2::geom_vline(xintercept = x, colour = colour, alpha = alpha, ...)
   }
 }
@@ -366,10 +372,10 @@ autolayer.Metre <- function(object, time_limits = c(-Inf, Inf), colour = "hotpin
 
 #' @exportS3Method
 #' @rdname autolayer
-autolayer.Duration <- function(object, time_limits = c(-Inf, Inf), expr = .data$Tier == "FORM",
+autolayer.Duration <- function(object, time_limits = c(-Inf, Inf), filter_expr = .data$Tier == "FORM",
                                fill_column = "Comments", geom = "rect", vline_column = "In", ...) {
   df <- as.data.frame(object)
-  e <- substitute(expr)
+  e <- substitute(filter_expr)
   rects <- dplyr::filter(df, !!e)
 
   # Subset based on limits
@@ -427,32 +433,23 @@ autolayer.Splice <- function(object, geom = "rect", vline_column = "Start", ...)
 }
 
 
-#' Get a ggplot2 xlim object based on duration data
-#'
-#' @param object Duration object.
-#' @param expr R expression to subset rows.
-#'
-#' @examples
-#' \dontrun{
-#' r <- get_recording("NIR_ABh_Puriya", fps = 25)
-#' m <- get_metre_data(r)
-#' d <- get_duration_annotation_data(r)
-#' autoplot(m)
-#' autoplot(m) + autolayer(d)
-#' v <- get_raw_view(r, "Central", "", "Sitar")
-#' autoplot(v, columns = c("LEar_x", "LEar_y")) + autolayer(d)
-#' autoplot(v, columns = c("LEar_x", "LEar_y")) +
-#' xlim_duration(d, expr = Tier == "FORM" & substr(Comments, 1, 1) == "J") +
-#' autolayer(d, expr = Tier == "FORM" & substr(Comments, 1, 1) == "J")
-#' }
-#' @export
-xlim_duration <- function(object, expr = .data$Tier == "Form") {
-  e <- substitute(expr)
-  rects <- dplyr::filter(object, !!e)
-  xmin <- min(rects$In, na.rm = TRUE)
-  xmax <- max(rects$Out, na.rm = TRUE)
+# helper to subset dfr based on explicit time limits or a duration object
+# and a quoted expr
+extract_segment_q <- function(dfr, time_limits, expr) {
 
-  ggplot2::xlim(xmin, xmax)
+  if (class(time_limits)[1] == "numeric") {
+    dfr <- dfr[dfr$Time >= time_limits[1] & dfr$Time <= time_limits[2],, drop = FALSE]
+  } else if (class(time_limits)[1] == "Duration") {
+    if (is.null(expr)) stop('Need expr to determine time limits from Duration object')
+    rects <- dplyr::filter(time_limits, !!expr)
+    time_limits <- c(-Inf, Inf)
+    time_limits[1] <- min(rects$In, na.rm = TRUE)
+    time_limits[2] <- max(rects$Out, na.rm = TRUE)
+    dfr <- dfr[dfr$Time >= time_limits[1] & dfr$Time <= time_limits[2],, drop = FALSE]
+  } else {
+    stop('Cannot restrict time using this object')
+  }
+
+  return(dfr)
 }
-
 
