@@ -19,5 +19,5 @@ Plot a Metre S3 object
 \examples{
 r <- get_sample_recording()
 m <- get_metre_data(r)
-plot(m, tempo = TRUE)
+plot(m)
 }
