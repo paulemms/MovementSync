@@ -1179,7 +1179,7 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
       ggplot2::facet_grid(Segment ~ Statistic_f,
                           labeller = ggplot2::labeller(Statistic_f = ggplot2::label_wrap_gen(12),
                                                        Segment = ggplot2::label_wrap_gen(12)), scales = 'free_x') +
-      ggplot2::ggtitle("Summary of Onset Difference Statistic for Instrument Pairs",
+      ggplot2::ggtitle("Summary of Onset Difference Statistics for Instrument Pairs",
                        subtitle = recording$stem)
     print(g)
   }
