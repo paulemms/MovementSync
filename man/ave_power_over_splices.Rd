@@ -12,6 +12,7 @@ ave_power_over_splices(
   sampling_type = "offset",
   rejection_list = list(),
   include_original = TRUE,
+  segments_to_plot = NULL,
   show_plot = TRUE
 )
 }
@@ -29,6 +30,8 @@ ave_power_over_splices(
 \item{rejection_list}{list of splice objects that random splices must not overlap.}
 
 \item{include_original}{include the original splice in output? (Default is TRUE).}
+
+\item{segments_to_plot}{rows of segments to plot from splice (Default is NULL plots all segments).}
 
 \item{show_plot}{show a plot? (Default is TRUE).}
 }

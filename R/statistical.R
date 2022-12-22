@@ -357,6 +357,7 @@ calculate_ave_cross_power1 <- function(jv, splicing_df, splice_name, num_segment
 #' @param sampling_type either 'offset' or 'gap'.
 #' @param include_original include the original splice in output? (Default is TRUE).
 #' @param rejection_list list of splice objects that random splices must not overlap.
+#' @param segments_to_plot rows of segments to plot from splice (Default is NULL plots all segments).
 #' @param show_plot show a plot? (Default is TRUE).
 #' @param num_splices number of randomly chosen splices.
 #'
@@ -378,9 +379,10 @@ calculate_ave_cross_power1 <- function(jv, splicing_df, splice_name, num_segment
 #' column = 'Nose_x_Central_Sitar', show_plot = TRUE)
 ave_power_over_splices <- function(jv, splicing_df, num_splices, column, sampling_type = 'offset',
                                    rejection_list = list(), include_original = TRUE,
-                                   show_plot = TRUE) {
+                                   segments_to_plot = NULL, show_plot = TRUE) {
 
   stopifnot(class(jv)[1] == "JoinedView",
+            class(splicing_df)[1] == "Splice",
             sampling_type %in% c('offset', 'gap'),
             is.list(rejection_list))
 
@@ -415,6 +417,11 @@ ave_power_over_splices <- function(jv, splicing_df, num_splices, column, samplin
 
   if (show_plot) {
 
+    if (!is.null(segments_to_plot)) {
+      segment_names <- splicing_df[intersect(segments_to_plot, seq_len(nrow(splicing_df))), 'Segment']
+      long_ave_power_df <- dplyr::filter(long_ave_power_df, .data$Segment %in% segment_names)
+    }
+
     subtitle <- paste(jv$recording$stem, column, sep = ' - ')
 
     g <- ggplot2::ggplot(long_ave_power_df) +
@@ -445,6 +452,7 @@ ave_power_over_splices <- function(jv, splicing_df, num_splices, column, samplin
 #' @param sampling_type either 'offset' or 'gap'.
 #' @param include_original include the original splice in output? (Default is TRUE).
 #' @param rejection_list list of splice objects that random splices must not overlap.
+#' @param segments_to_plot rows of segments to plot from splice (Default is NULL plots all segments).
 #' @param show_plot show a plot? (Default is TRUE).
 #' @param num_splices number of randomly chosen splices.
 #'
@@ -467,9 +475,10 @@ ave_power_over_splices <- function(jv, splicing_df, num_splices, column, samplin
 #'   columns = c('Nose_x_Central_Sitar', 'Nose_y_Central_Sitar'), show_plot = TRUE)
 ave_cross_power_over_splices <- function(jv, splicing_df, num_splices, columns, sampling_type = 'offset',
                                    rejection_list = list(), include_original = TRUE,
-                                   show_plot = TRUE) {
+                                   segments_to_plot = NULL, show_plot = TRUE) {
 
   stopifnot(class(jv)[1] == "JoinedView",
+            class(splicing_df)[1] == "Splice",
             sampling_type %in% c('offset', 'gap'),
             is.list(rejection_list))
 
@@ -503,6 +512,11 @@ ave_cross_power_over_splices <- function(jv, splicing_df, num_splices, columns, 
                                            names_to = 'Segment', values_to = 'Average_Cross_Power')
 
   if (show_plot) {
+
+    if (!is.null(segments_to_plot)) {
+      segment_names <- splicing_df[intersect(segments_to_plot, seq_len(nrow(splicing_df))), 'Segment']
+      long_ave_cross_power_df <- dplyr::filter(long_ave_cross_power_df, .data$Segment %in% segment_names)
+    }
 
     subtitle <- paste(jv$recording$stem, paste0(columns, collapse = ", "), sep = ' - ')
 

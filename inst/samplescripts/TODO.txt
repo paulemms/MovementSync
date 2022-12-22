@@ -5,10 +5,9 @@
 # Add secondary axis for temp - put it on displacement for example - added text labels as workaround
 # Fix wavelet time axis for plots when the segment is very short
 # Add ggpairs refined plots
-# Order onsetselected data
+# Order onsetselected data ...
 # Martin Word document and email 20122022
 # OSF httr library get zip - get_osf_data(), warn if overwrite, OSFR for listing
-# Update the show_plot type graphs to have similar features to other plots - see ave_power_spliceview
 # Check splice data.frames really are Splice objects in functions
 
 # DONE
@@ -16,6 +15,7 @@
 # Added tempo plot to default autoplot for Metre and a summary option
 # Spectral density x-axis in seconds not min:sec
 # Changed OSF node function to a parameter
+# Updated the show_plot type graphs to have a segments argument to restrict facets
 # Fixed visualise_sample_splices to take a list of rejection splices.
 # Did fresh R, RStudio, movementsync (it loaded dependencies), movementsync data, ran all scripts ok on old 16Gb machine.
 # Fixed single time series autoplot has z axis label see section 1.
