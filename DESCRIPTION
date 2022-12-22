@@ -25,7 +25,8 @@ Imports:
     tidyr,
     hms,
     gridExtra,
-    ggplot2
+    ggplot2,
+    GGally
 RoxygenNote: 7.2.3
 Roxygen: list(markdown = TRUE)
 Suggests: 

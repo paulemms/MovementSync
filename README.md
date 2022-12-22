@@ -33,12 +33,14 @@ You can get the original set of five recordings from
 get_osf_recordings()
 ```
 
-This function will download five zip files containing the data and
-extract the contents to a folder in your home directory.
+This function will download five zip files containing movement data and
+extract the contents to the folder `movementsync/Original` in your home
+directory.
 
 The R scripts in the [inst/samplescripts](inst/samplescripts) directory
 walk-through the package functionality using these recordings. These
-scripts are installed as part of the package. You can see them by typing
+scripts are installed as part of the package. You can see them locally
+by typing
 
 ``` r
 open_walk_throughs()
