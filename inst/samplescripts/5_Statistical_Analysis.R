@@ -9,7 +9,6 @@ rm(list=ls())
 gc()
 if (dev.cur() > 1) dev.off()
 library(movementsync)
-library(GGally)
 
 ################################################################################
 #

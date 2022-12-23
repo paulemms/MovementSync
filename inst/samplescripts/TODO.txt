@@ -1,15 +1,17 @@
 # QUERY
 
 # TODO
-# Add secondary axis for temp - put it on displacement for example - added text labels as workaround
-# Fix wavelet time axis for plots when the segment is very short
-# Add ggpairs refined plots
-# Martin Word document and email 20122022
 
 # DONE
+# Sent .tar.gzip, send zip
+# Add ggpairs refined plots
+# Martin Word document and email 20122022
+# Improve documentation and tests
+# Add secondary axis for temp - put it on displacement for example - added text labels as workaround
+# Fixed wavelet time axis for plots when the segment is very short
 # Force the user to enter c('NIR_ABh_Puriya', "NIRP1_VS_Hams", "NIRP1_MAK_Jaun", "Gagaku_5_Juha", "NIR_DBh_Malhar") to get data and the node address at OSF
 # Ordered onsetselected facets in autoplot
-# OSF httr library get zip - get_osf_data(), warn if overwrite, OSFR for listing
+# Added functionality to get data from OSF
 # Fixed xlim_duration plots - created option to use Duration object as time_limits
 # Added tempo plot to default autoplot for Metre and a summary option
 # Spectral density x-axis in seconds not min:sec

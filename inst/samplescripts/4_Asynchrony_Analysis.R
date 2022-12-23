@@ -29,12 +29,23 @@ instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa"
                  "Taiko_RW")
 
 # Difference in onsets for each instrument pair
-po1 <- difference_onsets(o1, instruments = c('Inst', 'Tabla'))
-ggpairs(po1, columns = 2:4, aes(colour = Metre))
-po2 <- difference_onsets(o2, instruments = c('Inst', 'Tabla'))
-ggpairs(po2, columns = 2:4, aes(colour = Metre))
-po5 <- difference_onsets(o5, instruments = instruments)
-ggpairs(po5, columns = 2:5) # only one Metre in plot
+instruments1 <- c('Inst', 'Tabla')
+po1 <- difference_onsets(o1, instrument = instruments1)
+pair_pos1 <- get_pair_columns(po1, 'Inst-Tabla', instruments1, add_metre = TRUE)
+ggpairs(po1, columns = pair_pos1, aes(colour = Metre)) + pairs_title(r1)
+
+po2 <- difference_onsets(o2, instrument = instruments1)
+pair_pos2 <- get_pair_columns(po2, 'Inst-Tabla', instruments1, add_metre = TRUE)
+ggpairs(po2, columns = pair_pos2, aes(colour = Metre)) + pairs_title(r2)
+
+po5 <- difference_onsets(o5, instrument = instruments)
+instrument_pairs <- c('Shoko_L-Shoko_R', 'Shoko_L-Taiko', 'Shoko_L-Kakko')
+pair_pos5 <- get_pair_columns(po5, instrument_pairs, instruments)
+ggpairs(po5, columns = pair_pos5) + pairs_title(r5) # only one Metre in plot
+
+# Partially match instrument names
+pair_pos6 <- get_pair_columns(po5, "-So", instruments, partial = TRUE)
+ggpairs(po5, columns = pair_pos6) + pairs_title(r5)
 
 # Summary of difference in onsets (allows segmentation via splicing_dfr argument)
 summary_dfr <- summary_onsets(o5, r5, instruments = instruments,
@@ -49,8 +60,15 @@ d5 <- get_duration_annotation_data(r5)
 splicing_section_dfr <- splice_time(d5, tier = 'Section')
 segmented_po <- difference_onsets(o5, instruments = instruments, splicing_dfr = splicing_section_dfr)
 head(segmented_po)
-ggpairs(segmented_po, columns = 3:6, aes(colour = Segment))
-ggpairs(segmented_po, columns = c(3, 7:9), aes(colour = Segment))
+pair_seg_pos1 <- get_pair_columns(segmented_po, instrument_pairs, instruments1)
+ggpairs(segmented_po, columns = pair_seg_pos1, aes(colour = Segment)) +
+  pairs_title(r5)
+pair_seg_pos2 <- get_pair_columns(segmented_po, instrument_pairs, instruments1, add_segment = TRUE)
+ggpairs(segmented_po, columns = pair_seg_pos2, aes(colour = Segment)) +
+  pairs_title(r5)
+pair_seg_pos3 <- get_pair_columns(segmented_po, instrument_pairs, instruments1, add_ref_beat_time = TRUE)
+ggpairs(segmented_po, columns = pair_seg_pos3, aes(colour = Segment)) +
+  pairs_title(r5)
 
 # Calculate summary statistics on the segments from splice
 summary_segmented_dfr <- summary_onsets(o5, r5, instruments = instruments, splicing_section_dfr,

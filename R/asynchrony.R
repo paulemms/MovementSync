@@ -155,3 +155,70 @@ summary_onsets <- function(onset_obj, recording, instruments, splicing_dfr = NUL
   invisible(as.data.frame(summary_dfr))
 }
 
+
+#' Helper for ggpairs plots
+#'
+#' Finds the column numbers of a subset of instrument pairs in a
+#' `OnsetsDifference` object using partial matching.
+#'
+#' @param obj 'OnsetsDifference' object.
+#' @param instrument_pairs character vector of instrument pairs or
+#' a single instrument pair for partial matching.
+#' @param instrument_names character vector of instrument names
+#' @param add_ref_beat_time add a Reference_Beat_Time column? (Default is FALSE).
+#' @param add_segment add a Segment column? (Default is FALSE).
+#' @param add_metre add a Metre column? (Default is FALSE).
+#' @param partial should matching be partial? (Default is FALSE)
+#'
+#' @return numeric vector of column positions in the `OnsetsDifference` object
+#' @export
+#' @family asynchrony analysis functions
+#'
+#' @examples
+#' \dontrun{
+#' library(GGally)
+#' instruments <- c("Shoko_L", "Shoko_R", "Taiko", "Kakko", "Kakko_1", "So", "Biwa",
+#' "Ryuteki", "Hichiriki", "Sho", "Biwa_RW", "Shoko_RW", "Taiko_LW", "Taiko_RW")
+#' r5 <- get_recording("Gagaku_5_Juha", fps = 60)
+#' o5 <- get_onsets_selected_data(r5)
+#' po5 <- difference_onsets(o5, instruments = instruments)
+#' pair_cols <- get_pair_columns(po5, c("Shoko_L-Kakko", "So-Biwa"), instruments)
+#' ggpairs(po5, columns = pair_cols)
+#' }
+get_pair_columns <- function(obj, instrument_pairs, instrument_names,
+                             add_ref_beat_time = FALSE, add_segment = FALSE,
+                             add_metre = FALSE, partial = FALSE) {
+  stopifnot(class(obj)[1] == 'OnsetsDifference')
+
+  to_match <- instrument_pairs
+  if (add_ref_beat_time) to_match <- c("Ref_Beat_Time", to_match)
+  if (add_segment) to_match <- c(to_match, "Segment")
+  if (add_metre) to_match <- c(to_match, "Metre")
+  if (partial) {
+    if (length(to_match) > 1) stop('Only one instrument_pairs is allowed for partial matching')
+    ind <- grep(to_match, colnames(obj))
+    if (length(ind) == 1) stop('No matches found')
+  } else {
+    ind <- match(to_match, colnames(obj), nomatch = NA)
+    if (anyNA(ind)) stop('Cannot find all the instrument pairs')
+  }
+
+  # Check for data
+  is_empty_col <- colSums(is.na(obj[ind])) == nrow(obj)
+  if (sum(is_empty_col) > 0) {
+    warning('Ignoring instrument pair columns with no data')
+    ind <- ind[!is_empty_col]
+  }
+
+  ind
+}
+
+#' Helper to add title to pairs plot
+#'
+#' @param recording `Recording` object.
+
+#' @export
+pairs_title <- function(recording) {
+  ggplot2::ggtitle("Instrument Pairs Onset Differences / ms",
+                   subtitle = recording$stem)
+}

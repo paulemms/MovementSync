@@ -30,6 +30,7 @@ head(difference_onsets(o1, instruments = c('Inst', 'Tabla'), expr = Matra == 3))
 }
 \seealso{
 Other asynchrony analysis functions: 
+\code{\link{get_pair_columns}()},
 \code{\link{summary_onsets}()}
 }
 \concept{asynchrony analysis functions}

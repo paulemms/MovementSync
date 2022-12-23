@@ -51,6 +51,7 @@ summary_onsets(o1, r1, instruments = c('Inst', 'Tabla'),
 }
 \seealso{
 Other asynchrony analysis functions: 
-\code{\link{difference_onsets}()}
+\code{\link{difference_onsets}()},
+\code{\link{get_pair_columns}()}
 }
 \concept{asynchrony analysis functions}

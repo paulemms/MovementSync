@@ -27,7 +27,6 @@ df1 <- dplyr::bind_rows(df_list, .id = "Feature")
 g <- ggplot2::ggplot(df1, ggplot2::aes(x, y)) +
   ggplot2::geom_point(aes(colour = Feature), alpha = 0.5) +
   scale_size(range = c(2,12)) +
-  #ggplot2::facet_wrap(~Feature) +
   labs(title = 'Time: {frame_time}') +
   transition_time(Time) +
   shadow_wake(.3)+

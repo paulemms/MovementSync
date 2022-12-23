@@ -140,7 +140,7 @@ harmonium_splicing_df
 
 # Plot Granger Causality interactions
 harmonium_sv <- get_spliced_view(jv3, splicing_df = harmonium_splicing_df)
-autoplot(harmonium_sv, breaks = 2)
+autoplot(harmonium_sv, time_breaks = 2)
 harmonium_gi <- get_granger_interactions(
   harmonium_sv, c("Nose_x_Cam1_Harmonium", "Nose_x_Cam2_Singer", "Nose_x_Cam2_Tabla"))
 plot(harmonium_gi)
