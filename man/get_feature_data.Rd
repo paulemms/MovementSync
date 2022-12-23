@@ -11,7 +11,7 @@ get_feature_data(
   inst,
   interpolate_data = FALSE,
   folder_out = "Raw",
-  save_output = TRUE
+  save_output = FALSE
 )
 }
 \arguments{
