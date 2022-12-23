@@ -3,7 +3,7 @@
 # TODO
 
 # DONE
-# Sent .tar.gzip, send zip
+# Sent .tar.gz, zip built packages, repository source and check log.
 # Add ggpairs refined plots
 # Martin Word document and email 20122022
 # Improve documentation and tests
