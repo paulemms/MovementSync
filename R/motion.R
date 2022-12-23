@@ -131,6 +131,8 @@ velocity_dp <- function(obj, add_mean = TRUE, vscale = 5, maxpts = 10000, alpha 
   ggplot2::ggplot(long_df, ggplot2::aes(.data$Time, .data$d, colour = .data$DataPoint)) +
     ggplot2::labs(title = paste("Velocity of", class(obj)[1]), subtitle = subtitle) +
     ggplot2::geom_point(alpha = alpha, ...) +
+    ggplot2::xlab("Time / min:sec") +
+    ggplot2::ylab("Velocity") +
     ggplot2::geom_line() +
     ggplot2::guides(colour=ggplot2::guide_legend(override.aes=list(alpha=1, size=3))) +
     ggplot2::scale_x_time(labels = function(l) strftime(l, '%M:%S'))

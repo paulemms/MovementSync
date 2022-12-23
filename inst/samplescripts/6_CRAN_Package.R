@@ -22,6 +22,7 @@ pvz <- get_processed_view(rvz)
 head(pvz$df)
 fvz <- apply_filter_sgolay(pvz, data_points = c('LEar', 'LElbow', 'LEye'), n = 19, p = 4)
 head(fvz$df)
+autoplot(fvz)
 
 # Check the package for CRAN
 # devtools::check()

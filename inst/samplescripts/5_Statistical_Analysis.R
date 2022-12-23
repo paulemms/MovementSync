@@ -134,10 +134,12 @@ cross_power_smile_list <- apply_segment_spliceview(
   sv_duration_smile, analyze_coherency, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"))
 cross_power_body_list <- apply_segment_spliceview(
   sv_duration_body, analyze_coherency, columns = c("Nose_x_Central_Sitar", "Nose_y_Central_Sitar"))
+old_par <- par(cex.main = 0.95) # Titles smaller for plots
 plot_cross_spectrum(cross_power_smile_list$output$`Mutual look and smile.1`,
                     cross_power_smile_list$input$`Mutual look and smile.1`)
 plot_cross_spectrum(cross_power_body_list$output$`Mutual head and body movement.1`,
                     cross_power_body_list$input$`Mutual head and body movement.1`)
+par(old_par)
 
 # Go straight to average cross power ...
 ave_cross_power_smile <- ave_cross_power_spliceview(
