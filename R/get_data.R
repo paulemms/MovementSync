@@ -678,7 +678,7 @@ get_processed_views <- function(r, data_points) {
 #' get_data_points(jv)
 #' autoplot(jv)
 get_feature_data <- function(recording, vid, direct, inst, interpolate_data = FALSE,
-                                 folder_out = "Raw", save_output = TRUE) {
+                                 folder_out = "Raw", save_output = FALSE) {
   fn_cpts <- c(recording$stem, vid, direct, 'Feature', inst)
   fn <- paste0(paste(fn_cpts[fn_cpts != ""], collapse = "_"), ".csv")
   data_file_name <- file.path(recording$data_path, fn)
